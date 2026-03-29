@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RestaurantOS</title>
-  
-
-<style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js"></script>
+  <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --am:#BA7517;--am-l:#FAEEDA;--am-m:#EF9F27;
@@ -15,66 +14,90 @@
   --bl:#185FA5;--bl-l:#E6F1FB;
   --re:#A32D2D;--re-l:#FCEBEB;
   --gr:#3B6D11;--gr-l:#EAF3DE;--gr-m:#639922;
+  --font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --color-bg:#f8f7f4;
+  --color-surface:#ffffff;
+  --color-border:rgba(0,0,0,0.09);
+  --color-border-md:rgba(0,0,0,0.15);
+  --color-text:#1a1a1a;
+  --color-text-2:#666;
+  --radius-md:8px;
+  --radius-lg:12px;
 }
-.app{font-family:var(--font-sans);display:flex;flex-direction:column;min-height:500px;}
-.topbar{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:10px 14px;background:var(--color-background-primary);
-  border-bottom:0.5px solid var(--color-border-tertiary);
-  position:sticky;top:0;z-index:50;
-}
-.logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:500;color:var(--color-text-primary);}
-.logo-icon{width:30px;height:30px;border-radius:8px;background:var(--am-m);display:flex;align-items:center;justify-content:center;font-size:15px;}
-.clock-badge{font-size:12px;color:var(--color-text-secondary);padding:4px 8px;border-radius:20px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);}
+body{background:var(--color-bg);font-family:var(--font-sans);color:var(--color-text);}
+.app{display:flex;flex-direction:column;min-height:100vh;}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--color-surface);border-bottom:0.5px solid var(--color-border);position:sticky;top:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:600;color:var(--color-text);}
+.logo-icon{width:32px;height:32px;border-radius:9px;background:var(--am-m);display:flex;align-items:center;justify-content:center;font-size:17px;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.clock-pill{font-size:12px;color:var(--color-text-2);padding:4px 10px;border-radius:20px;background:var(--color-bg);border:0.5px solid var(--color-border);}
 .db-dot{width:7px;height:7px;border-radius:50%;background:var(--te-m);display:inline-block;margin-right:4px;}
-.nav-desktop{display:flex;gap:4px;}
-.nav-mobile{display:none;background:var(--color-background-primary);border-top:0.5px solid var(--color-border-tertiary);padding:8px;position:sticky;bottom:0;z-index:50;}
-.nav-mobile-inner{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;}
-.nav-btn{padding:6px 11px;border-radius:var(--border-radius-md);border:0.5px solid transparent;background:transparent;cursor:pointer;font-size:12px;color:var(--color-text-secondary);transition:all .12s;font-family:var(--font-sans);white-space:nowrap;}
-.nav-btn:hover{background:var(--color-background-secondary);color:var(--color-text-primary);}
+.db-dot.error{background:var(--re);}
+
+/* NAV DESKTOP */
+.nav-desktop{display:flex;gap:3px;}
+.nav-btn{padding:6px 12px;border-radius:var(--radius-md);border:0.5px solid transparent;background:transparent;cursor:pointer;font-size:13px;color:var(--color-text-2);transition:all .12s;font-family:var(--font-sans);white-space:nowrap;}
+.nav-btn:hover{background:var(--color-bg);color:var(--color-text);}
 .nav-btn.active{background:var(--am-l);color:var(--am);border-color:var(--am-m);font-weight:500;}
-.nav-mob-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border-radius:var(--border-radius-md);border:0.5px solid transparent;background:transparent;cursor:pointer;font-family:var(--font-sans);transition:all .12s;}
+
+/* NAV MOBILE */
+.nav-mobile{display:none;background:var(--color-surface);border-top:0.5px solid var(--color-border);padding:6px 8px;position:sticky;bottom:0;z-index:100;}
+.nav-mobile-inner{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;}
+.nav-mob-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:var(--radius-md);border:0.5px solid transparent;background:transparent;cursor:pointer;font-family:var(--font-sans);transition:all .12s;touch-action:manipulation;}
 .nav-mob-btn.active{background:var(--am-l);border-color:var(--am-m);}
-.nav-mob-icon{font-size:16px;line-height:1;}
-.nav-mob-label{font-size:10px;color:var(--color-text-secondary);font-weight:400;}
+.nav-mob-icon{font-size:18px;line-height:1;}
+.nav-mob-label{font-size:10px;color:var(--color-text-2);font-weight:400;}
 .nav-mob-btn.active .nav-mob-label{color:var(--am);font-weight:500;}
-.content{flex:1;padding:14px;background:var(--color-background-secondary);}
+
+/* CONTENT */
+.content{flex:1;padding:16px;background:var(--color-bg);}
 .page{display:none;}.page.active{display:block;}
-.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px;}
-.section-title{font-size:11px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;}
-.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;}
+
+/* CARDS */
+.card{background:var(--color-surface);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:14px;}
+.section-title{font-size:11px;font-weight:600;color:var(--color-text-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;}
 .badge-am{background:var(--am-l);color:var(--am);}
 .badge-te{background:var(--te-l);color:var(--te);}
 .badge-re{background:var(--re-l);color:var(--re);}
 .badge-bl{background:var(--bl-l);color:var(--bl);}
-.badge-gr{background:var(--gr-l);color:var(--gr);}
-.btn{padding:9px 14px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);cursor:pointer;font-size:13px;font-family:var(--font-sans);color:var(--color-text-primary);transition:all .12s;touch-action:manipulation;}
-.btn:hover{background:var(--color-background-secondary);}
+.badge-co{background:var(--co-l);color:var(--co);}
+
+/* BUTTONS */
+.btn{padding:9px 15px;border-radius:var(--radius-md);border:0.5px solid var(--color-border-md);background:var(--color-surface);cursor:pointer;font-size:13px;font-family:var(--font-sans);color:var(--color-text);transition:all .12s;touch-action:manipulation;}
+.btn:hover{background:var(--color-bg);}
 .btn:active{transform:scale(.97);}
 .btn-p{background:var(--am-m);color:#fff;border-color:var(--am);font-weight:500;}
 .btn-p:hover{background:var(--am);}
 .btn-te{background:var(--te);color:#fff;border-color:var(--te);}
-.btn-te:hover{background:var(--te-m);}
-.btn-sm{padding:6px 10px;font-size:12px;}
+.btn-te:hover{opacity:.9;}
+.btn-re{background:var(--re-l);color:var(--re);border-color:var(--re);}
+.btn-re:hover{background:var(--re);color:#fff;}
+.btn-sm{padding:6px 11px;font-size:12px;}
 .btn-xs{padding:4px 8px;font-size:11px;}
-.btn-danger{background:var(--re-l);color:var(--re);border-color:var(--re);}
+
+/* LAYOUT UTILS */
 .fb{display:flex;justify-content:space-between;align-items:center;}
 .row{display:flex;gap:8px;align-items:center;}
-.mt8{margin-top:8px;}.mt12{margin-top:12px;}.mt16{margin-top:16px;}
-.divider{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:12px 0;}
-.text-m{font-size:13px;color:var(--color-text-secondary);}
-.metric-val{font-size:22px;font-weight:500;color:var(--color-text-primary);}
-.metric-label{font-size:11px;color:var(--color-text-secondary);margin-top:2px;}
-.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
-.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
-.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
-.g-metric{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+.mt8{margin-top:8px;}.mt10{margin-top:10px;}.mt12{margin-top:12px;}.mt16{margin-top:16px;}
+.divider{border:none;border-top:0.5px solid var(--color-border);margin:12px 0;}
+.text-m{font-size:13px;color:var(--color-text-2);}
+.metric-val{font-size:24px;font-weight:600;color:var(--color-text);}
+.metric-label{font-size:11px;color:var(--color-text-2);margin-top:2px;}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.g-metric{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
 
-.floor-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
-.mesa{aspect-ratio:1;border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .12s;background:var(--color-background-primary);font-family:var(--font-sans);touch-action:manipulation;}
-.mesa:active{transform:scale(.95);}
-.mesa-num{font-size:16px;font-weight:500;color:var(--color-text-primary);}
-.mesa-sub{font-size:10px;margin-top:2px;color:var(--color-text-secondary);}
+/* MESAS */
+.floor-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.mesa-wrap{position:relative;}
+.mesa{aspect-ratio:1;border-radius:var(--radius-lg);border:0.5px solid var(--color-border);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .12s;background:var(--color-surface);font-family:var(--font-sans);touch-action:manipulation;width:100%;}
+.mesa:active{transform:scale(.94);}
+.mesa-num{font-size:17px;font-weight:600;color:var(--color-text);}
+.mesa-sub{font-size:10px;margin-top:3px;color:var(--color-text-2);}
 .mesa.livre{background:var(--te-l);border-color:var(--te-m);}
 .mesa.livre .mesa-num{color:var(--te);}
 .mesa.livre .mesa-sub{color:var(--te);}
@@ -84,284 +107,292 @@
 .mesa.conta{background:var(--co-l);border-color:var(--co-m);}
 .mesa.conta .mesa-num{color:var(--co);}
 .mesa.conta .mesa-sub{color:var(--co);}
+/* botão de desmarcar no canto superior direito */
+.mesa-deselect{
+  position:absolute;top:-6px;right:-6px;
+  width:20px;height:20px;border-radius:50%;
+  background:var(--re);color:#fff;
+  border:2px solid var(--color-surface);
+  cursor:pointer;font-size:12px;line-height:1;
+  display:none;align-items:center;justify-content:center;
+  z-index:10;touch-action:manipulation;
+  font-family:var(--font-sans);font-weight:700;
+}
+.mesa-wrap:hover .mesa-deselect{display:flex;}
 
-.pedido-layout{display:grid;grid-template-columns:1fr 300px;gap:12px;}
+/* PEDIDO */
+.pedido-layout{display:grid;grid-template-columns:1fr 310px;gap:14px;}
 .cardapio-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
-.item-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px;cursor:pointer;transition:all .12s;text-align:left;touch-action:manipulation;}
+.item-card{background:var(--color-surface);border:0.5px solid var(--color-border);border-radius:var(--radius-md);padding:11px;cursor:pointer;transition:all .12s;text-align:left;touch-action:manipulation;}
 .item-card:hover,.item-card:active{border-color:var(--am-m);background:var(--am-l);}
-.item-name{font-size:12px;font-weight:500;color:var(--color-text-primary);}
-.item-price{font-size:11px;color:var(--color-text-secondary);margin-top:3px;}
-.item-cat-lbl{font-size:10px;color:var(--color-text-secondary);margin-bottom:3px;}
-.cat-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;overflow-x:auto;padding-bottom:2px;}
-.cat-chip{padding:5px 10px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:transparent;cursor:pointer;font-size:12px;font-family:var(--font-sans);color:var(--color-text-secondary);white-space:nowrap;touch-action:manipulation;}
+.item-name{font-size:12px;font-weight:600;color:var(--color-text);}
+.item-price{font-size:12px;color:var(--am);margin-top:3px;font-weight:500;}
+.item-cat-lbl{font-size:10px;color:var(--color-text-2);margin-bottom:3px;}
+.cat-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;overflow-x:auto;padding-bottom:2px;}
+.cat-chip{padding:5px 12px;border-radius:20px;border:0.5px solid var(--color-border-md);background:transparent;cursor:pointer;font-size:12px;font-family:var(--font-sans);color:var(--color-text-2);white-space:nowrap;touch-action:manipulation;}
 .cat-chip.active{background:var(--am-l);color:var(--am);border-color:var(--am-m);font-weight:500;}
-.cart-item{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid var(--color-border-tertiary);}
-.qty-btn{width:26px;height:26px;border-radius:50%;border:0.5px solid var(--color-border-secondary);background:transparent;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;font-family:var(--font-sans);touch-action:manipulation;}
-.obs-input{width:100%;padding:8px 10px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);font-size:13px;font-family:var(--font-sans);background:var(--color-background-primary);color:var(--color-text-primary);resize:none;}
+.cart-item{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid var(--color-border);}
+.qty-btn{width:28px;height:28px;border-radius:50%;border:0.5px solid var(--color-border-md);background:transparent;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;font-family:var(--font-sans);touch-action:manipulation;}
+.qty-btn:hover{background:var(--color-bg);}
+.obs-input{width:100%;padding:8px 10px;border:0.5px solid var(--color-border);border-radius:var(--radius-md);font-size:13px;font-family:var(--font-sans);background:var(--color-surface);color:var(--color-text);resize:none;}
 .obs-input:focus{outline:none;border-color:var(--am-m);}
 
+/* COZINHA */
 .kds-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
-.kds-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px;}
-.kds-card.preparo{border-left:3px solid var(--am-m);border-radius:0 var(--border-radius-lg) var(--border-radius-lg) 0;}
-.kds-card.pronto{border-left:3px solid var(--te-m);border-radius:0 var(--border-radius-lg) var(--border-radius-lg) 0;}
-.kds-card.entregue{opacity:.55;}
-.kds-item{padding:3px 0;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;justify-content:space-between;font-size:12px;}
+.kds-card{background:var(--color-surface);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:13px;}
+.kds-card.preparo{border-left:3px solid var(--am-m);border-radius:0 var(--radius-lg) var(--radius-lg) 0;}
+.kds-card.pronto{border-left:3px solid var(--te-m);border-radius:0 var(--radius-lg) var(--radius-lg) 0;}
+.kds-card.entregue{opacity:.5;}
+.kds-item{padding:3px 0;border-bottom:0.5px solid var(--color-border);display:flex;justify-content:space-between;font-size:12px;}
 
-.caixa-layout{display:grid;grid-template-columns:180px 1fr;gap:12px;}
-.mesa-item-btn{padding:10px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary);cursor:pointer;text-align:left;font-family:var(--font-sans);transition:all .12s;width:100%;touch-action:manipulation;}
+/* CAIXA */
+.caixa-layout{display:grid;grid-template-columns:190px 1fr;gap:14px;}
+.mesa-item-btn{padding:10px 12px;border-radius:var(--radius-md);border:0.5px solid var(--color-border);background:var(--color-surface);cursor:pointer;text-align:left;font-family:var(--font-sans);transition:all .12s;width:100%;touch-action:manipulation;}
 .mesa-item-btn:hover,.mesa-item-btn.active{border-color:var(--am-m);background:var(--am-l);}
 .pgto-opts{display:flex;gap:8px;}
-.pgto-btn{flex:1;padding:12px 6px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);cursor:pointer;text-align:center;font-family:var(--font-sans);transition:all .12s;touch-action:manipulation;}
+.pgto-btn{flex:1;padding:13px 6px;border-radius:var(--radius-md);border:0.5px solid var(--color-border-md);background:var(--color-surface);cursor:pointer;text-align:center;font-family:var(--font-sans);transition:all .12s;touch-action:manipulation;}
 .pgto-btn:hover,.pgto-btn.selected{border-color:var(--am-m);background:var(--am-l);}
-.pgto-icon{font-size:20px;display:block;margin-bottom:4px;}
-.pgto-label{font-size:12px;font-weight:500;color:var(--color-text-primary);}
-.conta-item{display:flex;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-size:13px;}
+.pgto-icon{font-size:22px;display:block;margin-bottom:5px;}
+.pgto-label{font-size:12px;font-weight:500;color:var(--color-text);}
+.conta-item{display:flex;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid var(--color-border);font-size:13px;}
 .total-row{display:flex;justify-content:space-between;padding:7px 0;font-size:13px;}
 
-.est-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary);}
-.est-bar-wrap{flex:1;height:5px;background:var(--color-background-secondary);border-radius:3px;overflow:hidden;}
+/* ESTOQUE */
+.est-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--color-border);}
+.est-bar-wrap{flex:1;height:6px;background:var(--color-bg);border-radius:3px;overflow:hidden;}
 .est-bar{height:100%;border-radius:3px;transition:width .3s;}
-.est-name{font-size:12px;color:var(--color-text-primary);width:110px;flex-shrink:0;}
-.est-qty{font-size:11px;color:var(--color-text-secondary);width:55px;text-align:right;}
+.est-name{font-size:12px;color:var(--color-text);width:115px;flex-shrink:0;}
+.est-qty{font-size:11px;color:var(--color-text-2);width:58px;text-align:right;}
 
-.chart-wrap{display:flex;align-items:flex-end;gap:6px;height:100px;padding:0 2px;}
+/* GRÁFICO */
+.chart-wrap{display:flex;align-items:flex-end;gap:5px;height:110px;padding:0 2px;}
 .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;}
 .bar-rect{width:100%;border-radius:3px 3px 0 0;background:var(--am-m);min-height:3px;}
-.bar-lbl{font-size:10px;color:var(--color-text-secondary);}
-.bar-val{font-size:10px;font-weight:500;color:var(--color-text-primary);}
-
-.rank-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--color-border-tertiary);}
-.rank-bar-wrap{width:70px;height:5px;background:var(--color-background-secondary);border-radius:3px;overflow:hidden;}
+.bar-val{font-size:9px;font-weight:600;color:var(--color-text);}
+.rank-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--color-border);}
+.rank-bar-wrap{width:72px;height:5px;background:var(--color-bg);border-radius:3px;overflow:hidden;}
 .rank-bar{height:100%;background:var(--am-m);border-radius:3px;}
-select,input[type=text],input[type=number]{padding:7px 10px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);font-size:13px;background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans);}
 
-.toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--te);color:#fff;padding:10px 18px;border-radius:var(--border-radius-md);font-size:13px;opacity:0;transition:all .25s;pointer-events:none;z-index:999;white-space:nowrap;}
+/* MODAL de desmarcar */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--color-surface);border-radius:var(--radius-lg);padding:24px;max-width:320px;width:90%;border:0.5px solid var(--color-border);}
+.modal-title{font-size:15px;font-weight:600;color:var(--color-text);margin-bottom:8px;}
+.modal-body{font-size:13px;color:var(--color-text-2);line-height:1.5;margin-bottom:18px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+
+/* SQL LOG */
+.sql-log{background:#1e1e2e;border-radius:var(--radius-md);padding:10px 12px;font-size:11px;font-family:monospace;color:#a6e3a1;max-height:120px;overflow-y:auto;margin-top:8px;}
+.sql-log .sql-line{padding:1px 0;border-bottom:0.5px solid rgba(255,255,255,.05);}
+.sql-log .sql-ts{color:#89b4fa;margin-right:6px;}
+.sql-log .sql-err{color:#f38ba8;}
+
+/* NIGHT BANNER */
+.night-banner{background:var(--bl-l);border:0.5px solid var(--bl);border-radius:var(--radius-md);padding:9px 13px;font-size:12px;color:var(--bl);margin-bottom:12px;display:none;align-items:center;gap:7px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%) translateY(10px);background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:var(--radius-md);font-size:13px;opacity:0;transition:all .25s;pointer-events:none;z-index:999;white-space:nowrap;max-width:90vw;text-overflow:ellipsis;overflow:hidden;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-.night-banner{background:var(--bl-l);border:0.5px solid var(--bl);border-radius:var(--border-radius-md);padding:8px 12px;font-size:12px;color:var(--bl);margin-bottom:12px;display:none;align-items:center;gap:6px;}
+/* INPUTS */
+select,input[type=text],input[type=number]{padding:7px 10px;border:0.5px solid var(--color-border);border-radius:var(--radius-md);font-size:13px;background:var(--color-surface);color:var(--color-text);font-family:var(--font-sans);}
 
+/* RESPONSIVE */
 @media(max-width:700px){
-
-  /* NAV */
   .nav-desktop{display:none;}
   .nav-mobile{display:block;}
-
-  /* ESPAÇAMENTO */
-  .content{
-    padding:10px;
-    padding-bottom:4px;
-  }
-
-  /* LAYOUT PRINCIPAL */
+  .content{padding:10px;padding-bottom:6px;}
   .pedido-layout{grid-template-columns:1fr;}
   .pedido-comanda{order:-1;}
-
-  /* GRIDS AJUSTADOS (ESSENCIAL) */
-  .cardapio-grid{grid-template-columns:1fr;}
+  .cardapio-grid{grid-template-columns:repeat(2,1fr);}
   .kds-grid{grid-template-columns:1fr;}
   .caixa-layout{grid-template-columns:1fr;}
-
-  /* MESAS (ANTES ERA 4 — agora mais usável) */
-  .floor-grid{grid-template-columns:repeat(2,1fr);}
-
-  /* MÉTRICAS */
+  .floor-grid{grid-template-columns:repeat(3,1fr);}
   .g-metric{grid-template-columns:repeat(2,1fr);}
-
-  /* OUTROS GRIDS */
   .g2{grid-template-columns:1fr;}
-  .g3{grid-template-columns:1fr;}
-  .g4{grid-template-columns:repeat(2,1fr);}
-
-  /* BOTÕES (TOQUE MELHOR) */
-  .btn{
-    min-height:44px;
-  }
-
-  /* PAGAMENTO */
+  .btn{min-height:44px;}
   .pgto-opts{flex-direction:column;}
-  .pgto-btn{
-    display:flex;
-    align-items:center;
-    gap:10px;
-  }
-
-  .pgto-btn .pgto-icon{
-    margin-bottom:0;
-    font-size:18px;
-  }
-
-  /* AJUSTES VISUAIS LEVES (sem quebrar desktop) */
-  .card{
-    border-radius:12px;
-  }
-
-  .mesa{
-    border-radius:12px;
-  }
-
-  .mesa-num{font-size:14px;}
-  .mesa-sub{font-size:9px;}
-
-  /* HEADER */
+  .pgto-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;}
+  .pgto-btn .pgto-icon{margin-bottom:0;font-size:18px;}
   .topbar .logo span{display:none;}
-
-  /* TOAST */
-  .toast{bottom:80px;}
+  .mesa-deselect{display:flex !important;}
+  .toast{bottom:82px;}
 }
-</style>
+@media(max-width:400px){
+  .floor-grid{grid-template-columns:repeat(3,1fr);}
+  .cardapio-grid{grid-template-columns:1fr 1fr;}
+}
+  </style>
 </head>
 <body>
-
 <div class="app">
-<div class="topbar">
-  <div class="logo">
-    <div class="logo-icon">🍽</div>
-    <span>RestaurantOS</span>
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-icon">🍽</div>
+      <span>RestaurantOS</span>
+    </div>
+    <nav class="nav-desktop">
+      <button class="nav-btn active" onclick="goPage('mesas')">Mesas</button>
+      <button class="nav-btn" onclick="goPage('pedido')">Pedidos</button>
+      <button class="nav-btn" onclick="goPage('cozinha')">Cozinha</button>
+      <button class="nav-btn" onclick="goPage('caixa')">Caixa</button>
+      <button class="nav-btn" onclick="goPage('estoque')">Estoque</button>
+      <button class="nav-btn" onclick="goPage('relatorios')">Relatórios</button>
+    </nav>
+    <div class="topbar-right">
+      <div class="clock-pill"><span class="db-dot" id="db-dot"></span><span id="clock">--:--</span></div>
+    </div>
   </div>
-  <nav class="nav-desktop" id="nav-d">
-    <button class="nav-btn active" onclick="goPage('mesas')">Mesas</button>
-    <button class="nav-btn" onclick="goPage('pedido')">Pedidos</button>
-    <button class="nav-btn" onclick="goPage('cozinha')">Cozinha</button>
-    <button class="nav-btn" onclick="goPage('caixa')">Caixa</button>
-    <button class="nav-btn" onclick="goPage('estoque')">Estoque</button>
-    <button class="nav-btn" onclick="goPage('relatorios')">Relatórios</button>
+
+  <!-- CONTEÚDO -->
+  <div class="content">
+    <div class="night-banner" id="night-banner">☾ Reset noturno das 2h — todas as mesas foram liberadas e dados do dia salvos.</div>
+
+    <!-- MESAS -->
+    <div class="page active" id="page-mesas">
+      <div class="fb" style="margin-bottom:14px">
+        <div>
+          <div style="font-size:16px;font-weight:600;">Salão</div>
+          <div class="text-m">Toque para abrir pedido &bull; ✕ para desmarcar</div>
+        </div>
+        <div class="row" style="flex-wrap:wrap;gap:6px;">
+          <span class="badge badge-te">Livre</span>
+          <span class="badge badge-am">Ocupada</span>
+          <span class="badge badge-co">Conta</span>
+        </div>
+      </div>
+      <div class="floor-grid" id="floor-grid"></div>
+      <div class="g-metric mt12">
+        <div class="card" style="text-align:center"><div class="metric-val" id="s-livres">0</div><div class="metric-label">Livres</div></div>
+        <div class="card" style="text-align:center"><div class="metric-val" id="s-ocup">0</div><div class="metric-label">Ocupadas</div></div>
+        <div class="card" style="text-align:center"><div class="metric-val" id="s-ped">0</div><div class="metric-label">Pedidos hoje</div></div>
+        <div class="card" style="text-align:center"><div class="metric-val" id="s-fat">R$0</div><div class="metric-label">Faturamento</div></div>
+      </div>
+      <!-- LOG SQL -->
+      <div class="card mt12">
+        <div class="section-title">Log do banco de dados (SQLite)</div>
+        <div class="sql-log" id="sql-log"><div class="sql-line"><span class="sql-ts">--:--:--</span>Aguardando operações...</div></div>
+      </div>
+    </div>
+
+    <!-- PEDIDO -->
+    <div class="page" id="page-pedido">
+      <div class="fb" style="margin-bottom:12px">
+        <div>
+          <div style="font-size:16px;font-weight:600;">Novo Pedido</div>
+          <div class="text-m" id="ped-mesa-lbl">Selecione uma mesa</div>
+        </div>
+        <div class="row">
+          <span class="text-m">Mesa:</span>
+          <select id="sel-mesa" onchange="selMesaDrop(this.value)" style="padding:6px 8px;font-size:12px;"></select>
+        </div>
+      </div>
+      <div class="pedido-layout">
+        <div>
+          <div class="cat-filter" id="cat-filter"></div>
+          <div class="cardapio-grid" id="cardapio-grid"></div>
+        </div>
+        <div class="card pedido-comanda">
+          <div style="font-size:14px;font-weight:600;margin-bottom:10px;">Comanda</div>
+          <div id="cart-items" style="min-height:80px;"></div>
+          <hr class="divider">
+          <label class="text-m" style="font-size:12px;">Observações</label>
+          <textarea class="obs-input mt8" id="obs-inp" rows="2" placeholder="sem cebola, mal passado..."></textarea>
+          <hr class="divider">
+          <div class="fb"><span class="text-m">Total</span><span style="font-size:16px;font-weight:600;" id="cart-total">R$ 0,00</span></div>
+          <button class="btn btn-p" style="width:100%;margin-top:10px" onclick="enviarPedido()">Enviar para Cozinha</button>
+          <button class="btn btn-sm" style="width:100%;margin-top:6px" onclick="limparCart()">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- COZINHA -->
+    <div class="page" id="page-cozinha">
+      <div class="fb" style="margin-bottom:12px">
+        <div style="font-size:16px;font-weight:600;">Cozinha — KDS</div>
+        <div class="row"><span class="badge badge-am" id="kd-prep">0 preparo</span><span class="badge badge-te" id="kd-pronto">0 prontos</span></div>
+      </div>
+      <div class="kds-grid" id="kds-grid"></div>
+    </div>
+
+    <!-- CAIXA -->
+    <div class="page" id="page-caixa">
+      <div style="font-size:16px;font-weight:600;margin-bottom:14px;">PDV — Caixa</div>
+      <div class="caixa-layout">
+        <div>
+          <div class="section-title">Mesas abertas</div>
+          <div style="display:flex;flex-direction:column;gap:6px;" id="caixa-lista"></div>
+        </div>
+        <div class="card" id="caixa-det"><div class="text-m" style="text-align:center;padding:40px 0">Selecione uma mesa</div></div>
+      </div>
+    </div>
+
+    <!-- ESTOQUE -->
+    <div class="page" id="page-estoque">
+      <div class="fb" style="margin-bottom:12px">
+        <div style="font-size:16px;font-weight:600;">Estoque</div>
+        <button class="btn btn-sm" onclick="reporTudo()">Repor tudo</button>
+      </div>
+      <div class="g2">
+        <div class="card"><div class="section-title">Ingredientes</div><div id="est-list"></div></div>
+        <div class="card"><div class="section-title">Alertas</div><div id="alertas-list"></div></div>
+      </div>
+    </div>
+
+    <!-- RELATÓRIOS -->
+    <div class="page" id="page-relatorios">
+      <div style="font-size:16px;font-weight:600;margin-bottom:14px;">Relatórios</div>
+      <div class="g-metric" style="margin-bottom:12px;">
+        <div class="card" style="text-align:center"><div class="metric-val" id="r-fat">R$0</div><div class="metric-label">Faturamento</div></div>
+        <div class="card" style="text-align:center"><div class="metric-val" id="r-ped">0</div><div class="metric-label">Pedidos</div></div>
+        <div class="card" style="text-align:center"><div class="metric-val" id="r-tick">R$0</div><div class="metric-label">Ticket médio</div></div>
+        <div class="card" style="text-align:center"><div class="metric-val" id="r-itens">0</div><div class="metric-label">Itens vendidos</div></div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="section-title">Faturamento por hora</div>
+          <div class="chart-wrap" id="chart-h"></div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--color-text-2);padding-top:4px;" id="chart-h-labels"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">Mais vendidos</div>
+          <div id="ranking"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAV MOBILE -->
+  <nav class="nav-mobile">
+    <div class="nav-mobile-inner">
+      <button class="nav-mob-btn active" onclick="goPage('mesas')" id="mob-mesas"><span class="nav-mob-icon">⊞</span><span class="nav-mob-label">Mesas</span></button>
+      <button class="nav-mob-btn" onclick="goPage('pedido')" id="mob-pedido"><span class="nav-mob-icon">✏</span><span class="nav-mob-label">Pedido</span></button>
+      <button class="nav-mob-btn" onclick="goPage('cozinha')" id="mob-cozinha"><span class="nav-mob-icon">🔥</span><span class="nav-mob-label">Cozinha</span></button>
+      <button class="nav-mob-btn" onclick="goPage('caixa')" id="mob-caixa"><span class="nav-mob-icon">💳</span><span class="nav-mob-label">Caixa</span></button>
+      <button class="nav-mob-btn" onclick="goPage('estoque')" id="mob-estoque"><span class="nav-mob-icon">📦</span><span class="nav-mob-label">Estoque</span></button>
+      <button class="nav-mob-btn" onclick="goPage('relatorios')" id="mob-relatorios"><span class="nav-mob-icon">📊</span><span class="nav-mob-label">Relatórios</span></button>
+    </div>
   </nav>
-  <div class="row">
-    <div class="clock-badge"><span class="db-dot"></span><span id="clock">--:--</span></div>
-  </div>
 </div>
 
-<div class="content">
-  <div class="night-banner" id="night-banner">
-    ☾ Reset noturno das 2h executado — todas as mesas foram liberadas.
-  </div>
-
-  <!-- MESAS -->
-  <div class="page active" id="page-mesas">
-    <div class="fb" style="margin-bottom:12px">
-      <div>
-        <div style="font-size:15px;font-weight:500;color:var(--color-text-primary)">Salão</div>
-        <div class="text-m" id="salao-sub">Toque em uma mesa para registrar pedido</div>
-      </div>
-      <div class="row" style="flex-wrap:wrap;gap:6px;">
-        <span class="badge badge-te">Livre</span>
-        <span class="badge badge-am">Ocupada</span>
-        <span class="badge badge-re" style="background:var(--co-l);color:var(--co)">Conta</span>
-      </div>
-    </div>
-    <div class="floor-grid" id="floor-grid"></div>
-    <div class="g-metric mt12">
-      <div class="card" style="text-align:center"><div class="metric-val" id="s-livres">0</div><div class="metric-label">Livres</div></div>
-      <div class="card" style="text-align:center"><div class="metric-val" id="s-ocup">0</div><div class="metric-label">Ocupadas</div></div>
-      <div class="card" style="text-align:center"><div class="metric-val" id="s-ped">0</div><div class="metric-label">Pedidos</div></div>
-      <div class="card" style="text-align:center"><div class="metric-val" id="s-fat">R$0</div><div class="metric-label">Hoje</div></div>
-    </div>
-  </div>
-
-  <!-- PEDIDO -->
-  <div class="page" id="page-pedido">
-    <div class="fb" style="margin-bottom:12px">
-      <div>
-        <div style="font-size:15px;font-weight:500;color:var(--color-text-primary)">Novo Pedido</div>
-        <div class="text-m" id="ped-mesa-lbl">Selecione uma mesa</div>
-      </div>
-      <div class="row">
-        <span class="text-m">Mesa:</span>
-        <select id="sel-mesa" onchange="selMesaDrop(this.value)" style="padding:6px 8px;font-size:12px;"></select>
-      </div>
-    </div>
-    <div class="pedido-layout">
-      <div>
-        <div class="cat-filter" id="cat-filter"></div>
-        <div class="cardapio-grid" id="cardapio-grid"></div>
-      </div>
-      <div class="card pedido-comanda">
-        <div style="font-size:14px;font-weight:500;margin-bottom:10px;color:var(--color-text-primary)">Comanda</div>
-        <div id="cart-items" style="min-height:80px;"></div>
-        <hr class="divider">
-        <label class="text-m" style="font-size:12px;">Observações</label>
-        <textarea class="obs-input mt8" id="obs-inp" rows="2" placeholder="sem cebola, mal passado..."></textarea>
-        <hr class="divider">
-        <div class="fb"><span class="text-m">Total</span><span style="font-size:16px;font-weight:500;color:var(--color-text-primary)" id="cart-total">R$ 0,00</span></div>
-        <button class="btn btn-p" style="width:100%;margin-top:10px" onclick="enviarPedido()">Enviar para Cozinha</button>
-        <button class="btn btn-sm" style="width:100%;margin-top:6px" onclick="limparCart()">Limpar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- COZINHA -->
-  <div class="page" id="page-cozinha">
-    <div class="fb" style="margin-bottom:12px">
-      <div style="font-size:15px;font-weight:500;color:var(--color-text-primary)">Cozinha — KDS</div>
-      <div class="row"><span class="badge badge-am" id="kd-prep">0 preparo</span><span class="badge badge-te" id="kd-pronto">0 prontos</span></div>
-    </div>
-    <div class="kds-grid" id="kds-grid"></div>
-  </div>
-
-  <!-- CAIXA -->
-  <div class="page" id="page-caixa">
-    <div style="font-size:15px;font-weight:500;margin-bottom:12px;color:var(--color-text-primary)">PDV — Caixa</div>
-    <div class="caixa-layout">
-      <div>
-        <div class="section-title">Mesas abertas</div>
-        <div style="display:flex;flex-direction:column;gap:6px;" id="caixa-lista"></div>
-      </div>
-      <div class="card" id="caixa-det"><div class="text-m" style="text-align:center;padding:40px 0">Selecione uma mesa</div></div>
-    </div>
-  </div>
-
-  <!-- ESTOQUE -->
-  <div class="page" id="page-estoque">
-    <div class="fb" style="margin-bottom:12px">
-      <div style="font-size:15px;font-weight:500;color:var(--color-text-primary)">Estoque</div>
-      <button class="btn btn-sm" onclick="reporTudo()">Repor tudo</button>
-    </div>
-    <div class="g2">
-      <div class="card"><div class="section-title">Ingredientes</div><div id="est-list"></div></div>
-      <div class="card"><div class="section-title">Alertas</div><div id="alertas-list"></div></div>
-    </div>
-  </div>
-
-  <!-- RELATÓRIOS -->
-  <div class="page" id="page-relatorios">
-    <div style="font-size:15px;font-weight:500;margin-bottom:12px;color:var(--color-text-primary)">Relatórios</div>
-    <div class="g-metric" style="margin-bottom:12px;">
-      <div class="card" style="text-align:center"><div class="metric-val" id="r-fat">R$0</div><div class="metric-label">Faturamento</div></div>
-      <div class="card" style="text-align:center"><div class="metric-val" id="r-ped">0</div><div class="metric-label">Pedidos</div></div>
-      <div class="card" style="text-align:center"><div class="metric-val" id="r-tick">R$0</div><div class="metric-label">Ticket médio</div></div>
-      <div class="card" style="text-align:center"><div class="metric-val" id="r-itens">0</div><div class="metric-label">Itens</div></div>
-    </div>
-    <div class="g2">
-      <div class="card">
-        <div class="section-title">Faturamento por hora</div>
-        <div class="chart-wrap" id="chart-h"></div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--color-text-secondary);padding-top:4px;" id="chart-h-labels"></div>
-      </div>
-      <div class="card">
-        <div class="section-title">Mais vendidos</div>
-        <div id="ranking"></div>
-      </div>
+<!-- MODAL DESMARCAR MESA -->
+<div class="modal-overlay" id="modal-deselect">
+  <div class="modal">
+    <div class="modal-title">Desmarcar mesa?</div>
+    <div class="modal-body" id="modal-deselect-body">Esta ação vai liberar a mesa e remover todos os pedidos em aberto. Deseja continuar?</div>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-sm btn-re" onclick="confirmarDeselect()">Sim, desmarcar</button>
     </div>
   </div>
 </div>
 
-<nav class="nav-mobile">
-  <div class="nav-mobile-inner">
-    <button class="nav-mob-btn active" onclick="goPage('mesas')" id="mob-mesas"><span class="nav-mob-icon">⊞</span><span class="nav-mob-label">Mesas</span></button>
-    <button class="nav-mob-btn" onclick="goPage('pedido')" id="mob-pedido"><span class="nav-mob-icon">✏</span><span class="nav-mob-label">Pedido</span></button>
-    <button class="nav-mob-btn" onclick="goPage('cozinha')" id="mob-cozinha"><span class="nav-mob-icon">🔥</span><span class="nav-mob-label">Cozinha</span></button>
-    <button class="nav-mob-btn" onclick="goPage('caixa')" id="mob-caixa"><span class="nav-mob-icon">💳</span><span class="nav-mob-label">Caixa</span></button>
-    <button class="nav-mob-btn" onclick="goPage('estoque')" id="mob-estoque"><span class="nav-mob-icon">📦</span><span class="nav-mob-label">Estoque</span></button>
-    <button class="nav-mob-btn" onclick="goPage('relatorios')" id="mob-relatorios"><span class="nav-mob-icon">📊</span><span class="nav-mob-label">Relatórios</span></button>
-  </div>
-</nav>
-</div>
 <div class="toast" id="toast"></div>
 
 <script>
-const STORAGE_KEY = 'restaurantOS_v2';
-const RESET_HOUR = 2;
-
+// ─── CARDÁPIO ───────────────────────────────────────────────────
 const CARDAPIO = [
   {id:1,nome:'Filé ao molho',cat:'Pratos',preco:52.90,ing:{carne:1,molho:0.5}},
   {id:2,nome:'Frango grelhado',cat:'Pratos',preco:38.90,ing:{frango:1}},
@@ -394,134 +425,269 @@ const EST_PADRAO = {
   pao:{nome:'Pão',qty:15,max:30,un:'un'},
 };
 
-let S = {};
+// ─── ESTADO UI ───────────────────────────────────────────────────
 let cartItems = [];
 let mesaSel = null;
 let catFiltro = 'Todos';
 let caixaMesa = null;
 let pgtoSel = null;
-let showedResetBanner = false;
+let deselectMesaId = null;
+let DB = null;
+let dbReady = false;
 
-function defaultState() {
-  const mesas = Array.from({length:15},(_,i)=>({id:i+1,status:'livre',pedidos:[],inicio:null,total:0}));
+// ─── SQL LOG ─────────────────────────────────────────────────────
+function sqlLog(msg, isErr=false){
+  const el = document.getElementById('sql-log');
+  if(!el) return;
+  const now = new Date();
+  const ts = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
+  const d = document.createElement('div');
+  d.className = 'sql-line';
+  d.innerHTML = `<span class="sql-ts">${ts}</span><span class="${isErr?'sql-err':''}">${msg}</span>`;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+  // manter só 30 linhas
+  while(el.children.length > 30) el.removeChild(el.firstChild);
+}
+
+// ─── BANCO SQLite ─────────────────────────────────────────────────
+async function initDB(){
+  try {
+    const SQL = await initSqlJs({locateFile: f=>`https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${f}`});
+    // Tentar carregar DB salvo
+    const saved = localStorage.getItem('restaurantOS_db_v3');
+    if(saved){
+      const arr = Uint8Array.from(atob(saved), c=>c.charCodeAt(0));
+      DB = new SQL.Database(arr);
+      sqlLog('Banco carregado do localStorage (' + arr.length + ' bytes)');
+    } else {
+      DB = new SQL.Database();
+      sqlLog('Novo banco SQLite criado em memória');
+    }
+    createSchema();
+    dbReady = true;
+    document.getElementById('db-dot').classList.remove('error');
+    checkNightReset();
+    renderAll();
+  } catch(e){
+    sqlLog('ERRO ao iniciar SQLite: '+e.message, true);
+    document.getElementById('db-dot').classList.add('error');
+    // fallback: usa estado em memória
+    dbReady = false;
+    initFallback();
+  }
+}
+
+function createSchema(){
+  DB.run(`
+    CREATE TABLE IF NOT EXISTS config (
+      chave TEXT PRIMARY KEY,
+      valor TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS mesas (
+      id INTEGER PRIMARY KEY,
+      status TEXT NOT NULL DEFAULT 'livre',
+      inicio INTEGER,
+      total REAL NOT NULL DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS pedidos (
+      id INTEGER PRIMARY KEY,
+      mesa_id INTEGER NOT NULL,
+      obs TEXT DEFAULT '',
+      total REAL NOT NULL,
+      status TEXT NOT NULL DEFAULT 'preparo',
+      criado INTEGER NOT NULL,
+      FOREIGN KEY(mesa_id) REFERENCES mesas(id)
+    );
+    CREATE TABLE IF NOT EXISTS pedido_itens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pedido_id INTEGER NOT NULL,
+      item_id INTEGER NOT NULL,
+      nome TEXT NOT NULL,
+      preco REAL NOT NULL,
+      qty INTEGER NOT NULL,
+      FOREIGN KEY(pedido_id) REFERENCES pedidos(id)
+    );
+    CREATE TABLE IF NOT EXISTS estoque (
+      chave TEXT PRIMARY KEY,
+      nome TEXT NOT NULL,
+      qty REAL NOT NULL,
+      max_qty REAL NOT NULL,
+      unidade TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS relatorio_dia (
+      data TEXT PRIMARY KEY,
+      pedidos_total INTEGER DEFAULT 0,
+      faturamento REAL DEFAULT 0,
+      itens_total INTEGER DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS fat_hora (
+      data TEXT NOT NULL,
+      hora INTEGER NOT NULL,
+      valor REAL DEFAULT 0,
+      PRIMARY KEY(data, hora)
+    );
+    CREATE TABLE IF NOT EXISTS ranking_itens (
+      data TEXT NOT NULL,
+      nome TEXT NOT NULL,
+      qty INTEGER DEFAULT 0,
+      PRIMARY KEY(data, nome)
+    );
+  `);
+  sqlLog('Schema SQL criado/verificado (8 tabelas)');
+
+  // Mesas iniciais
+  const count = DB.exec('SELECT COUNT(*) as c FROM mesas')[0]?.values[0][0];
+  if(!count || count === 0){
+    for(let i=1;i<=15;i++) DB.run('INSERT INTO mesas(id,status,inicio,total) VALUES(?,?,NULL,0)',[i,'livre']);
+    sqlLog('INSERT 15 mesas iniciais');
+  }
+  // Estoque inicial
+  const ec = DB.exec('SELECT COUNT(*) as c FROM estoque')[0]?.values[0][0];
+  if(!ec || ec === 0){
+    Object.entries(EST_PADRAO).forEach(([k,v])=>{
+      DB.run('INSERT INTO estoque(chave,nome,qty,max_qty,unidade) VALUES(?,?,?,?,?)',[k,v.nome,v.qty,v.max,v.un]);
+    });
+    sqlLog('INSERT estoque inicial ('+Object.keys(EST_PADRAO).length+' ingredientes)');
+  }
+  // Data do dia
   const hoje = todayStr();
-  return {
-    mesas, estoque: JSON.parse(JSON.stringify(EST_PADRAO)),
-    pedidosDia:0, faturamentoDia:0, itensDia:0,
-    faturamentoPorHora:{}, rankingItens:{},
-    dataAtual: hoje, lastResetCheck: ''
-  };
+  DB.run('INSERT OR IGNORE INTO relatorio_dia(data) VALUES(?)',[hoje]);
+  saveDB();
+}
+
+function saveDB(){
+  if(!DB) return;
+  try{
+    const data = DB.export();
+    const b64 = btoa(String.fromCharCode(...data));
+    localStorage.setItem('restaurantOS_db_v3', b64);
+    sqlLog('COMMIT → localStorage ('+data.length+' bytes)');
+  } catch(e){ sqlLog('ERRO ao salvar: '+e.message, true); }
 }
 
 function todayStr(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
 
-function save(){
-  try{window.storage.set(STORAGE_KEY, JSON.stringify(S), false);}catch(e){}
-  try{localStorage.setItem(STORAGE_KEY, JSON.stringify(S));}catch(e){}
-}
-
-async function load(){
-  let data = null;
+function qAll(sql, params=[]){
   try{
-    const r = await window.storage.get(STORAGE_KEY, false);
-    if(r&&r.value) data = JSON.parse(r.value);
-  }catch(e){}
-  if(!data){
-    try{const ls=localStorage.getItem(STORAGE_KEY);if(ls)data=JSON.parse(ls);}catch(e){}
-  }
-  if(data){
-    S = data;
-    if(!S.estoque) S.estoque = JSON.parse(JSON.stringify(EST_PADRAO));
-    if(!S.faturamentoPorHora) S.faturamentoPorHora={};
-    if(!S.rankingItens) S.rankingItens={};
-    if(!S.pedidosDia) S.pedidosDia=0;
-    if(!S.faturamentoDia) S.faturamentoDia=0;
-    if(!S.itensDia) S.itensDia=0;
-    if(!S.lastResetCheck) S.lastResetCheck='';
-  } else {
-    S = defaultState();
-  }
-  checkNightReset();
-  init();
+    const res = DB.exec(sql, params);
+    if(!res.length) return [];
+    return res[0].values.map(row=>{
+      const obj={};
+      res[0].columns.forEach((c,i)=>obj[c]=row[i]);
+      return obj;
+    });
+  }catch(e){sqlLog('SQL ERR: '+e.message,true);return[];}
+}
+function qOne(sql, params=[]){ return qAll(sql,params)[0]||null; }
+function run(sql, params=[]){
+  try{ DB.run(sql,params); }
+  catch(e){ sqlLog('SQL ERR: '+e.message,true); }
 }
 
+// ─── RESET NOTURNO ────────────────────────────────────────────────
 function checkNightReset(){
+  if(!dbReady) return;
   const now = new Date();
   const h = now.getHours();
-  const todayKey = todayStr()+'-reset';
-  if(h >= RESET_HOUR && S.lastResetCheck !== todayKey){
-    const needReset = S.dataAtual !== todayStr() || h === RESET_HOUR;
-    if(needReset || S.dataAtual !== todayStr()){
-      doNightReset(todayKey);
-    } else {
-      S.lastResetCheck = todayKey;
-    }
-  }
-}
-
-function doNightReset(key){
-  S.mesas.forEach(m=>{m.status='livre';m.pedidos=[];m.inicio=null;m.total=0;});
   const hoje = todayStr();
-  if(S.dataAtual !== hoje){
-    S.pedidosDia=0;S.faturamentoDia=0;S.itensDia=0;
-    S.faturamentoPorHora={};S.rankingItens={};
-    S.dataAtual=hoje;
-  }
-  S.lastResetCheck = key || todayStr()+'-reset';
-  save();
-  showedResetBanner = true;
-}
-
-function tStr(ms){const m=Math.floor(ms/60000);return m<60?m+'min':Math.floor(m/60)+'h'+('0'+(m%60)).slice(-2);}
-
-function init(){
-  renderFloor();renderKDS();renderRelatorios();
-  setInterval(()=>{
-    const now=new Date();
-    document.getElementById('clock').textContent=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-    checkNightReset();
-    if(document.getElementById('page-mesas').classList.contains('active'))renderFloor();
-    if(document.getElementById('page-cozinha').classList.contains('active'))renderKDS();
-  },30000);
-  const now=new Date();
-  document.getElementById('clock').textContent=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-  if(showedResetBanner){
-    const b=document.getElementById('night-banner');
-    b.style.display='flex';
-    setTimeout(()=>{b.style.display='none';},8000);
+  const cfg = qOne('SELECT valor FROM config WHERE chave=?',['last_reset']);
+  const lastReset = cfg?.valor || '';
+  if(h >= 2 && lastReset !== hoje){
+    doNightReset(hoje);
   }
 }
 
+function doNightReset(hoje){
+  sqlLog('⚙ Executando reset noturno das 2h...');
+  run('UPDATE mesas SET status=\'livre\', inicio=NULL, total=0');
+  run('UPDATE pedidos SET status=\'entregue\' WHERE status IN (\'preparo\',\'pronto\')');
+  run('INSERT OR IGNORE INTO relatorio_dia(data) VALUES(?)',[hoje]);
+  run('INSERT OR REPLACE INTO config(chave,valor) VALUES(?,?)',['last_reset',hoje]);
+  saveDB();
+  sqlLog('Reset concluído. Data atual: '+hoje);
+  const b=document.getElementById('night-banner');
+  b.style.display='flex';
+  setTimeout(()=>b.style.display='none',9000);
+}
+
+// ─── RENDER FLOOR ─────────────────────────────────────────────────
 function renderFloor(){
-  const g=document.getElementById('floor-grid');
-  g.innerHTML=S.mesas.map(m=>{
-    const t=m.inicio?tStr(Date.now()-m.inicio):'';
-    return `<button class="mesa ${m.status}" onclick="clickMesa(${m.id})">
-      <div class="mesa-num">${m.id}</div>
-      <div class="mesa-sub">${m.status==='livre'?'Livre':m.status==='ocupada'?t:'Conta'}</div>
-    </button>`;
+  if(!dbReady) return;
+  const mesas = qAll('SELECT * FROM mesas ORDER BY id');
+  const g = document.getElementById('floor-grid');
+  g.innerHTML = mesas.map(m=>{
+    const t = m.inicio ? tStr(Date.now()-m.inicio) : '';
+    return `<div class="mesa-wrap">
+      <button class="mesa ${m.status}" onclick="clickMesa(${m.id})">
+        <div class="mesa-num">${m.id}</div>
+        <div class="mesa-sub">${m.status==='livre'?'Livre':m.status==='ocupada'?t:'Conta'}</div>
+      </button>
+      ${m.status!=='livre'?`<button class="mesa-deselect" title="Desmarcar mesa" onclick="pedirDeselect(${m.id})">✕</button>`:''}
+    </div>`;
   }).join('');
-  document.getElementById('s-livres').textContent=S.mesas.filter(m=>m.status==='livre').length;
-  document.getElementById('s-ocup').textContent=S.mesas.filter(m=>m.status!=='livre').length;
-  document.getElementById('s-ped').textContent=S.pedidosDia;
-  document.getElementById('s-fat').textContent='R$'+S.faturamentoDia.toFixed(0);
+
+  const livres = mesas.filter(m=>m.status==='livre').length;
+  const ocup = mesas.filter(m=>m.status!=='livre').length;
+  const rel = qOne('SELECT * FROM relatorio_dia WHERE data=?',[todayStr()]);
+  document.getElementById('s-livres').textContent = livres;
+  document.getElementById('s-ocup').textContent = ocup;
+  document.getElementById('s-ped').textContent = rel?.pedidos_total||0;
+  document.getElementById('s-fat').textContent = 'R$'+(rel?.faturamento||0).toFixed(0);
 }
 
 function clickMesa(id){
+  const m = qOne('SELECT * FROM mesas WHERE id=?',[id]);
+  if(m.status==='livre'){
+    run('UPDATE mesas SET status=?,inicio=? WHERE id=?',['ocupada',Date.now(),id]);
+    sqlLog('UPDATE mesas SET status=ocupada WHERE id='+id);
+    saveDB();
+    renderFloor();
+  }
   mesaSel=id;
-  if(S.mesas[id-1].status==='livre'){S.mesas[id-1].status='ocupada';S.mesas[id-1].inicio=Date.now();save();renderFloor();}
   document.getElementById('ped-mesa-lbl').textContent='Mesa '+id;
-  document.getElementById('sel-mesa').value=id;
   goPage('pedido');
 }
 
+// ─── DESMARCAR MESA ───────────────────────────────────────────────
+function pedirDeselect(id){
+  deselectMesaId = id;
+  const m = qOne('SELECT * FROM mesas WHERE id=?',[id]);
+  const pedidosCount = qOne('SELECT COUNT(*) as c FROM pedidos WHERE mesa_id=? AND status!="entregue"',[id])?.c||0;
+  document.getElementById('modal-deselect-body').textContent =
+    `Mesa ${id} está como "${m.status}"${pedidosCount>0?' com '+pedidosCount+' pedido(s) em aberto':''}.`+
+    ` Esta ação libera a mesa e cancela pedidos pendentes. Continuar?`;
+  document.getElementById('modal-deselect').classList.add('open');
+}
+
+function fecharModal(){
+  document.getElementById('modal-deselect').classList.remove('open');
+  deselectMesaId = null;
+}
+
+function confirmarDeselect(){
+  if(!deselectMesaId) return;
+  const id = deselectMesaId;
+  run('UPDATE pedidos SET status=? WHERE mesa_id=? AND status IN (?,?)',['cancelado',id,'preparo','pronto']);
+  run('UPDATE mesas SET status=?,inicio=NULL,total=0 WHERE id=?',['livre',id]);
+  sqlLog('DELETE pedidos pendentes + UPDATE mesas SET livre WHERE id='+id);
+  saveDB();
+  fecharModal();
+  renderFloor();
+  renderKDS();
+  renderCaixa();
+  toast('Mesa '+id+' desmarcada e liberada');
+}
+
+// ─── PEDIDOS ──────────────────────────────────────────────────────
 function renderSelMesa(){
-  const s=document.getElementById('sel-mesa');
-  s.innerHTML='<option value="">-- Mesa --</option>'+S.mesas.map(m=>`<option value="${m.id}">Mesa ${m.id} (${m.status})</option>`).join('');
+  const mesas = qAll('SELECT * FROM mesas ORDER BY id');
+  const s = document.getElementById('sel-mesa');
+  s.innerHTML='<option value="">-- Mesa --</option>'+mesas.map(m=>`<option value="${m.id}">Mesa ${m.id} (${m.status})</option>`).join('');
   if(mesaSel) s.value=mesaSel;
 }
 
-function selMesaDrop(v){if(!v)return;mesaSel=parseInt(v);document.getElementById('ped-mesa-lbl').textContent='Mesa '+v;}
+function selMesaDrop(v){ if(!v)return; mesaSel=parseInt(v); document.getElementById('ped-mesa-lbl').textContent='Mesa '+v; }
 
 function renderCardapio(){
   const cats=['Todos',...new Set(CARDAPIO.map(c=>c.cat))];
@@ -535,32 +701,34 @@ function renderCardapio(){
     </button>`).join('');
 }
 
-function filtCat(c){catFiltro=c;renderCardapio();}
+function filtCat(c){ catFiltro=c; renderCardapio(); }
 
 function addItem(id){
   const item=CARDAPIO.find(i=>i.id===id);
   const ex=cartItems.find(c=>c.id===id);
-  if(ex)ex.qty++;else cartItems.push({id,nome:item.nome,preco:item.preco,qty:1});
+  if(ex) ex.qty++;
+  else cartItems.push({id,nome:item.nome,preco:item.preco,qty:1});
   renderCart();
 }
 
 function removeItem(id){
   const ex=cartItems.find(c=>c.id===id);
-  if(!ex)return;
-  if(ex.qty>1)ex.qty--;else cartItems=cartItems.filter(c=>c.id!==id);
+  if(!ex) return;
+  if(ex.qty>1) ex.qty--;
+  else cartItems=cartItems.filter(c=>c.id!==id);
   renderCart();
 }
 
 function renderCart(){
   const el=document.getElementById('cart-items');
-  if(!cartItems.length){el.innerHTML='<div class="text-m" style="text-align:center;padding:16px 0">Nenhum item</div>';}
-  else{
+  if(!cartItems.length){ el.innerHTML='<div class="text-m" style="text-align:center;padding:16px 0">Nenhum item</div>'; }
+  else {
     el.innerHTML=cartItems.map(c=>`<div class="cart-item">
-      <div><div style="font-size:12px;font-weight:500;color:var(--color-text-primary)">${c.nome}</div>
-      <div style="font-size:11px;color:var(--color-text-secondary)">R$ ${c.preco.toFixed(2)}</div></div>
+      <div><div style="font-size:12px;font-weight:500;">${c.nome}</div>
+      <div style="font-size:11px;color:var(--color-text-2)">R$ ${c.preco.toFixed(2)}</div></div>
       <div style="display:flex;align-items:center;gap:5px;">
         <button class="qty-btn" onclick="removeItem(${c.id})">−</button>
-        <span style="font-size:13px;font-weight:500;min-width:14px;text-align:center">${c.qty}</span>
+        <span style="font-size:13px;font-weight:600;min-width:14px;text-align:center">${c.qty}</span>
         <button class="qty-btn" onclick="addItem(${c.id})">+</button>
       </div></div>`).join('');
   }
@@ -568,103 +736,134 @@ function renderCart(){
   document.getElementById('cart-total').textContent='R$ '+tot.toFixed(2);
 }
 
-function limparCart(){cartItems=[];renderCart();}
+function limparCart(){ cartItems=[]; renderCart(); }
 
 function enviarPedido(){
-  if(!mesaSel){toast('Selecione uma mesa!');return;}
-  if(!cartItems.length){toast('Adicione itens!');return;}
+  if(!mesaSel){ toast('Selecione uma mesa!'); return; }
+  if(!cartItems.length){ toast('Adicione itens!'); return; }
   const obs=document.getElementById('obs-inp').value;
   const tot=cartItems.reduce((s,c)=>s+c.preco*c.qty,0);
-  const pedido={id:Date.now(),mesaId:mesaSel,items:[...cartItems],obs,total:tot,status:'preparo',criado:Date.now()};
-  S.mesas[mesaSel-1].pedidos.push(pedido);
-  S.mesas[mesaSel-1].total+=tot;
+  const now=Date.now();
+  const pedidoId=now;
+
+  run('INSERT INTO pedidos(id,mesa_id,obs,total,status,criado) VALUES(?,?,?,?,?,?)',[pedidoId,mesaSel,obs,tot,'preparo',now]);
+  sqlLog(`INSERT INTO pedidos id=${pedidoId} mesa=${mesaSel} total=R$${tot.toFixed(2)}`);
+
   cartItems.forEach(c=>{
+    run('INSERT INTO pedido_itens(pedido_id,item_id,nome,preco,qty) VALUES(?,?,?,?,?)',[pedidoId,c.id,c.nome,c.preco,c.qty]);
     const item=CARDAPIO.find(i=>i.id===c.id);
-    if(item&&item.ing)Object.entries(item.ing).forEach(([k,v])=>{if(S.estoque[k])S.estoque[k].qty=Math.max(0,S.estoque[k].qty-v*c.qty);});
-    S.rankingItens[c.nome]=(S.rankingItens[c.nome]||0)+c.qty;
+    if(item&&item.ing) Object.entries(item.ing).forEach(([k,v])=>{
+      run('UPDATE estoque SET qty=MAX(0,qty-?) WHERE chave=?',[v*c.qty,k]);
+    });
+    const hoje=todayStr();
+    run('INSERT INTO ranking_itens(data,nome,qty) VALUES(?,?,?) ON CONFLICT(data,nome) DO UPDATE SET qty=qty+excluded.qty',[hoje,c.nome,c.qty]);
   });
+
+  run('UPDATE mesas SET total=total+? WHERE id=?',[tot,mesaSel]);
   const h=new Date().getHours();
-  S.faturamentoPorHora[h]=(S.faturamentoPorHora[h]||0)+tot;
-  cartItems=[];renderCart();
+  const hoje=todayStr();
+  run('INSERT INTO fat_hora(data,hora,valor) VALUES(?,?,?) ON CONFLICT(data,hora) DO UPDATE SET valor=valor+excluded.valor',[hoje,h,tot]);
+
+  cartItems=[]; renderCart();
   document.getElementById('obs-inp').value='';
-  save();renderKDS();renderFloor();
+  saveDB();
+  renderKDS();
+  renderFloor();
   toast('Pedido enviado para a cozinha!');
 }
 
+// ─── COZINHA ──────────────────────────────────────────────────────
 function renderKDS(){
-  const allPedidos=S.mesas.flatMap(m=>m.pedidos);
-  const prep=allPedidos.filter(p=>p.status==='preparo').length;
-  const pronto=allPedidos.filter(p=>p.status==='pronto').length;
+  if(!dbReady) return;
+  const pedidos = qAll('SELECT p.*,m.id as mesa_num FROM pedidos p JOIN mesas m ON p.mesa_id=m.id WHERE p.status!=? ORDER BY p.criado',['cancelado']);
+  const prep = pedidos.filter(p=>p.status==='preparo').length;
+  const pronto = pedidos.filter(p=>p.status==='pronto').length;
   document.getElementById('kd-prep').textContent=prep+' preparo';
   document.getElementById('kd-pronto').textContent=pronto+' prontos';
-  const abertos=allPedidos.filter(p=>p.status!=='entregue');
+  const abertos = pedidos.filter(p=>p.status!=='entregue');
   if(!abertos.length){
     document.getElementById('kds-grid').innerHTML='<div class="text-m" style="text-align:center;padding:40px 0;grid-column:1/-1">Nenhum pedido no momento</div>';
     return;
   }
-  const sorted=[...allPedidos].sort((a,b)=>a.criado-b.criado);
-  document.getElementById('kds-grid').innerHTML=sorted.map(p=>`
-    <div class="kds-card ${p.status}">
+  document.getElementById('kds-grid').innerHTML=pedidos.map(p=>{
+    const itens=qAll('SELECT * FROM pedido_itens WHERE pedido_id=?',[p.id]);
+    return `<div class="kds-card ${p.status}">
       <div class="fb" style="margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:13px;font-weight:500;color:var(--color-text-primary)">Mesa ${p.mesaId}</span>
+          <span style="font-size:13px;font-weight:600;">Mesa ${p.mesa_id}</span>
           <span class="badge badge-${p.status==='preparo'?'am':p.status==='pronto'?'te':'bl'}">${p.status==='preparo'?'Preparo':p.status==='pronto'?'Pronto':'Entregue'}</span>
         </div>
         <span class="text-m" style="font-size:11px;">${tStr(Date.now()-p.criado)}</span>
       </div>
-      <div>${p.items.map(i=>`<div class="kds-item"><span>${i.qty}x ${i.nome}</span><span style="color:var(--color-text-secondary)">R$${(i.preco*i.qty).toFixed(2)}</span></div>`).join('')}
-      ${p.obs?`<div style="font-size:11px;color:var(--color-text-secondary);font-style:italic;padding-top:4px;">Obs: ${p.obs}</div>`:''}</div>
+      <div>${itens.map(i=>`<div class="kds-item"><span>${i.qty}x ${i.nome}</span><span style="color:var(--color-text-2)">R$${(i.preco*i.qty).toFixed(2)}</span></div>`).join('')}
+      ${p.obs?`<div style="font-size:11px;color:var(--color-text-2);font-style:italic;padding-top:4px;">Obs: ${p.obs}</div>`:''}</div>
       <div style="display:flex;gap:6px;margin-top:10px;">
         ${p.status==='preparo'?`<button class="btn btn-sm btn-te" onclick="avancar(${p.id})">Marcar Pronto</button>`:''}
         ${p.status==='pronto'?`<button class="btn btn-sm btn-p" onclick="avancar(${p.id})">Marcar Entregue</button>`:''}
         ${p.status==='entregue'?`<span class="text-m" style="font-size:11px">Entregue</span>`:''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function avancar(id){
-  let p=null;
-  S.mesas.forEach(m=>{const found=m.pedidos.find(x=>x.id===id);if(found)p=found;});
-  if(!p)return;
-  if(p.status==='preparo'){p.status='pronto';toast('Pronto! Mesa '+p.mesaId);}
-  else if(p.status==='pronto'){
-    p.status='entregue';
-    S.pedidosDia++;S.faturamentoDia+=p.total;S.itensDia+=p.items.reduce((s,i)=>s+i.qty,0);
+  const p=qOne('SELECT * FROM pedidos WHERE id=?',[id]);
+  if(!p) return;
+  if(p.status==='preparo'){
+    run('UPDATE pedidos SET status=? WHERE id=?',['pronto',id]);
+    sqlLog('UPDATE pedidos SET status=pronto WHERE id='+id);
+    toast('Pronto! Mesa '+p.mesa_id);
+  } else if(p.status==='pronto'){
+    run('UPDATE pedidos SET status=? WHERE id=?',['entregue',id]);
+    const itens=qAll('SELECT * FROM pedido_itens WHERE pedido_id=?',[id]);
+    const qtdItens=itens.reduce((s,i)=>s+i.qty,0);
+    const hoje=todayStr();
+    run('UPDATE relatorio_dia SET pedidos_total=pedidos_total+1, faturamento=faturamento+?, itens_total=itens_total+? WHERE data=?',[p.total,qtdItens,hoje]);
+    sqlLog('UPDATE relatorio_dia faturamento+='+p.total.toFixed(2)+' pedidos_total+=1');
     toast('Pedido entregue!');
   }
-  save();renderKDS();renderFloor();renderRelatorios();
+  saveDB();
+  renderKDS();
+  renderFloor();
+  renderRelatorios();
 }
 
+// ─── CAIXA ────────────────────────────────────────────────────────
 function renderCaixa(){
-  const abertas=S.mesas.filter(m=>m.status!=='livre'&&m.pedidos.length);
+  if(!dbReady) return;
+  const abertas=qAll('SELECT * FROM mesas WHERE status!=? AND total>0',['livre']);
   const lista=document.getElementById('caixa-lista');
-  if(!abertas.length){lista.innerHTML='<div class="text-m" style="font-size:13px;padding:12px 0">Nenhuma mesa aberta</div>';return;}
+  if(!abertas.length){ lista.innerHTML='<div class="text-m" style="font-size:13px;padding:12px 0">Nenhuma mesa aberta</div>'; return; }
   lista.innerHTML=abertas.map(m=>`<button class="mesa-item-btn${caixaMesa===m.id?' active':''}" onclick="selCaixaMesa(${m.id})">
-    <div style="font-size:13px;font-weight:500;color:var(--color-text-primary)">Mesa ${m.id}</div>
-    <div style="font-size:12px;color:var(--color-text-secondary)">R$ ${m.total.toFixed(2)}</div>
+    <div style="font-size:13px;font-weight:600;">Mesa ${m.id}</div>
+    <div style="font-size:12px;color:var(--color-text-2)">R$ ${m.total.toFixed(2)}</div>
   </button>`).join('');
-  if(caixaMesa)renderCaixaDet();
+  if(caixaMesa) renderCaixaDet();
 }
 
-function selCaixaMesa(id){caixaMesa=id;pgtoSel=null;renderCaixa();renderCaixaDet();}
+function selCaixaMesa(id){ caixaMesa=id; pgtoSel=null; renderCaixa(); renderCaixaDet(); }
 
 function renderCaixaDet(){
-  const m=S.mesas[caixaMesa-1];
+  const m=qOne('SELECT * FROM mesas WHERE id=?',[caixaMesa]);
+  const pedidos=qAll('SELECT * FROM pedidos WHERE mesa_id=? AND status!=?',[caixaMesa,'cancelado']);
   const todosItens=[];
-  m.pedidos.forEach(p=>p.items.forEach(i=>{const ex=todosItens.find(x=>x.nome===i.nome);if(ex)ex.qty+=i.qty;else todosItens.push({...i});}));
+  pedidos.forEach(p=>{
+    const its=qAll('SELECT * FROM pedido_itens WHERE pedido_id=?',[p.id]);
+    its.forEach(i=>{const ex=todosItens.find(x=>x.nome===i.nome);if(ex)ex.qty+=i.qty;else todosItens.push({...i});});
+  });
   const sub=todosItens.reduce((s,i)=>s+i.preco*i.qty,0);
   const taxa=sub*0.1;
   const tot=sub+taxa;
   document.getElementById('caixa-det').innerHTML=`
     <div class="fb" style="margin-bottom:10px">
-      <span style="font-size:14px;font-weight:500;color:var(--color-text-primary)">Mesa ${caixaMesa}</span>
+      <span style="font-size:14px;font-weight:600;">Mesa ${caixaMesa}</span>
       <span class="badge badge-am">${tStr(Date.now()-m.inicio)}</span>
     </div>
     <div style="max-height:180px;overflow-y:auto">${todosItens.map(i=>`<div class="conta-item"><span>${i.qty}x ${i.nome}</span><span>R$ ${(i.preco*i.qty).toFixed(2)}</span></div>`).join('')}</div>
     <hr class="divider">
     <div class="total-row"><span class="text-m">Subtotal</span><span>R$ ${sub.toFixed(2)}</span></div>
     <div class="total-row"><span class="text-m">Taxa (10%)</span><span>R$ ${taxa.toFixed(2)}</span></div>
-    <div class="total-row" style="font-size:15px;font-weight:500;border-top:0.5px solid var(--color-border-tertiary);padding-top:10px;margin-top:4px"><span>Total</span><span>R$ ${tot.toFixed(2)}</span></div>
+    <div class="total-row" style="font-size:15px;font-weight:600;border-top:0.5px solid var(--color-border);padding-top:10px;margin-top:4px"><span>Total</span><span>R$ ${tot.toFixed(2)}</span></div>
     <hr class="divider">
     <div class="section-title">Pagamento</div>
     <div class="pgto-opts mt8">
@@ -676,96 +875,148 @@ function renderCaixaDet(){
     <button class="btn btn-sm" style="width:100%;margin-top:6px" onclick="dividirConta(${tot.toFixed(2)})">Dividir conta</button>`;
 }
 
-function selPgto(p){pgtoSel=p;if(caixaMesa)renderCaixaDet();}
+function selPgto(p){ pgtoSel=p; if(caixaMesa) renderCaixaDet(); }
 
 function fecharConta(){
-  if(!pgtoSel){toast('Selecione o pagamento!');return;}
-  const m=S.mesas[caixaMesa-1];
-  m.status='livre';m.pedidos=[];m.total=0;m.inicio=null;
+  if(!pgtoSel){ toast('Selecione o pagamento!'); return; }
+  const m=qOne('SELECT * FROM mesas WHERE id=?',[caixaMesa]);
+  const pedidos=qAll('SELECT * FROM pedidos WHERE mesa_id=? AND status=?',[caixaMesa,'entregue']);
+  const tot=pedidos.reduce((s,p)=>s+p.total,0);
+  run('UPDATE mesas SET status=?,inicio=NULL,total=0 WHERE id=?',['livre',caixaMesa]);
+  sqlLog(`Conta fechada mesa=${caixaMesa} pgto=${pgtoSel} total=R$${tot.toFixed(2)}`);
   toast('Conta fechada — '+pgtoSel);
-  caixaMesa=null;pgtoSel=null;
+  caixaMesa=null; pgtoSel=null;
   document.getElementById('caixa-det').innerHTML='<div class="text-m" style="text-align:center;padding:40px 0">Selecione uma mesa</div>';
-  save();renderFloor();renderCaixa();renderRelatorios();
+  saveDB();
+  renderFloor();
+  renderCaixa();
+  renderRelatorios();
 }
 
 function dividirConta(tot){
   const n=prompt('Dividir entre quantas pessoas?','2');
-  if(!n||isNaN(n)||n<1)return;
+  if(!n||isNaN(n)||n<1) return;
   toast('Cada pessoa: R$ '+(tot/parseInt(n)).toFixed(2));
 }
 
+// ─── ESTOQUE ──────────────────────────────────────────────────────
 function renderEstoque(){
-  document.getElementById('est-list').innerHTML=Object.entries(S.estoque).map(([k,v])=>{
-    const pct=v.qty/v.max;
+  if(!dbReady) return;
+  const itens=qAll('SELECT * FROM estoque ORDER BY nome');
+  document.getElementById('est-list').innerHTML=itens.map(v=>{
+    const pct=v.qty/v.max_qty;
     const cor=pct<0.2?'var(--co-m)':pct<0.4?'var(--am-m)':'var(--te-m)';
     return `<div class="est-item">
       <div class="est-name">${v.nome}</div>
       <div class="est-bar-wrap"><div class="est-bar" style="width:${Math.round(pct*100)}%;background:${cor}"></div></div>
-      <div class="est-qty">${v.qty.toFixed(1)} ${v.un}</div>
+      <div class="est-qty">${v.qty.toFixed(1)} ${v.unidade}</div>
     </div>`;
   }).join('');
-  const baixos=Object.entries(S.estoque).filter(([k,v])=>v.qty/v.max<0.3);
-  document.getElementById('alertas-list').innerHTML=baixos.length?baixos.map(([k,v])=>`
-    <div class="fb" style="padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary)">
+  const baixos=itens.filter(v=>v.qty/v.max_qty<0.3);
+  document.getElementById('alertas-list').innerHTML=baixos.length?baixos.map(v=>`
+    <div class="fb" style="padding:8px 0;border-bottom:0.5px solid var(--color-border)">
       <div>
-        <div style="font-size:12px;font-weight:500;color:var(--color-text-primary)">${v.nome}</div>
-        <div style="font-size:11px;color:var(--co)">Resta ${v.qty.toFixed(1)} ${v.un}</div>
+        <div style="font-size:12px;font-weight:500;">${v.nome}</div>
+        <div style="font-size:11px;color:var(--co)">Resta ${v.qty.toFixed(1)} ${v.unidade}</div>
       </div>
-      <button class="btn btn-xs" onclick="reporItem('${k}')">Repor</button>
+      <button class="btn btn-xs" onclick="reporItem('${v.chave}')">Repor</button>
     </div>`).join(''):'<div class="text-m" style="padding:12px 0;text-align:center">Sem alertas</div>';
 }
 
-function reporItem(k){S.estoque[k].qty=S.estoque[k].max;save();renderEstoque();toast(S.estoque[k].nome+' reposto!');}
-function reporTudo(){Object.keys(S.estoque).forEach(k=>S.estoque[k].qty=S.estoque[k].max);save();renderEstoque();toast('Estoque reposto!');}
+function reporItem(k){
+  const item=qOne('SELECT * FROM estoque WHERE chave=?',[k]);
+  run('UPDATE estoque SET qty=max_qty WHERE chave=?',[k]);
+  sqlLog('UPDATE estoque SET qty=max_qty WHERE chave='+k);
+  saveDB();
+  renderEstoque();
+  toast(item.nome+' reposto!');
+}
 
+function reporTudo(){
+  run('UPDATE estoque SET qty=max_qty');
+  sqlLog('UPDATE estoque SET qty=max_qty (todos)');
+  saveDB();
+  renderEstoque();
+  toast('Estoque reposto!');
+}
+
+// ─── RELATÓRIOS ───────────────────────────────────────────────────
 function renderRelatorios(){
-  document.getElementById('r-fat').textContent='R$'+S.faturamentoDia.toFixed(0);
-  document.getElementById('r-ped').textContent=S.pedidosDia;
-  document.getElementById('r-tick').textContent=S.pedidosDia?'R$'+(S.faturamentoDia/S.pedidosDia).toFixed(0):'R$0';
-  document.getElementById('r-itens').textContent=S.itensDia;
-  const demo={11:320,12:890,13:1240,14:780,15:430,18:1100,19:1580,20:1920};
-  const merged={...demo,...S.faturamentoPorHora};
-  const horas=Object.entries(merged).sort((a,b)=>a[0]-b[0]);
-  const maxH=Math.max(...horas.map(h=>h[1]),1);
-  document.getElementById('chart-h').innerHTML=horas.map(([h,v])=>`
+  if(!dbReady) return;
+  const rel=qOne('SELECT * FROM relatorio_dia WHERE data=?',[todayStr()]);
+  const fat=rel?.faturamento||0;
+  const ped=rel?.pedidos_total||0;
+  const itens=rel?.itens_total||0;
+  document.getElementById('r-fat').textContent='R$'+fat.toFixed(0);
+  document.getElementById('r-ped').textContent=ped;
+  document.getElementById('r-tick').textContent=ped?'R$'+(fat/ped).toFixed(0):'R$0';
+  document.getElementById('r-itens').textContent=itens;
+
+  const horas=qAll('SELECT hora,valor FROM fat_hora WHERE data=? ORDER BY hora',[todayStr()]);
+  const maxH=Math.max(...horas.map(h=>h.valor),1);
+  document.getElementById('chart-h').innerHTML=horas.length?horas.map(h=>`
     <div class="bar-col">
-      <div class="bar-val">R$${Math.round(v/100)/10}k</div>
-      <div class="bar-rect" style="height:${Math.round(v/maxH*85)}px"></div>
-    </div>`).join('');
-  document.getElementById('chart-h-labels').innerHTML=horas.map(([h])=>`<span>${h}h</span>`).join('');
-  const rank=Object.entries(S.rankingItens).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  const maxR=rank.length?rank[0][1]:1;
-  document.getElementById('ranking').innerHTML=rank.length?rank.map(([nome,qty])=>`
+      <div class="bar-val">R$${Math.round(h.valor/100)/10}k</div>
+      <div class="bar-rect" style="height:${Math.round(h.valor/maxH*90)}px"></div>
+    </div>`).join(''):'<div class="text-m" style="padding:20px;text-align:center">Sem dados</div>';
+  document.getElementById('chart-h-labels').innerHTML=horas.map(h=>`<span>${h.hora}h</span>`).join('');
+
+  const rank=qAll('SELECT nome,qty FROM ranking_itens WHERE data=? ORDER BY qty DESC LIMIT 6',[todayStr()]);
+  const maxR=rank.length?rank[0].qty:1;
+  document.getElementById('ranking').innerHTML=rank.length?rank.map(r=>`
     <div class="rank-item">
-      <div style="font-size:12px;flex:1;color:var(--color-text-primary)">${nome}</div>
-      <div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(qty/maxR*100)}%"></div></div>
-      <div style="font-size:11px;color:var(--color-text-secondary);width:20px;text-align:right">${qty}</div>
+      <div style="font-size:12px;flex:1;">${r.nome}</div>
+      <div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(r.qty/maxR*100)}%"></div></div>
+      <div style="font-size:11px;color:var(--color-text-2);width:20px;text-align:right">${r.qty}</div>
     </div>`).join(''):'<div class="text-m" style="padding:12px 0;text-align:center">Sem dados</div>';
 }
 
+// ─── NAVEGAÇÃO ────────────────────────────────────────────────────
 function goPage(name){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn,.nav-mob-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   const labels={mesas:'Mesas',pedido:'Pedido',cozinha:'Cozinha',caixa:'Caixa',estoque:'Estoque',relatorios:'Relatórios'};
-  document.querySelectorAll('.nav-btn').forEach(b=>{if(b.textContent.trim()===labels[name])b.classList.add('active');});
+  document.querySelectorAll('.nav-btn').forEach(b=>{ if(b.textContent.trim()===labels[name]) b.classList.add('active'); });
   const mob=document.getElementById('mob-'+name);
-  if(mob)mob.classList.add('active');
-  if(name==='pedido'){renderSelMesa();renderCardapio();renderCart();}
-  if(name==='cozinha')renderKDS();
-  if(name==='caixa')renderCaixa();
-  if(name==='estoque')renderEstoque();
-  if(name==='relatorios')renderRelatorios();
-  if(name==='mesas')renderFloor();
+  if(mob) mob.classList.add('active');
+  if(name==='pedido'){ renderSelMesa(); renderCardapio(); renderCart(); }
+  if(name==='cozinha') renderKDS();
+  if(name==='caixa') renderCaixa();
+  if(name==='estoque') renderEstoque();
+  if(name==='relatorios') renderRelatorios();
+  if(name==='mesas') renderFloor();
 }
+
+function renderAll(){ renderFloor(); renderKDS(); renderRelatorios(); }
+
+// ─── UTILITÁRIOS ──────────────────────────────────────────────────
+function tStr(ms){ const m=Math.floor(ms/60000); return m<60?m+'min':Math.floor(m/60)+'h'+('0'+(m%60)).slice(-2); }
 
 function toast(msg){
   const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
+  t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2500);
 }
 
-load();
+function updateClock(){
+  const n=new Date();
+  document.getElementById('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+}
+
+// Fallback sem SQL
+function initFallback(){ toast('Modo offline (sem SQLite)'); }
+
+// ─── INICIALIZAÇÃO ────────────────────────────────────────────────
+updateClock();
+setInterval(()=>{
+  updateClock();
+  checkNightReset();
+  if(document.getElementById('page-mesas').classList.contains('active')) renderFloor();
+  if(document.getElementById('page-cozinha').classList.contains('active')) renderKDS();
+},30000);
+
+initDB();
 </script>
 </body>
 </html>
