@@ -6,7 +6,33 @@
 <title>RestaurantOS — Sistema de Gestão</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js"></script>
+<!-- Firebase SDKs -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, deleteDoc, query, where, orderBy, onSnapshot, writeBatch, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCR-_gi_2InOeiv_2lnZByD2QwZg3Wmgo4",
+    authDomain: "restaurante-os.firebaseapp.com",
+    projectId: "restaurante-os",
+    storageBucket: "restaurante-os.firebasestorage.app",
+    messagingSenderId: "374170112531",
+    appId: "1:374170112531:web:a78ca2e7400cb837f9e5e6",
+    measurementId: "G-896Q6YQS2D"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Expose to global scope
+  window._firebase = {
+    db, collection, doc, getDoc, getDocs, setDoc, updateDoc,
+    addDoc, deleteDoc, query, where, orderBy, onSnapshot,
+    writeBatch, serverTimestamp, increment
+  };
+  window._firebaseReady = true;
+  document.dispatchEvent(new Event('firebaseReady'));
+</script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -396,7 +422,7 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════════
-// RESTAURANTOS — SISTEMA COMPLETO v2.0
+// RESTAURANTOS — SISTEMA COMPLETO v2.0 (Firebase Firestore)
 // Módulos: Auth · DB · Mesas · Pedidos · KDS · Caixa · Estoque
 //          Cardápio · Relatórios · Config · UI
 // ═══════════════════════════════════════════════════════════════════
@@ -404,14 +430,12 @@
 // ─── MÓDULO: CONFIG DO SISTEMA ──────────────────────────────────────
 const SYS = {
   version: '2.0',
-  dbKey: 'restaurantOS_v2_db',
-  usersKey: 'restaurantOS_v2_users',
   sessionKey: 'restaurantOS_v2_session',
-  taxaServico: 10,    // %
+  taxaServico: 10,
   nMesas: 15,
   nomeRestaurante: 'RestaurantOS',
-  autoRefreshMs: 8000, // Polling KDS mais rápido (8s)
-  alertaEstoque: 0.25  // 25% = alerta
+  autoRefreshMs: 8000,
+  alertaEstoque: 0.25
 };
 
 // ─── MÓDULO: ESTADO GLOBAL ──────────────────────────────────────────
@@ -549,7 +573,8 @@ function restoreSession() {
   } catch(e) {}
 }
 
-// ─── MÓDULO: BANCO DE DADOS (sql.js) ─────────────────────────────────
+// ─── MÓDULO: BANCO DE DADOS (Firebase Firestore) ─────────────────────
+
 function sysLog(msg, type='msg') {
   const panel = document.getElementById('log-panel');
   if (!panel) return;
@@ -568,200 +593,210 @@ function clearLog() {
   document.getElementById('log-panel').innerHTML = '';
 }
 
+// ─── Cache local de dados em memória ─────────────────────────────────
+const DB = {
+  mesas: {},        // { id: {...} }
+  cardapio: {},     // { id: {...} }
+  pedidos: {},      // { id: {...} }
+  pedido_itens: {}, // { id: {...} }
+  estoque: {},      // { chave: {...} }
+  config: {},       // { chave: valor }
+  relatorio_dia: {},// { data: {...} }
+  fat_hora: {},     // { 'data_hora': {...} }
+  ranking_itens: {},// { 'data_nome': {...} }
+  fat_pgto: {},     // { 'data_forma': {...} }
+  fat_cat: {},      // { 'data_cat': {...} }
+};
+
+function getFirebase() { return window._firebase; }
+
 async function initDB() {
+  // Aguardar Firebase estar pronto
+  if (!window._firebaseReady) {
+    await new Promise(resolve => document.addEventListener('firebaseReady', resolve, {once:true}));
+  }
   try {
-    const SQL = await initSqlJs({
-      locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${f}`
-    });
-    const saved = localStorage.getItem(SYS.dbKey);
-    if (saved) {
-      const arr = Uint8Array.from(atob(saved), c => c.charCodeAt(0));
-      STATE.db = new SQL.Database(arr);
-      sysLog(`Banco carregado (${arr.length} bytes)`, 'info');
-    } else {
-      STATE.db = new SQL.Database();
-      sysLog('Banco novo criado em memória', 'info');
-    }
-    createSchema();
+    sysLog('Conectando ao Firebase...', 'info');
+    const { db, collection, getDocs } = getFirebase();
+
+    // Carregar todas as coleções em paralelo
+    const [mesasSnap, cardapioSnap, pedidosSnap, itensSnap,
+           estoqueSnap, configSnap, relSnap, fatHoraSnap,
+           rankSnap, fatPgtoSnap, fatCatSnap] = await Promise.all([
+      getDocs(collection(db, 'mesas')),
+      getDocs(collection(db, 'cardapio')),
+      getDocs(collection(db, 'pedidos')),
+      getDocs(collection(db, 'pedido_itens')),
+      getDocs(collection(db, 'estoque')),
+      getDocs(collection(db, 'config')),
+      getDocs(collection(db, 'relatorio_dia')),
+      getDocs(collection(db, 'fat_hora')),
+      getDocs(collection(db, 'ranking_itens')),
+      getDocs(collection(db, 'fat_pgto')),
+      getDocs(collection(db, 'fat_cat')),
+    ]);
+
+    mesasSnap.forEach(d => { DB.mesas[d.id] = {id: parseInt(d.id), ...d.data()}; });
+    cardapioSnap.forEach(d => { DB.cardapio[d.id] = {id: parseInt(d.id)||d.id, ...d.data()}; });
+    pedidosSnap.forEach(d => { DB.pedidos[d.id] = {id: d.id, ...d.data()}; });
+    itensSnap.forEach(d => { DB.pedido_itens[d.id] = {id: d.id, ...d.data()}; });
+    estoqueSnap.forEach(d => { DB.estoque[d.id] = {chave: d.id, ...d.data()}; });
+    configSnap.forEach(d => { DB.config[d.id] = d.data().valor; });
+    relSnap.forEach(d => { DB.relatorio_dia[d.id] = {data: d.id, ...d.data()}; });
+    fatHoraSnap.forEach(d => { DB.fat_hora[d.id] = {id: d.id, ...d.data()}; });
+    rankSnap.forEach(d => { DB.ranking_itens[d.id] = {id: d.id, ...d.data()}; });
+    fatPgtoSnap.forEach(d => { DB.fat_pgto[d.id] = {id: d.id, ...d.data()}; });
+    fatCatSnap.forEach(d => { DB.fat_cat[d.id] = {id: d.id, ...d.data()}; });
+
+    sysLog('Dados carregados do Firebase', 'info');
+
+    await ensureInitialData();
     loadConfig();
     STATE.dbReady = true;
     checkNightReset();
     renderAll();
     sysLog('Sistema pronto ✓', 'info');
+
+    // Listeners em tempo real para KDS e Mesas
+    setupRealtimeListeners();
+
   } catch(e) {
-    sysLog('ERRO ao iniciar DB: ' + e.message, 'err');
+    sysLog('ERRO ao iniciar Firebase: ' + e.message, 'err');
     STATE.dbReady = false;
-    toast('Erro ao iniciar banco de dados', 'error');
+    toast('Erro ao conectar ao Firebase. Verifique o console.', 'error');
+    console.error(e);
   }
 }
 
-function createSchema() {
-  const db = STATE.db;
-  db.run(`
-    CREATE TABLE IF NOT EXISTS config (
-      chave TEXT PRIMARY KEY,
-      valor TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS mesas (
-      id INTEGER PRIMARY KEY,
-      status TEXT NOT NULL DEFAULT 'livre',
-      capacidade INTEGER DEFAULT 4,
-      inicio INTEGER,
-      total REAL NOT NULL DEFAULT 0
-    );
-    CREATE TABLE IF NOT EXISTS cardapio (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nome TEXT NOT NULL,
-      cat TEXT NOT NULL,
-      preco REAL NOT NULL,
-      tempo INTEGER DEFAULT 15,
-      icon TEXT DEFAULT '🍽️',
-      ing TEXT DEFAULT '{}',
-      ativo INTEGER DEFAULT 1
-    );
-    CREATE TABLE IF NOT EXISTS pedidos (
-      id TEXT PRIMARY KEY,
-      mesa_id INTEGER NOT NULL,
-      usuario TEXT NOT NULL,
-      obs TEXT DEFAULT '',
-      total REAL NOT NULL DEFAULT 0,
-      status TEXT NOT NULL DEFAULT 'preparo',
-      criado INTEGER NOT NULL,
-      atualizado INTEGER NOT NULL,
-      FOREIGN KEY(mesa_id) REFERENCES mesas(id)
-    );
-    CREATE TABLE IF NOT EXISTS pedido_itens (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      pedido_id TEXT NOT NULL,
-      item_id INTEGER NOT NULL,
-      nome TEXT NOT NULL,
-      preco REAL NOT NULL,
-      qty INTEGER NOT NULL,
-      FOREIGN KEY(pedido_id) REFERENCES pedidos(id)
-    );
-    CREATE TABLE IF NOT EXISTS estoque (
-      chave TEXT PRIMARY KEY,
-      nome TEXT NOT NULL,
-      icon TEXT DEFAULT '📦',
-      qty REAL NOT NULL,
-      max_qty REAL NOT NULL,
-      unidade TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS pagamentos (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      mesa_id INTEGER NOT NULL,
-      forma TEXT NOT NULL,
-      subtotal REAL NOT NULL,
-      taxa REAL NOT NULL,
-      total REAL NOT NULL,
-      troco REAL DEFAULT 0,
-      criado INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS relatorio_dia (
-      data TEXT PRIMARY KEY,
-      pedidos_total INTEGER DEFAULT 0,
-      faturamento REAL DEFAULT 0,
-      itens_total INTEGER DEFAULT 0
-    );
-    CREATE TABLE IF NOT EXISTS fat_hora (
-      data TEXT NOT NULL,
-      hora INTEGER NOT NULL,
-      valor REAL DEFAULT 0,
-      PRIMARY KEY(data, hora)
-    );
-    CREATE TABLE IF NOT EXISTS ranking_itens (
-      data TEXT NOT NULL,
-      nome TEXT NOT NULL,
-      cat TEXT DEFAULT '',
-      qty INTEGER DEFAULT 0,
-      faturamento REAL DEFAULT 0,
-      PRIMARY KEY(data, nome)
-    );
-    CREATE TABLE IF NOT EXISTS fat_pgto (
-      data TEXT NOT NULL,
-      forma TEXT NOT NULL,
-      valor REAL DEFAULT 0,
-      qtd INTEGER DEFAULT 0,
-      PRIMARY KEY(data, forma)
-    );
-    CREATE TABLE IF NOT EXISTS fat_cat (
-      data TEXT NOT NULL,
-      cat TEXT NOT NULL,
-      valor REAL DEFAULT 0,
-      PRIMARY KEY(data, cat)
-    );
-  `);
-  sysLog('Schema verificado (12 tabelas)', 'info');
+function setupRealtimeListeners() {
+  const { db, collection, onSnapshot, query, where } = getFirebase();
 
-  // Mesas iniciais
-  const count = qOne('SELECT COUNT(*) c FROM mesas')?.c || 0;
-  if (!count) {
+  // Listener de pedidos em tempo real
+  onSnapshot(collection(db, 'pedidos'), snap => {
+    snap.docChanges().forEach(change => {
+      if (change.type === 'added' || change.type === 'modified') {
+        DB.pedidos[change.doc.id] = {id: change.doc.id, ...change.doc.data()};
+      } else if (change.type === 'removed') {
+        delete DB.pedidos[change.doc.id];
+      }
+    });
+  });
+
+  // Listener de pedido_itens em tempo real
+  onSnapshot(collection(db, 'pedido_itens'), snap => {
+    snap.docChanges().forEach(change => {
+      if (change.type === 'added' || change.type === 'modified') {
+        DB.pedido_itens[change.doc.id] = {id: change.doc.id, ...change.doc.data()};
+      } else if (change.type === 'removed') {
+        delete DB.pedido_itens[change.doc.id];
+      }
+    });
+  });
+
+  // Listener de mesas em tempo real
+  onSnapshot(collection(db, 'mesas'), snap => {
+    snap.docChanges().forEach(change => {
+      if (change.type === 'added' || change.type === 'modified') {
+        DB.mesas[change.doc.id] = {id: parseInt(change.doc.id), ...change.doc.data()};
+      } else if (change.type === 'removed') {
+        delete DB.mesas[change.doc.id];
+      }
+    });
+  });
+}
+
+async function ensureInitialData() {
+  const { db, doc, setDoc } = getFirebase();
+
+  // Mesas
+  if (!Object.keys(DB.mesas).length) {
     const n = SYS.nMesas;
     for (let i = 1; i <= n; i++) {
-      db.run('INSERT INTO mesas(id,status,capacidade) VALUES(?,?,?)', [i,'livre',4]);
+      const m = {status:'livre', capacidade:4, inicio:null, total:0};
+      await setDoc(doc(db, 'mesas', String(i)), m);
+      DB.mesas[String(i)] = {id: i, ...m};
     }
-    sysLog(`${n} mesas criadas`);
+    sysLog(`${n} mesas criadas`, 'info');
   }
 
-  // Cardápio inicial
-  const cc = qOne('SELECT COUNT(*) c FROM cardapio')?.c || 0;
-  if (!cc) {
-    CARDAPIO_PADRAO.forEach(it => {
-      db.run('INSERT INTO cardapio(id,nome,cat,preco,tempo,icon,ing,ativo) VALUES(?,?,?,?,?,?,?,?)',
-        [it.id, it.nome, it.cat, it.preco, it.tempo, it.icon, JSON.stringify(it.ing), it.ativo ? 1 : 0]);
-    });
-    sysLog(`${CARDAPIO_PADRAO.length} itens de cardápio inseridos`);
+  // Cardápio
+  if (!Object.keys(DB.cardapio).length) {
+    for (const it of CARDAPIO_PADRAO) {
+      const d = {nome:it.nome, cat:it.cat, preco:it.preco, tempo:it.tempo,
+                  icon:it.icon, ing:JSON.stringify(it.ing), ativo:it.ativo ? 1 : 0};
+      await setDoc(doc(db, 'cardapio', String(it.id)), d);
+      DB.cardapio[String(it.id)] = {id: it.id, ...d};
+    }
+    sysLog(`${CARDAPIO_PADRAO.length} itens de cardápio inseridos`, 'info');
   }
 
-  // Estoque inicial
-  const ec = qOne('SELECT COUNT(*) c FROM estoque')?.c || 0;
-  if (!ec) {
-    Object.entries(ESTOQUE_PADRAO).forEach(([k, v]) => {
-      db.run('INSERT INTO estoque(chave,nome,icon,qty,max_qty,unidade) VALUES(?,?,?,?,?,?)',
-        [k, v.nome, v.icon, v.qty, v.max, v.un]);
-    });
-    sysLog(`${Object.keys(ESTOQUE_PADRAO).length} ingredientes inseridos`);
+  // Estoque
+  if (!Object.keys(DB.estoque).length) {
+    for (const [k, v] of Object.entries(ESTOQUE_PADRAO)) {
+      const d = {nome:v.nome, icon:v.icon, qty:v.qty, max_qty:v.max, unidade:v.un};
+      await setDoc(doc(db, 'estoque', k), d);
+      DB.estoque[k] = {chave: k, ...d};
+    }
+    sysLog(`${Object.keys(ESTOQUE_PADRAO).length} ingredientes inseridos`, 'info');
   }
 
   // Registro do dia
   const hoje = todayStr();
-  db.run('INSERT OR IGNORE INTO relatorio_dia(data) VALUES(?)', [hoje]);
-  saveDB();
-}
-
-function saveDB() {
-  if (!STATE.db) return;
-  try {
-    const data = STATE.db.export();
-    // Salvar em chunks se necessário
-    const b64 = btoa(String.fromCharCode(...new Uint8Array(data)));
-    localStorage.setItem(SYS.dbKey, b64);
-  } catch(e) {
-    sysLog('ERRO ao salvar: ' + e.message, 'err');
-    if (e.name === 'QuotaExceededError') {
-      toast('Armazenamento cheio! Exporte os dados e limpe o histórico.', 'error');
-    }
+  if (!DB.relatorio_dia[hoje]) {
+    const rd = {pedidos_total:0, faturamento:0, itens_total:0};
+    await setDoc(doc(db, 'relatorio_dia', hoje), rd);
+    DB.relatorio_dia[hoje] = {data: hoje, ...rd};
   }
 }
 
-// Helpers SQL
-function qAll(sql, params = []) {
-  if (!STATE.db) return [];
-  try {
-    const res = STATE.db.exec(sql, params);
-    if (!res.length) return [];
-    return res[0].values.map(row => {
-      const obj = {};
-      res[0].columns.forEach((c, i) => obj[c] = row[i]);
-      return obj;
-    });
-  } catch(e) { sysLog('SQL ERR: ' + e.message, 'err'); return []; }
+// ─── Firebase helpers: wrappers assíncronos que atualizam DB local ────
+
+async function fsSet(col, id, data) {
+  const { db, doc, setDoc } = getFirebase();
+  await setDoc(doc(db, col, id), data);
 }
-function qOne(sql, params = []) { return qAll(sql, params)[0] || null; }
-function run(sql, params = []) {
-  try { STATE.db.run(sql, params); return true; }
-  catch(e) { sysLog('SQL ERR: ' + e.message, 'err'); return false; }
+
+async function fsUpdate(col, id, data) {
+  const { db, doc, setDoc, getDoc } = getFirebase();
+  const ref = doc(db, col, id);
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    const { updateDoc } = getFirebase();
+    await updateDoc(ref, data);
+  } else {
+    await setDoc(ref, data);
+  }
 }
+
+async function fsAdd(col, data) {
+  const { db, collection, addDoc } = getFirebase();
+  const ref = await addDoc(collection(db, col), data);
+  return ref.id;
+}
+
+async function fsDelete(col, id) {
+  const { db, doc, deleteDoc } = getFirebase();
+  await deleteDoc(doc(db, col, id));
+}
+
+// Incremento atômico de campo numérico
+async function fsIncrement(col, id, field, amount, fallback = {}) {
+  const { db, doc, getDoc, setDoc, updateDoc, increment } = getFirebase();
+  const ref = doc(db, col, id);
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    await updateDoc(ref, {[field]: increment(amount)});
+    const newSnap = await getDoc(ref);
+    return newSnap.data()[field];
+  } else {
+    const newData = {...fallback, [field]: (fallback[field]||0) + amount};
+    await setDoc(ref, newData);
+    return newData[field];
+  }
+}
+
+// saveDB é no-op (Firebase salva automaticamente via fsSet/fsUpdate/fsAdd)
+function saveDB() { /* Firebase: gravação já foi feita inline */ }
 
 // UUID v4 simples
 function uuid() {
@@ -773,32 +808,41 @@ function uuid() {
 
 // ─── MÓDULO: CONFIG ───────────────────────────────────────────────────
 function loadConfig() {
-  const taxa = qOne('SELECT valor FROM config WHERE chave=?', ['taxa_servico']);
-  if (taxa) SYS.taxaServico = parseFloat(taxa.valor);
-  const nome = qOne('SELECT valor FROM config WHERE chave=?', ['nome_restaurante']);
-  if (nome) SYS.nomeRestaurante = nome.valor;
-  const nm = qOne('SELECT valor FROM config WHERE chave=?', ['n_mesas']);
-  if (nm) SYS.nMesas = parseInt(nm.valor);
+  if (DB.config['taxa_servico'] !== undefined) SYS.taxaServico = parseFloat(DB.config['taxa_servico']);
+  if (DB.config['nome_restaurante']) SYS.nomeRestaurante = DB.config['nome_restaurante'];
+  if (DB.config['n_mesas']) SYS.nMesas = parseInt(DB.config['n_mesas']);
 }
 
-function salvarConfig() {
+async function salvarConfig() {
   const nome = document.getElementById('cfg-nome').value.trim() || SYS.nomeRestaurante;
   const taxa = parseFloat(document.getElementById('cfg-taxa').value) || SYS.taxaServico;
   const nm = parseInt(document.getElementById('cfg-mesas').value) || SYS.nMesas;
-  run('INSERT OR REPLACE INTO config(chave,valor) VALUES(?,?)', ['nome_restaurante', nome]);
-  run('INSERT OR REPLACE INTO config(chave,valor) VALUES(?,?)', ['taxa_servico', String(taxa)]);
-  run('INSERT OR REPLACE INTO config(chave,valor) VALUES(?,?)', ['n_mesas', String(nm)]);
+
+  await Promise.all([
+    fsSet('config', 'nome_restaurante', {valor: nome}),
+    fsSet('config', 'taxa_servico', {valor: String(taxa)}),
+    fsSet('config', 'n_mesas', {valor: String(nm)}),
+  ]);
+  DB.config['nome_restaurante'] = nome;
+  DB.config['taxa_servico'] = String(taxa);
+  DB.config['n_mesas'] = String(nm);
+
   SYS.nomeRestaurante = nome;
   SYS.taxaServico = taxa;
-  SYS.nMesas = nm;
-  // Ajustar quantidade de mesas se necessário
-  const atualCount = qOne('SELECT COUNT(*) c FROM mesas')?.c || 0;
+
+  // Adicionar novas mesas se necessário
+  const atualCount = Object.keys(DB.mesas).length;
   if (nm > atualCount) {
     for (let i = atualCount + 1; i <= nm; i++) {
-      run('INSERT OR IGNORE INTO mesas(id,status,capacidade) VALUES(?,?,?)', [i,'livre',4]);
+      const id = String(i);
+      if (!DB.mesas[id]) {
+        const m = {status:'livre', capacidade:4, inicio:null, total:0};
+        await fsSet('mesas', id, m);
+        DB.mesas[id] = {id: i, ...m};
+      }
     }
   }
-  saveDB();
+  SYS.nMesas = nm;
   renderFloor();
   toast('Configurações salvas!', 'success');
 }
@@ -807,14 +851,13 @@ function exportarDados() {
   const data = {
     version: SYS.version,
     exportedAt: new Date().toISOString(),
-    mesas: qAll('SELECT * FROM mesas'),
-    cardapio: qAll('SELECT * FROM cardapio'),
-    pedidos: qAll('SELECT * FROM pedidos'),
-    pedido_itens: qAll('SELECT * FROM pedido_itens'),
-    estoque: qAll('SELECT * FROM estoque'),
-    pagamentos: qAll('SELECT * FROM pagamentos'),
-    relatorio_dia: qAll('SELECT * FROM relatorio_dia'),
-    ranking_itens: qAll('SELECT * FROM ranking_itens'),
+    mesas: Object.values(DB.mesas),
+    cardapio: Object.values(DB.cardapio),
+    pedidos: Object.values(DB.pedidos),
+    pedido_itens: Object.values(DB.pedido_itens),
+    estoque: Object.values(DB.estoque),
+    relatorio_dia: Object.values(DB.relatorio_dia),
+    ranking_itens: Object.values(DB.ranking_itens),
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
@@ -830,7 +873,7 @@ function importarDados(input) {
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      const data = JSON.parse(e.target.result);
+      JSON.parse(e.target.result);
       toast('Importação não implementada nesta versão demo', 'info');
     } catch(err) {
       toast('Arquivo inválido', 'error');
@@ -840,34 +883,58 @@ function importarDados(input) {
   input.value = '';
 }
 
-function resetarSistema() {
+async function resetarSistema() {
   if (!confirm('ATENÇÃO: Isso apagará TODOS os dados! Deseja continuar?')) return;
   if (!confirm('Tem certeza? Esta ação não pode ser desfeita.')) return;
-  try { localStorage.removeItem(SYS.dbKey); } catch(e){}
+  toast('Limpando dados no Firebase...', 'info');
+  // Apagar coleções relevantes
+  const cols = ['mesas','cardapio','pedidos','pedido_itens','estoque','config','relatorio_dia','fat_hora','ranking_itens','fat_pgto','fat_cat'];
+  const { db, collection, getDocs, deleteDoc, doc } = getFirebase();
+  for (const col of cols) {
+    const snap = await getDocs(collection(db, col));
+    for (const d of snap.docs) await deleteDoc(doc(db, col, d.id));
+  }
+  Object.keys(DB).forEach(k => { DB[k] = {}; });
   toast('Dados resetados. Recarregando...', 'info');
   setTimeout(() => location.reload(), 1500);
 }
 
 // ─── MÓDULO: RESET NOTURNO ────────────────────────────────────────────
-function checkNightReset() {
+async function checkNightReset() {
   if (!STATE.dbReady) return;
   const now = new Date();
   const h = now.getHours();
   const hoje = todayStr();
-  const cfg = qOne('SELECT valor FROM config WHERE chave=?', ['last_reset']);
-  const lastReset = cfg?.valor || '';
+  const lastReset = DB.config['last_reset'] || '';
   if (h >= 2 && lastReset !== hoje) {
-    doNightReset(hoje);
+    await doNightReset(hoje);
   }
 }
 
-function doNightReset(hoje) {
+async function doNightReset(hoje) {
   sysLog('Executando reset noturno...', 'info');
-  run('UPDATE mesas SET status=\'livre\', inicio=NULL, total=0');
-  run('UPDATE pedidos SET status=\'entregue\' WHERE status IN (\'preparo\',\'pronto\')');
-  run('INSERT OR IGNORE INTO relatorio_dia(data) VALUES(?)', [hoje]);
-  run('INSERT OR REPLACE INTO config(chave,valor) VALUES(?,?)', ['last_reset', hoje]);
-  saveDB();
+  // Liberar todas as mesas
+  for (const [id, m] of Object.entries(DB.mesas)) {
+    if (m.status !== 'livre') {
+      await fsUpdate('mesas', id, {status:'livre', inicio:null, total:0});
+      DB.mesas[id] = {...m, status:'livre', inicio:null, total:0};
+    }
+  }
+  // Marcar pedidos abertos como entregues
+  for (const [id, p] of Object.entries(DB.pedidos)) {
+    if (p.status === 'preparo' || p.status === 'pronto') {
+      await fsUpdate('pedidos', id, {status:'entregue'});
+      DB.pedidos[id] = {...p, status:'entregue'};
+    }
+  }
+  // Garantir registro do dia
+  if (!DB.relatorio_dia[hoje]) {
+    const rd = {pedidos_total:0, faturamento:0, itens_total:0};
+    await fsSet('relatorio_dia', hoje, rd);
+    DB.relatorio_dia[hoje] = {data: hoje, ...rd};
+  }
+  await fsSet('config', 'last_reset', {valor: hoje});
+  DB.config['last_reset'] = hoje;
   sysLog('Reset noturno concluído — ' + hoje, 'info');
   const b = document.getElementById('night-banner');
   b.style.display = 'flex';
@@ -877,13 +944,15 @@ function doNightReset(hoje) {
 // ─── MÓDULO: MESAS ────────────────────────────────────────────────────
 function renderFloor() {
   if (!STATE.dbReady) return;
-  const mesas = qAll('SELECT * FROM mesas ORDER BY id');
+  const mesas = Object.values(DB.mesas).sort((a,b) => a.id - b.id);
   const g = document.getElementById('floor-grid');
   const canOrder = !STATE.currentUser || ROLE_CONFIG[STATE.currentUser?.role]?.canOrder;
 
   g.innerHTML = mesas.map(m => {
     const elapsed = m.inicio ? tStr(Date.now() - m.inicio) : '';
-    const pedidos_ativos = m.status !== 'livre' ? (qOne('SELECT COUNT(*) c FROM pedidos WHERE mesa_id=? AND status IN (\'preparo\',\'pronto\')', [m.id])?.c || 0) : 0;
+    const pedidos_ativos = m.status !== 'livre'
+      ? Object.values(DB.pedidos).filter(p => p.mesa_id === m.id && (p.status === 'preparo' || p.status === 'pronto')).length
+      : 0;
     return `<div class="mesa-wrap">
       <button class="mesa ${m.status}" onclick="clickMesa(${m.id})" title="Mesa ${m.id} — ${m.status}">
         <div class="mesa-num">${m.id}</div>
@@ -898,9 +967,9 @@ function renderFloor() {
   const livres = mesas.filter(m => m.status === 'livre').length;
   const ocup = mesas.filter(m => m.status !== 'livre').length;
   const conta = mesas.filter(m => m.status === 'conta').length;
-  const rel = qOne('SELECT * FROM relatorio_dia WHERE data=?', [todayStr()]);
-  const fat = rel?.faturamento || 0;
-  const ped = rel?.pedidos_total || 0;
+  const rel = DB.relatorio_dia[todayStr()] || {};
+  const fat = rel.faturamento || 0;
+  const ped = rel.pedidos_total || 0;
 
   document.getElementById('floor-sub').textContent =
     `${livres} livres · ${ocup} ocupadas · ${conta} aguardando conta`;
@@ -925,12 +994,11 @@ function renderFloor() {
   `;
 }
 
-function clickMesa(id) {
-  const m = qOne('SELECT * FROM mesas WHERE id=?', [id]);
+async function clickMesa(id) {
+  const m = DB.mesas[String(id)];
   const role = STATE.currentUser?.role;
   const rc = ROLE_CONFIG[role] || {};
 
-  // Caixa vai direto para caixa
   if (role === 'caixa') {
     STATE.caixaMesa = id;
     goPage('caixa');
@@ -941,9 +1009,10 @@ function clickMesa(id) {
     if (!rc.canOrder && role !== 'gerente') {
       toast('Sem permissão para abrir mesas', 'error'); return;
     }
-    run('UPDATE mesas SET status=?,inicio=? WHERE id=?', ['ocupada', Date.now(), id]);
+    const upd = {status:'ocupada', inicio:Date.now(), total: m.total || 0};
+    await fsUpdate('mesas', String(id), upd);
+    DB.mesas[String(id)] = {...m, ...upd};
     sysLog(`Mesa ${id} aberta por ${STATE.currentUser?.nome || 'sistema'}`);
-    saveDB();
     renderFloor();
   }
   STATE.mesaSel = id;
@@ -956,20 +1025,26 @@ function clickMesa(id) {
 
 function pedirDeselect(id) {
   STATE.deselectMesaId = id;
-  const m = qOne('SELECT * FROM mesas WHERE id=?', [id]);
-  const pendentes = qOne('SELECT COUNT(*) c FROM pedidos WHERE mesa_id=? AND status NOT IN (\'entregue\',\'cancelado\')', [id])?.c || 0;
+  const m = DB.mesas[String(id)];
+  const pendentes = Object.values(DB.pedidos).filter(p => p.mesa_id === id && p.status !== 'entregue' && p.status !== 'cancelado').length;
   document.getElementById('modal-deselect-body').textContent =
     `Mesa ${id} (${m.status})${pendentes > 0 ? ` — ${pendentes} pedido(s) em aberto.` : '.'} Esta ação libera a mesa e cancela pedidos pendentes. Continuar?`;
   openModal('modal-deselect');
 }
 
-function confirmarDeselect() {
+async function confirmarDeselect() {
   if (!STATE.deselectMesaId) return;
   const id = STATE.deselectMesaId;
-  run('UPDATE pedidos SET status=? WHERE mesa_id=? AND status IN (?,?)', ['cancelado', id, 'preparo', 'pronto']);
-  run('UPDATE mesas SET status=?,inicio=NULL,total=0 WHERE id=?', ['livre', id]);
+  // Cancelar pedidos pendentes
+  for (const [pid, p] of Object.entries(DB.pedidos)) {
+    if (p.mesa_id === id && (p.status === 'preparo' || p.status === 'pronto')) {
+      await fsUpdate('pedidos', pid, {status:'cancelado'});
+      DB.pedidos[pid] = {...p, status:'cancelado'};
+    }
+  }
+  await fsUpdate('mesas', String(id), {status:'livre', inicio:null, total:0});
+  DB.mesas[String(id)] = {...DB.mesas[String(id)], status:'livre', inicio:null, total:0};
   sysLog(`Mesa ${id} liberada (pedidos cancelados)`);
-  saveDB();
   closeModal('modal-deselect');
   STATE.deselectMesaId = null;
   renderFloor();
@@ -979,20 +1054,20 @@ function confirmarDeselect() {
 }
 
 function openAddMesaModal() {
-  const maxId = qOne('SELECT MAX(id) m FROM mesas')?.m || 0;
+  const maxId = Math.max(0, ...Object.keys(DB.mesas).map(Number));
   document.getElementById('new-mesa-num').value = maxId + 1;
   document.getElementById('new-mesa-cap').value = 4;
   openModal('modal-add-mesa');
 }
 
-function confirmarAddMesa() {
+async function confirmarAddMesa() {
   const num = parseInt(document.getElementById('new-mesa-num').value);
   const cap = parseInt(document.getElementById('new-mesa-cap').value) || 4;
   if (!num || num < 1) { toast('Número inválido', 'error'); return; }
-  const exists = qOne('SELECT id FROM mesas WHERE id=?', [num]);
-  if (exists) { toast(`Mesa ${num} já existe`, 'error'); return; }
-  run('INSERT INTO mesas(id,status,capacidade) VALUES(?,?,?)', [num, 'livre', cap]);
-  saveDB();
+  if (DB.mesas[String(num)]) { toast(`Mesa ${num} já existe`, 'error'); return; }
+  const m = {status:'livre', capacidade:cap, inicio:null, total:0};
+  await fsSet('mesas', String(num), m);
+  DB.mesas[String(num)] = {id: num, ...m};
   closeModal('modal-add-mesa');
   renderFloor();
   toast(`Mesa ${num} adicionada!`, 'success');
@@ -1000,7 +1075,7 @@ function confirmarAddMesa() {
 
 // ─── MÓDULO: PEDIDOS ─────────────────────────────────────────────────
 function renderMesaSelector() {
-  const mesas = qAll('SELECT * FROM mesas ORDER BY id');
+  const mesas = Object.values(DB.mesas).sort((a,b) => a.id - b.id);
   const grid = document.getElementById('mesa-sel-grid');
   grid.innerHTML = mesas.map(m => `
     <button class="mesa-sel-btn ${m.status} ${STATE.mesaSel === m.id ? 'sel' : ''}"
@@ -1009,12 +1084,13 @@ function renderMesaSelector() {
     </button>`).join('');
 }
 
-function selMesa(id) {
-  const m = qOne('SELECT * FROM mesas WHERE id=?', [id]);
+async function selMesa(id) {
+  const m = DB.mesas[String(id)];
   if (m.status === 'livre') {
-    run('UPDATE mesas SET status=?,inicio=? WHERE id=?', ['ocupada', Date.now(), id]);
+    const upd = {status:'ocupada', inicio:Date.now()};
+    await fsUpdate('mesas', String(id), upd);
+    DB.mesas[String(id)] = {...m, ...upd};
     sysLog(`Mesa ${id} aberta via pedido`);
-    saveDB();
     renderFloor();
   }
   STATE.mesaSel = id;
@@ -1025,22 +1101,19 @@ function selMesa(id) {
 
 function renderCardapio() {
   const catFiltro = STATE.cardapioCatFiltro;
-  const itens = qAll('SELECT * FROM cardapio ORDER BY cat, nome');
+  const itens = Object.values(DB.cardapio).sort((a,b) => (a.cat+a.nome).localeCompare(b.cat+b.nome));
   const cats = ['Todos', ...new Set(itens.map(i => i.cat))];
 
-  // Cat bar
   document.getElementById('cat-bar').innerHTML = cats.map(c =>
     `<button class="cat-chip ${c === catFiltro ? 'active' : ''}" onclick="filtCardapio('${c}')">${c}</button>`
   ).join('');
 
-  // Grid
   const filtered = catFiltro === 'Todos' ? itens : itens.filter(i => i.cat === catFiltro);
-  const estoque = qAll('SELECT * FROM estoque');
 
   document.getElementById('cardapio-grid').innerHTML = filtered.map(i => {
     const ing = JSON.parse(i.ing || '{}');
     const semEstoque = Object.entries(ing).some(([k, v]) => {
-      const est = estoque.find(e => e.chave === k);
+      const est = DB.estoque[k];
       return est && est.qty < v;
     });
     const indisponivel = !i.ativo || semEstoque;
@@ -1063,7 +1136,7 @@ function filtCardapio(cat) {
 }
 
 function addItem(id) {
-  const item = qOne('SELECT * FROM cardapio WHERE id=?', [id]);
+  const item = DB.cardapio[String(id)];
   if (!item) return;
   const ex = STATE.cartItems.find(c => c.id === id);
   if (ex) ex.qty++;
@@ -1107,7 +1180,7 @@ function limparCart() {
   renderCart();
 }
 
-function enviarPedido() {
+async function enviarPedido() {
   if (!STATE.mesaSel) { toast('Selecione uma mesa primeiro!', 'error'); return; }
   if (!STATE.cartItems.length) { toast('Adicione itens ao pedido!', 'error'); return; }
 
@@ -1116,51 +1189,79 @@ function enviarPedido() {
   const now = Date.now();
   const pedidoId = uuid();
   const usuario = STATE.currentUser?.nome || 'Sistema';
+  const hoje = todayStr();
+  const h = new Date().getHours();
 
   // Inserir pedido
-  const ok = run('INSERT INTO pedidos(id,mesa_id,usuario,obs,total,status,criado,atualizado) VALUES(?,?,?,?,?,?,?,?)',
-    [pedidoId, STATE.mesaSel, usuario, obs, tot, 'preparo', now, now]);
-  if (!ok) { toast('Erro ao criar pedido', 'error'); return; }
+  const pedData = {mesa_id: STATE.mesaSel, usuario, obs, total: tot, status:'preparo', criado: now, atualizado: now};
+  await fsSet('pedidos', pedidoId, pedData);
+  DB.pedidos[pedidoId] = {id: pedidoId, ...pedData};
 
   sysLog(`Pedido #${pedidoId.substring(0,8)} — Mesa ${STATE.mesaSel} — ${fmtBRL(tot)}`);
 
   // Inserir itens + baixa de estoque + ranking
-  const hoje = todayStr();
-  const h = new Date().getHours();
+  for (const c of STATE.cartItems) {
+    const itemId = await fsAdd('pedido_itens', {pedido_id: pedidoId, item_id: c.id, nome: c.nome, preco: c.preco, qty: c.qty});
+    DB.pedido_itens[itemId] = {id: itemId, pedido_id: pedidoId, item_id: c.id, nome: c.nome, preco: c.preco, qty: c.qty};
 
-  STATE.cartItems.forEach(c => {
-    run('INSERT INTO pedido_itens(pedido_id,item_id,nome,preco,qty) VALUES(?,?,?,?,?)',
-      [pedidoId, c.id, c.nome, c.preco, c.qty]);
-
-    // Baixa automática de estoque
-    if (c.ing) Object.entries(c.ing).forEach(([k, v]) => {
-      run('UPDATE estoque SET qty=MAX(0,qty-?) WHERE chave=?', [v * c.qty, k]);
-    });
+    // Baixa de estoque
+    if (c.ing) {
+      for (const [k, v] of Object.entries(c.ing)) {
+        if (DB.estoque[k]) {
+          const novaQty = Math.max(0, DB.estoque[k].qty - v * c.qty);
+          await fsUpdate('estoque', k, {qty: novaQty});
+          DB.estoque[k] = {...DB.estoque[k], qty: novaQty};
+        }
+      }
+    }
 
     // Ranking
-    run(`INSERT INTO ranking_itens(data,nome,cat,qty,faturamento) VALUES(?,?,?,?,?)
-      ON CONFLICT(data,nome) DO UPDATE SET qty=qty+excluded.qty, faturamento=faturamento+excluded.faturamento`,
-      [hoje, c.nome, c.cat, c.qty, c.preco * c.qty]);
+    const rkKey = `${hoje}_${c.nome}`;
+    if (DB.ranking_itens[rkKey]) {
+      const rk = DB.ranking_itens[rkKey];
+      await fsUpdate('ranking_itens', rkKey, {qty: rk.qty + c.qty, faturamento: rk.faturamento + c.preco * c.qty});
+      DB.ranking_itens[rkKey] = {...rk, qty: rk.qty + c.qty, faturamento: rk.faturamento + c.preco * c.qty};
+    } else {
+      const rk = {data: hoje, nome: c.nome, cat: c.cat, qty: c.qty, faturamento: c.preco * c.qty};
+      await fsSet('ranking_itens', rkKey, rk);
+      DB.ranking_itens[rkKey] = {id: rkKey, ...rk};
+    }
 
     // Fat por categoria
-    run(`INSERT INTO fat_cat(data,cat,valor) VALUES(?,?,?)
-      ON CONFLICT(data,cat) DO UPDATE SET valor=valor+excluded.valor`,
-      [hoje, c.cat, c.preco * c.qty]);
-  });
+    const catKey = `${hoje}_${c.cat}`;
+    if (DB.fat_cat[catKey]) {
+      const fc = DB.fat_cat[catKey];
+      await fsUpdate('fat_cat', catKey, {valor: fc.valor + c.preco * c.qty});
+      DB.fat_cat[catKey] = {...fc, valor: fc.valor + c.preco * c.qty};
+    } else {
+      const fc = {data: hoje, cat: c.cat, valor: c.preco * c.qty};
+      await fsSet('fat_cat', catKey, fc);
+      DB.fat_cat[catKey] = {id: catKey, ...fc};
+    }
+  }
 
   // Atualizar total da mesa
-  run('UPDATE mesas SET total=total+? WHERE id=?', [tot, STATE.mesaSel]);
+  const mesa = DB.mesas[String(STATE.mesaSel)];
+  const novoTotal = (mesa.total || 0) + tot;
+  await fsUpdate('mesas', String(STATE.mesaSel), {total: novoTotal});
+  DB.mesas[String(STATE.mesaSel)] = {...mesa, total: novoTotal};
 
   // Fat por hora
-  run(`INSERT INTO fat_hora(data,hora,valor) VALUES(?,?,?)
-    ON CONFLICT(data,hora) DO UPDATE SET valor=valor+excluded.valor`,
-    [hoje, h, tot]);
+  const horaKey = `${hoje}_${h}`;
+  if (DB.fat_hora[horaKey]) {
+    const fh = DB.fat_hora[horaKey];
+    await fsUpdate('fat_hora', horaKey, {valor: fh.valor + tot});
+    DB.fat_hora[horaKey] = {...fh, valor: fh.valor + tot};
+  } else {
+    const fh = {data: hoje, hora: h, valor: tot};
+    await fsSet('fat_hora', horaKey, fh);
+    DB.fat_hora[horaKey] = {id: horaKey, ...fh};
+  }
 
   // Limpar
   STATE.cartItems = [];
   document.getElementById('obs-inp').value = '';
   renderCart();
-  saveDB();
   renderKDS();
   renderFloor();
 
@@ -1179,34 +1280,29 @@ function filtKDS(f, btn) {
 
 function renderKDS() {
   if (!STATE.dbReady) return;
-  let sql = `SELECT p.*, m.id as mesa_num FROM pedidos p
-    JOIN mesas m ON p.mesa_id = m.id
-    WHERE p.status != 'cancelado' ORDER BY p.criado`;
+  const pedidos = Object.values(DB.pedidos)
+    .filter(p => p.status !== 'cancelado')
+    .sort((a,b) => a.criado - b.criado);
 
-  const pedidos = qAll(sql);
   const preparo = pedidos.filter(p => p.status === 'preparo').length;
   const pronto = pedidos.filter(p => p.status === 'pronto').length;
 
   document.getElementById('kd-prep').textContent = `${preparo} preparo`;
   document.getElementById('kd-pronto').textContent = `${pronto} prontos`;
 
-  // Badge no nav
   const total_abertos = preparo + pronto;
   const badge = document.getElementById('kds-count-badge');
   const mobBadge = document.getElementById('mob-kds-badge');
   if (total_abertos > 0) {
-    badge.textContent = total_abertos;
-    badge.style.display = '';
+    badge.textContent = total_abertos; badge.style.display = '';
     if (mobBadge) { mobBadge.textContent = total_abertos; mobBadge.style.display = ''; }
   } else {
     badge.style.display = 'none';
     if (mobBadge) mobBadge.style.display = 'none';
   }
 
-  // Filtro
   let filtered = pedidos;
   if (kdsFilter !== 'todos') filtered = pedidos.filter(p => p.status === kdsFilter);
-  // Excluir entregues de 'todos' por padrão
   if (kdsFilter === 'todos') filtered = pedidos.filter(p => p.status !== 'entregue');
 
   const grid = document.getElementById('kds-grid');
@@ -1219,7 +1315,7 @@ function renderKDS() {
   }
 
   grid.innerHTML = filtered.map(p => {
-    const itens = qAll('SELECT * FROM pedido_itens WHERE pedido_id=?', [p.id]);
+    const itens = Object.values(DB.pedido_itens).filter(i => i.pedido_id === p.id);
     const elapsed = Date.now() - p.criado;
     const mins = Math.floor(elapsed / 60000);
     const timerCls = mins > 20 ? 'late' : mins > 10 ? 'warn' : 'ok';
@@ -1255,48 +1351,57 @@ function renderKDS() {
   }).join('');
 }
 
-function avancarPedido(id) {
-  const p = qOne('SELECT * FROM pedidos WHERE id=?', [id]);
+async function avancarPedido(id) {
+  const p = DB.pedidos[id];
   if (!p) return;
   const now = Date.now();
 
   if (p.status === 'preparo') {
-    run('UPDATE pedidos SET status=?,atualizado=? WHERE id=?', ['pronto', now, id]);
+    await fsUpdate('pedidos', id, {status:'pronto', atualizado: now});
+    DB.pedidos[id] = {...p, status:'pronto', atualizado: now};
     sysLog(`Pedido ${id.substring(0,8)} → Pronto (Mesa ${p.mesa_id})`);
     toast(`Pronto! Mesa ${p.mesa_id}`, 'success');
   } else if (p.status === 'pronto') {
-    run('UPDATE pedidos SET status=?,atualizado=? WHERE id=?', ['entregue', now, id]);
+    await fsUpdate('pedidos', id, {status:'entregue', atualizado: now});
+    DB.pedidos[id] = {...p, status:'entregue', atualizado: now};
+
     // Atualizar relatório
-    const itens = qAll('SELECT * FROM pedido_itens WHERE pedido_id=?', [id]);
+    const itens = Object.values(DB.pedido_itens).filter(i => i.pedido_id === id);
     const qtdItens = itens.reduce((s, i) => s + i.qty, 0);
     const hoje = todayStr();
-    run('UPDATE relatorio_dia SET pedidos_total=pedidos_total+1, faturamento=faturamento+?, itens_total=itens_total+? WHERE data=?',
-      [p.total, qtdItens, hoje]);
+    if (!DB.relatorio_dia[hoje]) {
+      const rd = {pedidos_total:0, faturamento:0, itens_total:0};
+      await fsSet('relatorio_dia', hoje, rd);
+      DB.relatorio_dia[hoje] = {data: hoje, ...rd};
+    }
+    const rd = DB.relatorio_dia[hoje];
+    const newRd = {pedidos_total: (rd.pedidos_total||0)+1, faturamento: (rd.faturamento||0)+p.total, itens_total: (rd.itens_total||0)+qtdItens};
+    await fsUpdate('relatorio_dia', hoje, newRd);
+    DB.relatorio_dia[hoje] = {...rd, ...newRd};
+
     sysLog(`Pedido ${id.substring(0,8)} → Entregue (Mesa ${p.mesa_id}) ${fmtBRL(p.total)}`);
     toast(`Pedido entregue! Mesa ${p.mesa_id}`, 'success');
   }
-  saveDB();
   renderKDS();
   renderFloor();
   renderCaixa();
   if (document.getElementById('page-relatorios').classList.contains('active')) renderRelatorios();
 }
 
-function cancelarPedido(id) {
+async function cancelarPedido(id) {
   if (!confirm('Cancelar este pedido?')) return;
-  const p = qOne('SELECT * FROM pedidos WHERE id=?', [id]);
-  run('UPDATE pedidos SET status=? WHERE id=?', ['cancelado', id]);
+  const p = DB.pedidos[id];
+  await fsUpdate('pedidos', id, {status:'cancelado'});
+  DB.pedidos[id] = {...p, status:'cancelado'};
   sysLog(`Pedido ${id.substring(0,8)} cancelado (Mesa ${p?.mesa_id})`);
-  saveDB();
   renderKDS();
   renderFloor();
   toast('Pedido cancelado', 'info');
 }
-
 // ─── MÓDULO: CAIXA ────────────────────────────────────────────────────
 function renderCaixa() {
   if (!STATE.dbReady) return;
-  const abertas = qAll('SELECT * FROM mesas WHERE status!=? AND total>0', ['livre']);
+  const abertas = Object.values(DB.mesas).filter(m => m.status !== 'livre' && m.total > 0).sort((a,b) => a.id - b.id);
   const lista = document.getElementById('caixa-lista');
 
   if (!abertas.length) {
@@ -1320,18 +1425,16 @@ function selCaixaMesa(id) {
 }
 
 function renderCaixaDet() {
-  const m = qOne('SELECT * FROM mesas WHERE id=?', [STATE.caixaMesa]);
+  const m = DB.mesas[String(STATE.caixaMesa)];
   if (!m) return;
 
-  const pedidos = qAll('SELECT * FROM pedidos WHERE mesa_id=? AND status NOT IN (?,?)', [STATE.caixaMesa, 'cancelado', 'entregue']);
-  const pedidos_entregues = qAll('SELECT * FROM pedidos WHERE mesa_id=? AND status=?', [STATE.caixaMesa, 'entregue']);
+  const pedidos = Object.values(DB.pedidos).filter(p => p.mesa_id === STATE.caixaMesa && p.status !== 'cancelado' && p.status !== 'entregue');
+  const pedidos_entregues = Object.values(DB.pedidos).filter(p => p.mesa_id === STATE.caixaMesa && p.status === 'entregue');
   const todos_pedidos = [...pedidos, ...pedidos_entregues];
 
-  // Consolidar itens
   const todosItens = [];
   todos_pedidos.forEach(p => {
-    const its = qAll('SELECT * FROM pedido_itens WHERE pedido_id=?', [p.id]);
-    its.forEach(i => {
+    Object.values(DB.pedido_itens).filter(i => i.pedido_id === p.id).forEach(i => {
       const ex = todosItens.find(x => x.nome === i.nome && x.preco === i.preco);
       if (ex) ex.qty += i.qty;
       else todosItens.push({ ...i });
@@ -1402,7 +1505,6 @@ function renderCaixaDet() {
     </div>
   `;
 
-  // Troco live
   const trocoEl = document.getElementById('troco-val');
   if (trocoEl) {
     trocoEl.addEventListener('input', () => {
@@ -1418,19 +1520,17 @@ function selPgto(p, tot) {
   STATE.pgtoSel = p;
   const tw = document.getElementById('troco-wrap');
   if (tw) tw.className = `troco-input-wrap ${p === 'dinheiro' ? 'visible' : ''}`;
-  // Re-highlight
   document.querySelectorAll('.pgto-btn').forEach((b, i) => {
     const formas = ['dinheiro','debito','credito','pix'];
     b.classList.toggle('selected', formas[i] === p);
   });
 }
 
-function fecharConta(sub, taxa, tot) {
+async function fecharConta(sub, taxa, tot) {
   if (!STATE.pgtoSel) { toast('Selecione a forma de pagamento!', 'error'); return; }
   const id = STATE.caixaMesa;
   const now = Date.now();
 
-  // Troco
   let troco = 0;
   if (STATE.pgtoSel === 'dinheiro') {
     const recebido = parseFloat(document.getElementById('troco-val')?.value) || tot;
@@ -1438,53 +1538,65 @@ function fecharConta(sub, taxa, tot) {
   }
 
   // Registrar pagamento
-  run('INSERT INTO pagamentos(mesa_id,forma,subtotal,taxa,total,troco,criado) VALUES(?,?,?,?,?,?,?)',
-    [id, STATE.pgtoSel, sub, taxa, tot, troco, now]);
+  await fsAdd('pagamentos', {mesa_id: id, forma: STATE.pgtoSel, subtotal: sub, taxa, total: tot, troco, criado: now});
 
-  // Registrar fat por pgto
   const hoje = todayStr();
-  run(`INSERT INTO fat_pgto(data,forma,valor,qtd) VALUES(?,?,?,1)
-    ON CONFLICT(data,forma) DO UPDATE SET valor=valor+excluded.valor, qtd=qtd+1`,
-    [hoje, STATE.pgtoSel, tot]);
+  // Fat por pgto
+  const pgtoKey = `${hoje}_${STATE.pgtoSel}`;
+  if (DB.fat_pgto[pgtoKey]) {
+    const fp = DB.fat_pgto[pgtoKey];
+    await fsUpdate('fat_pgto', pgtoKey, {valor: fp.valor + tot, qtd: fp.qtd + 1});
+    DB.fat_pgto[pgtoKey] = {...fp, valor: fp.valor + tot, qtd: fp.qtd + 1};
+  } else {
+    const fp = {data: hoje, forma: STATE.pgtoSel, valor: tot, qtd: 1};
+    await fsSet('fat_pgto', pgtoKey, fp);
+    DB.fat_pgto[pgtoKey] = {id: pgtoKey, ...fp};
+  }
 
-  // Atualizar relatório (apenas para pedidos não contabilizados ainda)
-  const pedidosAbertos = qAll('SELECT * FROM pedidos WHERE mesa_id=? AND status NOT IN (?,?)', [id,'cancelado','entregue']);
+  // Atualizar pedidos abertos e relatório
+  const pedidosAbertos = Object.values(DB.pedidos).filter(p => p.mesa_id === id && p.status !== 'cancelado' && p.status !== 'entregue');
   let fatExtra = 0, itenExtra = 0;
-  pedidosAbertos.forEach(p => {
-    const its = qAll('SELECT * FROM pedido_itens WHERE pedido_id=?', [p.id]);
-    itenExtra += its.reduce((s,i) => s+i.qty, 0);
+  for (const p of pedidosAbertos) {
+    const its = Object.values(DB.pedido_itens).filter(i => i.pedido_id === p.id);
+    itenExtra += its.reduce((s, i) => s + i.qty, 0);
     fatExtra += p.total;
-    run('UPDATE pedidos SET status=? WHERE id=?', ['entregue', p.id]);
-  });
+    await fsUpdate('pedidos', p.id, {status:'entregue'});
+    DB.pedidos[p.id] = {...p, status:'entregue'};
+  }
   if (fatExtra > 0) {
-    run('UPDATE relatorio_dia SET pedidos_total=pedidos_total+1, faturamento=faturamento+?, itens_total=itens_total+? WHERE data=?',
-      [fatExtra, itenExtra, hoje]);
+    if (!DB.relatorio_dia[hoje]) {
+      const rd = {pedidos_total:0, faturamento:0, itens_total:0};
+      await fsSet('relatorio_dia', hoje, rd);
+      DB.relatorio_dia[hoje] = {data: hoje, ...rd};
+    }
+    const rd = DB.relatorio_dia[hoje];
+    const newRd = {pedidos_total: (rd.pedidos_total||0)+1, faturamento: (rd.faturamento||0)+fatExtra, itens_total: (rd.itens_total||0)+itenExtra};
+    await fsUpdate('relatorio_dia', hoje, newRd);
+    DB.relatorio_dia[hoje] = {...rd, ...newRd};
   }
 
   // Liberar mesa
-  run('UPDATE mesas SET status=?,inicio=NULL,total=0 WHERE id=?', ['livre', id]);
+  await fsUpdate('mesas', String(id), {status:'livre', inicio:null, total:0});
+  DB.mesas[String(id)] = {...DB.mesas[String(id)], status:'livre', inicio:null, total:0};
   sysLog(`Conta fechada — Mesa ${id} — ${fmtBRL(tot)} (${STATE.pgtoSel})`);
 
-  saveDB();
+  const pgtoSel = STATE.pgtoSel;
   STATE.caixaMesa = null;
   STATE.pgtoSel = null;
   document.getElementById('caixa-det').innerHTML = '<div class="text-center text-muted" style="padding:50px 0;">Selecione uma mesa para ver a conta</div>';
   renderCaixa();
   renderFloor();
   if (document.getElementById('page-relatorios').classList.contains('active')) renderRelatorios();
-
-  toast(`Conta fechada! ${fmtBRL(tot)} — ${STATE.pgtoSel || ''}${troco > 0 ? ` — Troco: ${fmtBRL(troco)}` : ''}`, 'success');
+  toast(`Conta fechada! ${fmtBRL(tot)} — ${pgtoSel}${troco > 0 ? ` — Troco: ${fmtBRL(troco)}` : ''}`, 'success');
 }
 
 function dividirConta(tot) {
   const n = prompt('Dividir entre quantas pessoas?', '2');
   if (!n || isNaN(n) || parseInt(n) < 1) return;
-  const pp = tot / parseInt(n);
-  toast(`${n} pessoas — ${fmtBRL(pp)} cada`, 'info');
+  toast(`${n} pessoas — ${fmtBRL(tot / parseInt(n))} cada`, 'info');
 }
 
 function solicitarConta() {
-  // Simula impressão / envio para impressora
   toast('Conta enviada para impressora (simulado)', 'info');
 }
 
@@ -1492,7 +1604,7 @@ function solicitarConta() {
 function renderEstoque() {
   if (!STATE.dbReady) return;
   const busca = document.getElementById('est-search')?.value?.toLowerCase() || '';
-  let itens = qAll('SELECT * FROM estoque ORDER BY nome');
+  let itens = Object.values(DB.estoque).sort((a,b) => a.nome.localeCompare(b.nome));
   if (busca) itens = itens.filter(i => i.nome.toLowerCase().includes(busca));
 
   document.getElementById('est-list').innerHTML = itens.map(v => {
@@ -1502,7 +1614,7 @@ function renderEstoque() {
       <div class="est-icon">${v.icon || '📦'}</div>
       <div class="est-info">
         <div class="est-name">${v.nome}</div>
-        <div class="est-qty-text">${v.qty.toFixed(1)} / ${v.max_qty} ${v.unidade}</div>
+        <div class="est-qty-text">${Number(v.qty).toFixed(1)} / ${v.max_qty} ${v.unidade}</div>
         <div class="est-bar-wrap"><div class="est-bar" style="width:${Math.round(pct*100)}%;background:${cor}"></div></div>
       </div>
       <div class="est-pct" style="color:${cor}">${Math.round(pct*100)}%</div>
@@ -1513,59 +1625,60 @@ function renderEstoque() {
     </div>`;
   }).join('');
 
-  // Alertas
-  const alertas = qAll('SELECT * FROM estoque WHERE qty < max_qty * ? ORDER BY qty/max_qty', [SYS.alertaEstoque]);
+  const alertas = Object.values(DB.estoque).filter(v => v.qty < v.max_qty * SYS.alertaEstoque).sort((a,b) => (a.qty/a.max_qty) - (b.qty/b.max_qty));
   const al = document.getElementById('alertas-list');
   al.innerHTML = alertas.length ? alertas.map(v => `
     <div class="alerta-item">
       <div>
         <div class="alerta-name">${v.icon || '⚠️'} ${v.nome}</div>
-        <div class="alerta-qty">Resta ${v.qty.toFixed(1)} ${v.unidade} (${Math.round(v.qty/v.max_qty*100)}%)</div>
+        <div class="alerta-qty">Resta ${Number(v.qty).toFixed(1)} ${v.unidade} (${Math.round(v.qty/v.max_qty*100)}%)</div>
       </div>
       <button class="btn btn-xs btn-green" onclick="reporItem('${v.chave}')">Repor</button>
     </div>`).join('') : '<div class="text-muted text-sm" style="padding:12px 0;text-align:center;">Sem alertas 🎉</div>';
 }
 
 function openReporModal(chave) {
-  const item = qOne('SELECT * FROM estoque WHERE chave=?', [chave]);
-  document.getElementById('modal-repor-desc').textContent = `${item.nome}: ${item.qty.toFixed(1)} ${item.unidade} restantes (máx: ${item.max_qty}).`;
+  const item = DB.estoque[chave];
+  document.getElementById('modal-repor-desc').textContent = `${item.nome}: ${Number(item.qty).toFixed(1)} ${item.unidade} restantes (máx: ${item.max_qty}).`;
   document.getElementById('repor-qty').value = (item.max_qty - item.qty).toFixed(1);
   document.getElementById('repor-key').value = chave;
   openModal('modal-repor');
 }
 
-function confirmarRepor() {
+async function confirmarRepor() {
   const chave = document.getElementById('repor-key').value;
   const qty = parseFloat(document.getElementById('repor-qty').value) || 0;
-  const item = qOne('SELECT * FROM estoque WHERE chave=?', [chave]);
+  const item = DB.estoque[chave];
   const novaQty = Math.min(item.max_qty, item.qty + qty);
-  run('UPDATE estoque SET qty=? WHERE chave=?', [novaQty, chave]);
+  await fsUpdate('estoque', chave, {qty: novaQty});
+  DB.estoque[chave] = {...item, qty: novaQty};
   sysLog(`Estoque reposto: ${item.nome} → ${novaQty.toFixed(1)} ${item.unidade}`);
-  saveDB();
   closeModal('modal-repor');
   renderEstoque();
   toast(`${item.nome} reposto!`, 'success');
 }
 
-function reporItem(chave) {
-  const item = qOne('SELECT * FROM estoque WHERE chave=?', [chave]);
-  run('UPDATE estoque SET qty=max_qty WHERE chave=?', [chave]);
+async function reporItem(chave) {
+  const item = DB.estoque[chave];
+  await fsUpdate('estoque', chave, {qty: item.max_qty});
+  DB.estoque[chave] = {...item, qty: item.max_qty};
   sysLog(`Estoque ${item.nome} → máximo`);
-  saveDB();
   renderEstoque();
   toast(`${item.nome} reposto ao máximo!`, 'success');
 }
 
-function reporTudo() {
+async function reporTudo() {
   if (!confirm('Repor todos os ingredientes ao máximo?')) return;
-  run('UPDATE estoque SET qty=max_qty');
+  for (const [k, item] of Object.entries(DB.estoque)) {
+    await fsUpdate('estoque', k, {qty: item.max_qty});
+    DB.estoque[k] = {...item, qty: item.max_qty};
+  }
   sysLog('Todos os ingredientes repostos');
-  saveDB();
   renderEstoque();
   toast('Estoque totalmente reposto!', 'success');
 }
 
-function addIngrediente() {
+async function addIngrediente() {
   const nome = document.getElementById('new-ing-nome').value.trim();
   const qty = parseFloat(document.getElementById('new-ing-qty').value) || 0;
   const max = parseFloat(document.getElementById('new-ing-max').value) || 10;
@@ -1573,11 +1686,11 @@ function addIngrediente() {
   const icon = document.getElementById('new-ing-icon').value || '📦';
   if (!nome) { toast('Informe o nome do ingrediente', 'error'); return; }
   const chave = nome.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
-  const exists = qOne('SELECT chave FROM estoque WHERE chave=?', [chave]);
-  if (exists) { toast('Ingrediente já existe', 'error'); return; }
-  run('INSERT INTO estoque(chave,nome,icon,qty,max_qty,unidade) VALUES(?,?,?,?,?,?)', [chave,nome,icon,qty,max,un]);
+  if (DB.estoque[chave]) { toast('Ingrediente já existe', 'error'); return; }
+  const d = {nome, icon, qty, max_qty: max, unidade: un};
+  await fsSet('estoque', chave, d);
+  DB.estoque[chave] = {chave, ...d};
   sysLog(`Ingrediente adicionado: ${nome}`);
-  saveDB();
   ['new-ing-nome','new-ing-qty','new-ing-max','new-ing-icon'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
@@ -1586,11 +1699,11 @@ function addIngrediente() {
   toast(`${nome} adicionado ao estoque!`, 'success');
 }
 
-function removerIngrediente(chave) {
-  const item = qOne('SELECT * FROM estoque WHERE chave=?', [chave]);
+async function removerIngrediente(chave) {
+  const item = DB.estoque[chave];
   if (!confirm(`Remover "${item?.nome}" do estoque?`)) return;
-  run('DELETE FROM estoque WHERE chave=?', [chave]);
-  saveDB();
+  await fsDelete('estoque', chave);
+  delete DB.estoque[chave];
   renderEstoque();
   toast('Ingrediente removido', 'info');
 }
@@ -1600,7 +1713,7 @@ let adminCatFiltro = 'Todos';
 
 function renderCardapioAdmin() {
   if (!STATE.dbReady) return;
-  const itens = qAll('SELECT * FROM cardapio ORDER BY cat, nome');
+  const itens = Object.values(DB.cardapio).sort((a,b) => (a.cat+a.nome).localeCompare(b.cat+b.nome));
   const cats = ['Todos', ...new Set(itens.map(i => i.cat))];
 
   document.getElementById('cardapio-cat-bar').innerHTML = cats.map(c =>
@@ -1616,14 +1729,14 @@ function renderCardapioAdmin() {
           <div class="cardapio-admin-name">${i.nome}</div>
           <div class="cardapio-admin-cat">${i.cat}</div>
         </div>
-        <button class="btn btn-xs" onclick="openEditItemModal(${i.id})">✏️</button>
+        <button class="btn btn-xs" onclick="openEditItemModal('${i.id}')">✏️</button>
       </div>
       <div class="cardapio-admin-price">${fmtBRL(i.preco)}</div>
       <div style="font-size:11px;color:var(--text-3);">⏱ ${i.tempo || 15}min</div>
       <div class="cardapio-admin-footer">
         <span class="badge ${i.ativo ? 'b-green' : 'b-red'}">${i.ativo ? 'Ativo' : 'Inativo'}</span>
         <label class="toggle">
-          <input type="checkbox" ${i.ativo ? 'checked' : ''} onchange="toggleItem(${i.id},this.checked)">
+          <input type="checkbox" ${i.ativo ? 'checked' : ''} onchange="toggleItem('${i.id}',this.checked)">
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -1646,7 +1759,7 @@ function openAddItemModal() {
 }
 
 function openEditItemModal(id) {
-  const item = qOne('SELECT * FROM cardapio WHERE id=?', [id]);
+  const item = DB.cardapio[String(id)];
   if (!item) return;
   document.getElementById('modal-item-title').textContent = 'Editar item';
   document.getElementById('item-edit-id').value = id;
@@ -1658,7 +1771,7 @@ function openEditItemModal(id) {
   openModal('modal-item-cardapio');
 }
 
-function salvarItem() {
+async function salvarItem() {
   const id = document.getElementById('item-edit-id').value;
   const nome = document.getElementById('item-nome').value.trim();
   const preco = parseFloat(document.getElementById('item-preco').value);
@@ -1670,24 +1783,27 @@ function salvarItem() {
   if (!preco || preco <= 0) { toast('Preço inválido', 'error'); return; }
 
   if (id) {
-    run('UPDATE cardapio SET nome=?,preco=?,cat=?,tempo=?,icon=? WHERE id=?', [nome,preco,cat,tempo,icon,id]);
+    const upd = {nome, preco, cat, tempo, icon};
+    await fsUpdate('cardapio', String(id), upd);
+    DB.cardapio[String(id)] = {...DB.cardapio[String(id)], ...upd};
     sysLog(`Item atualizado: ${nome}`);
     toast('Item atualizado!', 'success');
   } else {
-    run('INSERT INTO cardapio(nome,cat,preco,tempo,icon,ing,ativo) VALUES(?,?,?,?,?,?,1)', [nome,cat,preco,tempo,icon,'{}']);
+    const newId = await fsAdd('cardapio', {nome, cat, preco, tempo, icon, ing:'{}', ativo:1});
+    DB.cardapio[newId] = {id: newId, nome, cat, preco, tempo, icon, ing:'{}', ativo:1};
     sysLog(`Item adicionado: ${nome}`);
     toast('Item adicionado!', 'success');
   }
-  saveDB();
   closeModal('modal-item-cardapio');
   renderCardapioAdmin();
   renderCardapio();
 }
 
-function toggleItem(id, ativo) {
-  run('UPDATE cardapio SET ativo=? WHERE id=?', [ativo ? 1 : 0, id]);
+async function toggleItem(id, ativo) {
+  const val = ativo ? 1 : 0;
+  await fsUpdate('cardapio', String(id), {ativo: val});
+  DB.cardapio[String(id)] = {...DB.cardapio[String(id)], ativo: val};
   sysLog(`Item ${id} → ${ativo ? 'ativo' : 'inativo'}`);
-  saveDB();
   renderCardapioAdmin();
   renderCardapio();
 }
@@ -1705,34 +1821,21 @@ function setRelPeriod(p, btn) {
 function getRelDatas() {
   const hoje = todayStr();
   if (relPeriod === 'hoje') return [hoje];
-  if (relPeriod === 'semana') {
-    const datas = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      datas.push(d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate());
-    }
-    return datas;
+  const count = relPeriod === 'semana' ? 7 : 30;
+  const datas = [];
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    datas.push(d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate());
   }
-  if (relPeriod === 'mes') {
-    const datas = [];
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      datas.push(d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate());
-    }
-    return datas;
-  }
-  return [hoje];
+  return datas;
 }
 
 function renderRelatorios() {
   if (!STATE.dbReady) return;
-  const datas = getRelDatas();
-  const placeholders = datas.map(() => '?').join(',');
+  const datas = new Set(getRelDatas());
 
-  // Métricas agregadas
-  const rels = qAll(`SELECT * FROM relatorio_dia WHERE data IN (${placeholders})`, datas);
+  const rels = Object.values(DB.relatorio_dia).filter(r => datas.has(r.data));
   const fat = rels.reduce((s, r) => s + (r.faturamento || 0), 0);
   const ped = rels.reduce((s, r) => s + (r.pedidos_total || 0), 0);
   const itens = rels.reduce((s, r) => s + (r.itens_total || 0), 0);
@@ -1757,27 +1860,20 @@ function renderRelatorios() {
     </div>
   `;
 
-  // Gráfico por hora (apenas para hoje)
   if (relPeriod === 'hoje') {
-    const horas = qAll('SELECT hora,valor FROM fat_hora WHERE data=? ORDER BY hora', [todayStr()]);
+    const horas = Object.values(DB.fat_hora).filter(h => h.data === todayStr()).sort((a,b) => a.hora - b.hora);
     const maxH = Math.max(...horas.map(h => h.valor), 1);
-    const chartEl = document.getElementById('chart-horas');
-    const labelsEl = document.getElementById('chart-horas-labels');
-    chartEl.innerHTML = horas.length ? horas.map(h => `
-      <div class="chart-bar-col">
-        <div class="chart-bar-val">${h.valor >= 1000 ? (h.valor/1000).toFixed(1)+'k' : fmtBRL(h.valor).replace('R$','')}</div>
-        <div class="chart-bar-rect" style="height:${Math.max(4,Math.round(h.valor/maxH*100))}px"></div>
-      </div>`).join('') : '<div class="text-center text-muted" style="padding:20px;width:100%">Sem dados hoje</div>';
-    labelsEl.innerHTML = horas.map(h => `<span class="chart-bar-label">${h.hora}h</span>`).join('');
+    document.getElementById('chart-horas').innerHTML = horas.length
+      ? horas.map(h => `<div class="chart-bar-col"><div class="chart-bar-val">${h.valor >= 1000 ? (h.valor/1000).toFixed(1)+'k' : fmtBRL(h.valor).replace('R$ ','')}</div><div class="chart-bar-rect" style="height:${Math.max(4,Math.round(h.valor/maxH*100))}px"></div></div>`).join('')
+      : '<div class="text-center text-muted" style="padding:20px;width:100%">Sem dados hoje</div>';
+    document.getElementById('chart-horas-labels').innerHTML = horas.map(h => `<span class="chart-bar-label">${h.hora}h</span>`).join('');
   } else {
-    // Por dia
-    const fatPorDia = qAll(`SELECT data, SUM(faturamento) f FROM relatorio_dia WHERE data IN (${placeholders}) GROUP BY data ORDER BY data`, datas);
-    const maxD = Math.max(...fatPorDia.map(d => d.f || 0), 1);
-    document.getElementById('chart-horas').innerHTML = fatPorDia.length ? fatPorDia.map(d => `
-      <div class="chart-bar-col">
-        <div class="chart-bar-val">${(d.f||0) >= 1000 ? ((d.f||0)/1000).toFixed(1)+'k' : Math.round(d.f||0)}</div>
-        <div class="chart-bar-rect" style="height:${Math.max(4,Math.round((d.f||0)/maxD*100))}px"></div>
-      </div>`).join('') : '<div class="text-center text-muted" style="padding:20px;width:100%">Sem dados</div>';
+    const datasArr = [...datas].sort();
+    const fatPorDia = datasArr.map(data => ({data, f: (DB.relatorio_dia[data]?.faturamento || 0)}));
+    const maxD = Math.max(...fatPorDia.map(d => d.f), 1);
+    document.getElementById('chart-horas').innerHTML = fatPorDia.length
+      ? fatPorDia.map(d => `<div class="chart-bar-col"><div class="chart-bar-val">${d.f >= 1000 ? (d.f/1000).toFixed(1)+'k' : Math.round(d.f)}</div><div class="chart-bar-rect" style="height:${Math.max(4,Math.round(d.f/maxD*100))}px"></div></div>`).join('')
+      : '<div class="text-center text-muted" style="padding:20px;width:100%">Sem dados</div>';
     document.getElementById('chart-horas-labels').innerHTML = fatPorDia.map(d => {
       const parts = d.data.split('-');
       return `<span class="chart-bar-label">${parts[2]}/${parts[1]}</span>`;
@@ -1785,46 +1881,49 @@ function renderRelatorios() {
   }
 
   // Ranking
-  const rank = qAll(`SELECT nome, SUM(qty) qty, SUM(faturamento) fat
-    FROM ranking_itens WHERE data IN (${placeholders})
-    GROUP BY nome ORDER BY qty DESC LIMIT 8`, datas);
+  const rankMap = {};
+  Object.values(DB.ranking_itens).filter(r => datas.has(r.data)).forEach(r => {
+    if (!rankMap[r.nome]) rankMap[r.nome] = {nome: r.nome, qty: 0, fat: 0};
+    rankMap[r.nome].qty += r.qty || 0;
+    rankMap[r.nome].fat += r.faturamento || 0;
+  });
+  const rank = Object.values(rankMap).sort((a,b) => b.qty - a.qty).slice(0, 8);
   const maxR = rank.length ? rank[0].qty : 1;
-  document.getElementById('ranking-list').innerHTML = rank.length ? rank.map((r, i) => `
-    <div class="rank-item">
-      <div class="rank-pos">${i+1}</div>
-      <div class="rank-name">${r.nome}</div>
-      <div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(r.qty/maxR*100)}%"></div></div>
-      <div class="rank-qty">${r.qty}</div>
-    </div>`).join('') : '<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
+  document.getElementById('ranking-list').innerHTML = rank.length
+    ? rank.map((r, i) => `<div class="rank-item"><div class="rank-pos">${i+1}</div><div class="rank-name">${r.nome}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(r.qty/maxR*100)}%"></div></div><div class="rank-qty">${r.qty}</div></div>`).join('')
+    : '<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
 
   // Por categoria
-  const fatCat = qAll(`SELECT cat, SUM(valor) v FROM fat_cat WHERE data IN (${placeholders}) GROUP BY cat ORDER BY v DESC`, datas);
+  const catMap = {};
+  Object.values(DB.fat_cat).filter(r => datas.has(r.data)).forEach(r => {
+    catMap[r.cat] = (catMap[r.cat] || 0) + (r.valor || 0);
+  });
+  const fatCat = Object.entries(catMap).map(([cat,v]) => ({cat,v})).sort((a,b) => b.v - a.v);
   const maxCat = fatCat.length ? fatCat[0].v : 1;
-  document.getElementById('cat-fat-list').innerHTML = fatCat.length ? fatCat.map(c => `
-    <div class="rank-item">
-      <div class="rank-name">${c.cat}</div>
-      <div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round((c.v||0)/maxCat*100)}%;background:var(--brand)"></div></div>
-      <div class="rank-qty">${fmtBRL(c.v)}</div>
-    </div>`).join('') : '<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
+  document.getElementById('cat-fat-list').innerHTML = fatCat.length
+    ? fatCat.map(c => `<div class="rank-item"><div class="rank-name">${c.cat}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(c.v/maxCat*100)}%;background:var(--brand)"></div></div><div class="rank-qty">${fmtBRL(c.v)}</div></div>`).join('')
+    : '<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
 
   // Por forma de pagamento
-  const fatPgto = qAll(`SELECT forma, SUM(valor) v, SUM(qtd) qtd FROM fat_pgto WHERE data IN (${placeholders}) GROUP BY forma ORDER BY v DESC`, datas);
+  const pgtoMap = {};
+  Object.values(DB.fat_pgto).filter(r => datas.has(r.data)).forEach(r => {
+    if (!pgtoMap[r.forma]) pgtoMap[r.forma] = {forma: r.forma, v: 0, qtd: 0};
+    pgtoMap[r.forma].v += r.valor || 0;
+    pgtoMap[r.forma].qtd += r.qtd || 0;
+  });
+  const fatPgto = Object.values(pgtoMap).sort((a,b) => b.v - a.v);
   const pgtoIcons = {dinheiro:'💵',debito:'💳',credito:'💳',pix:'📱'};
-  document.getElementById('pgto-fat-list').innerHTML = fatPgto.length ? fatPgto.map(p => `
-    <div class="conta-total-row" style="padding:8px 0;">
-      <span>${pgtoIcons[p.forma] || '💳'} ${p.forma} (${p.qtd}×)</span>
-      <span style="font-weight:600;">${fmtBRL(p.v)}</span>
-    </div>`).join('') : '<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
+  document.getElementById('pgto-fat-list').innerHTML = fatPgto.length
+    ? fatPgto.map(p => `<div class="conta-total-row" style="padding:8px 0;"><span>${pgtoIcons[p.forma] || '💳'} ${p.forma} (${p.qtd}×)</span><span style="font-weight:600;">${fmtBRL(p.v)}</span></div>`).join('')
+    : '<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
 }
 
 // ─── MÓDULO: CONFIG PAGE ─────────────────────────────────────────────
 function renderConfigPage() {
-  // Preencher campos
   document.getElementById('cfg-nome').value = SYS.nomeRestaurante;
   document.getElementById('cfg-taxa').value = SYS.taxaServico;
-  document.getElementById('cfg-mesas').value = qOne('SELECT COUNT(*) c FROM mesas')?.c || SYS.nMesas;
+  document.getElementById('cfg-mesas').value = Object.keys(DB.mesas).length || SYS.nMesas;
 
-  // Usuários (sessão atual)
   const roles = Object.entries(ROLE_CONFIG);
   document.getElementById('usuarios-list').innerHTML = roles.map(([role, rc]) => {
     const isCurrentUser = STATE.currentUser?.role === role;
