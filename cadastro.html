@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadastro - RestaurantOS</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+
+    <div class="login-logo">
+      <div class="login-logo-icon">🍽️</div>
+      <h1>RestaurantOS</h1>
+      <p>Sistema de Gestão Profissional</p>
+    </div>
+
+    <div id="login-form-wrap">
+
+      <!-- NOME -->
+      <div class="login-field-wrap">
+        <label class="login-label">Nome</label>
+        <input class="login-field" id="register-nome" type="text" placeholder="Seu nome">
+      </div>
+
+      <!-- EMAIL -->
+      <div class="login-field-wrap">
+        <label class="login-label">E-mail</label>
+        <input class="login-field" id="register-email" type="email" placeholder="seu@email.com">
+      </div>
+
+      <!-- SENHA -->
+      <div class="login-field-wrap">
+        <label class="login-label">Senha</label>
+        <input class="login-field" id="register-senha" type="password" placeholder="••••••••">
+      </div>
+
+      <!-- PERFIL (MESMO PADRÃO QUE VOCÊ JÁ USAVA) -->
+      <div class="login-field-wrap">
+        <label class="login-label">Perfil</label>
+        <div class="login-roles">
+          <button class="login-role-btn sel" data-role="garcom" onclick="selRole(this)">
+            <span class="login-role-icon">🍽️</span>Garçom
+          </button>
+          <button class="login-role-btn" data-role="cozinheiro" onclick="selRole(this)">
+            <span class="login-role-icon">👨‍🍳</span>Cozinheiro
+          </button>
+          <button class="login-role-btn" data-role="caixa" onclick="selRole(this)">
+            <span class="login-role-icon">💳</span>Caixa
+          </button>
+          <button class="login-role-btn" data-role="gerente" onclick="selRole(this)">
+            <span class="login-role-icon">📊</span>Gerente
+          </button>
+        </div>
+      </div>
+
+      <!-- ERRO / LOADING -->
+      <div class="login-err" id="register-err"></div>
+      <div class="login-loading" id="register-loading">Criando conta...</div>
+
+      <!-- BOTÃO -->
+      <button class="login-btn" onclick="doRegister()">Criar conta</button>
+
+      <div class="login-hint">
+        Já tem conta? <a href="login.html">Entrar</a>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+// ── IMPORTS FIREBASE ──────────────────────────────────────────────────
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {
+  getAuth, onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {
+  getFirestore, collection, doc,
+  getDoc, getDocs, setDoc, updateDoc,
+  addDoc, deleteDoc, onSnapshot,
+  writeBatch, increment, serverTimestamp
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:            'AIzaSyCR-_gi_2InOeiv_2lnZByD2QwZg3Wmgo4',
+  authDomain:        'restaurante-os.firebaseapp.com',
+  projectId:         'restaurante-os',
+  storageBucket:     'restaurante-os.firebasestorage.app',
+  messagingSenderId: '374170112531',
+  appId:             '1:374170112531:web:a78ca2e7400cb837f9e5e6',
+};
+
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// MANTÉM PADRÃO DO TEU SISTEMA
+let loginRoleSel = 'garcom';
+
+window.selRole = (btn) => {
+  document.querySelectorAll('.login-role-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  loginRoleSel = btn.dataset.role;
+};
+
+window.doRegister = async () => {
+  const nome  = document.getElementById('register-nome').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const senha = document.getElementById('register-senha').value;
+  const role  = loginRoleSel;
+
+  if (!nome || !email || !senha) {
+    showErr('Preencha todos os campos.');
+    return;
+  }
+
+  if (senha.length < 6) {
+    showErr('Senha precisa ter pelo menos 6 caracteres.');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, senha);
+
+    await setDoc(doc(db, 'usuarios', cred.user.uid), {
+      nome,
+      email,
+      role,
+      criadoEm: new Date().toISOString()
+    });
+
+    alert('Conta criada com sucesso!');
+    window.location.href = 'index.html';
+
+  } catch (e) {
+    const erros = {
+      'auth/email-already-in-use': 'Esse e-mail já está cadastrado.',
+      'auth/invalid-email': 'E-mail inválido.',
+      'auth/weak-password': 'Senha muito fraca.'
+    };
+
+    showErr(erros[e.code] || 'Erro ao criar conta.');
+    setLoading(false);
+  }
+};
+
+function showErr(msg) {
+  document.getElementById('register-err').innerText = msg;
+}
+
+function setLoading(state) {
+  document.getElementById('register-loading').style.display = state ? 'block' : 'none';
+}
+</script>
+
+</body>
+</html>

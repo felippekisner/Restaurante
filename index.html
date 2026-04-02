@@ -3,80 +3,55 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>RestaurantOS — Sistema de Gestão</title>
+<title>RestaurantOS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<!-- Firebase SDKs -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, deleteDoc, query, where, orderBy, onSnapshot, writeBatch, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCR-_gi_2InOeiv_2lnZByD2QwZg3Wmgo4",
-    authDomain: "restaurante-os.firebaseapp.com",
-    projectId: "restaurante-os",
-    storageBucket: "restaurante-os.firebasestorage.app",
-    messagingSenderId: "374170112531",
-    appId: "1:374170112531:web:a78ca2e7400cb837f9e5e6",
-    measurementId: "G-896Q6YQS2D"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  // Expose to global scope
-  window._firebase = {
-    db, collection, doc, getDoc, getDocs, setDoc, updateDoc,
-    addDoc, deleteDoc, query, where, orderBy, onSnapshot,
-    writeBatch, serverTimestamp, increment
-  };
-  window._firebaseReady = true;
-  document.dispatchEvent(new Event('firebaseReady'));
-</script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
+<!-- ═══════════════ LOGIN ═══════════════ -->
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">
-      <div class="login-logo-icon">🍽️</div>
+      <span class="login-logo-icon">🍽️</span>
       <h1>RestaurantOS</h1>
       <p>Sistema de Gestão Profissional</p>
     </div>
-    <div class="field">
-      <label class="input-label" style="color:rgba(255,255,255,0.6)">Nome</label>
-      <input class="login-field" id="login-name" type="text" placeholder="Seu nome" style="width:100%;padding:11px 14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;" />
-    </div>
-    <div class="field">
-      <label class="input-label" style="color:rgba(255,255,255,0.6)">Perfil de acesso</label>
-      <div class="login-roles">
-        <button class="login-role-btn sel" data-role="garcom" onclick="selRole(this)"><span class="login-role-icon">🍽️</span>Garçom</button>
-        <button class="login-role-btn" data-role="cozinheiro" onclick="selRole(this)"><span class="login-role-icon">👨‍🍳</span>Cozinheiro</button>
-        <button class="login-role-btn" data-role="caixa" onclick="selRole(this)"><span class="login-role-icon">💳</span>Caixa</button>
-        <button class="login-role-btn" data-role="gerente" onclick="selRole(this)"><span class="login-role-icon">📊</span>Gerente</button>
+
+    <!-- Tab: Email/Senha -->
+    <div id="login-form-wrap">
+      <div class="login-field-wrap">
+        <label class="login-label">E-mail</label>
+        <input class="login-field" id="login-email" type="email" placeholder="seu@email.com" autocomplete="email">
       </div>
-    </div>
-    <button class="login-btn" onclick="doLogin()">Entrar no Sistema</button>
-    <div class="login-hint">Demo — selecione qualquer perfil para testar</div>
+      <div class="login-field-wrap">
+        <label class="login-label">Senha</label>
+        <input class="login-field" id="login-senha" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div class="login-err" id="login-err"></div>
+      <div class="login-loading" id="login-loading">Autenticando...</div>
+      <button class="login-btn" onclick="doEmailLogin()">Entrar</button>
+<br><br>
+      <button class="login-btn" style="background:rgba(255,255,255,.12);margin-top:0;" onclick="window.location.href='cadastro.html'"> Criar conta nova
+</button>    </div>
+    <div class="login-hint">Seus dados são salvos no Firebase</div>
   </div>
 </div>
 
 <!-- ═══════════════ APP ═══════════════ -->
-<div id="app">
+<div id="app" class="app" style="display:none;">
 
-  <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-left">
       <div class="logo">
         <div class="logo-icon">🍽️</div>
         <span class="logo-name">RestaurantOS</span>
       </div>
-      <nav class="nav-desktop" id="nav-desktop">
+      <nav class="nav-desktop">
         <button class="nav-btn active" onclick="goPage('mesas')" data-page="mesas">⊞ Mesas</button>
         <button class="nav-btn" onclick="goPage('pedido')" data-page="pedido">✏️ Pedido</button>
-        <button class="nav-btn" onclick="goPage('cozinha')" data-page="cozinha" id="nav-cozinha">🔥 Cozinha <span class="nav-badge" id="kds-count-badge" style="display:none">0</span></button>
+        <button class="nav-btn" onclick="goPage('cozinha')" data-page="cozinha">🔥 Cozinha <span class="nav-badge" id="kds-count-badge" style="display:none">0</span></button>
         <button class="nav-btn" onclick="goPage('caixa')" data-page="caixa">💳 Caixa</button>
         <button class="nav-btn" onclick="goPage('estoque')" data-page="estoque">📦 Estoque</button>
         <button class="nav-btn" onclick="goPage('cardapio')" data-page="cardapio" id="nav-cardapio" style="display:none">🍴 Cardápio</button>
@@ -87,25 +62,24 @@
     <div class="topbar-right">
       <span class="clock-pill" id="clock">00:00</span>
       <div class="user-pill" onclick="doLogout()">
-        <div class="user-avatar" id="user-avatar" style="background:var(--brand)">?</div>
-        <span class="user-name" id="user-name">Usuário</span>
-        <span class="user-role-badge b-brand" id="user-role-badge">—</span>
+        <div class="user-avatar" id="user-avatar">?</div>
+        <span class="user-name" id="user-name">...</span>
+        <span class="user-role-badge" id="user-role-badge">—</span>
       </div>
     </div>
   </div>
 
-  <!-- CONTENT -->
   <div class="content">
     <div class="night-banner" id="night-banner">🌙 Reset noturno realizado — boa operação!</div>
 
-    <!-- ═══ MESAS ═══ -->
+    <!-- MESAS -->
     <div class="page active" id="page-mesas">
       <div class="page-header">
         <div>
           <div class="page-title">Mapa de Mesas</div>
           <div class="page-sub" id="floor-sub">Carregando...</div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="openAddMesaModal()">+ Mesa</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-mesa')">+ Mesa</button>
       </div>
       <div class="floor-grid" id="floor-grid"></div>
       <div class="floor-stats" id="floor-stats"></div>
@@ -115,12 +89,12 @@
           <button class="btn btn-xs" onclick="clearLog()">Limpar</button>
         </div>
         <div class="log-panel" id="log-panel">
-          <div class="log-line"><span class="log-ts">--:--:--</span><span class="log-info">Sistema iniciando...</span></div>
+          <div class="log-line"><span class="log-ts">--:--:--</span><span class="log-info">Aguardando autenticação...</span></div>
         </div>
       </div>
     </div>
 
-    <!-- ═══ PEDIDO ═══ -->
+    <!-- PEDIDO -->
     <div class="page" id="page-pedido">
       <div class="page-header">
         <div>
@@ -128,8 +102,7 @@
           <div class="page-sub" id="ped-mesa-lbl">Selecione uma mesa abaixo</div>
         </div>
       </div>
-      <!-- Mesa selector inline -->
-      <div class="card" style="margin-bottom:12px;" id="mesa-selector-card">
+      <div class="card mt-2" style="margin-bottom:12px;">
         <div class="card-title" style="margin-bottom:10px;">Mesa</div>
         <div class="mesa-sel-grid" id="mesa-sel-grid"></div>
       </div>
@@ -138,28 +111,26 @@
           <div class="cat-bar" id="cat-bar"></div>
           <div class="cardapio-grid" id="cardapio-grid"></div>
         </div>
-        <div class="card pedido-comanda comanda" id="comanda-card">
+        <div class="card pedido-comanda comanda">
           <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">Comanda</div>
           <div class="comanda-items" id="cart-items">
-            <div class="text-center text-muted" style="padding:20px 0;font-size:13px;">Nenhum item adicionado</div>
+            <div class="text-center text-muted" style="padding:20px 0;font-size:13px;">Nenhum item</div>
           </div>
           <div class="divider"></div>
           <label class="input-label">Observações</label>
           <textarea class="obs-area mt-2" id="obs-inp" rows="2" placeholder="sem cebola, mal passado..."></textarea>
           <div class="divider"></div>
-          <div class="flex justify-between items-center mt-2">
-            <span class="text-muted text-sm">Total do pedido</span>
+          <div class="flex justify-between items-center">
+            <span class="text-muted text-sm">Total</span>
             <span class="comanda-total" id="cart-total">R$ 0,00</span>
           </div>
-          <button class="btn btn-gold w-full mt-3" onclick="enviarPedido()">
-            🚀 Enviar para Cozinha
-          </button>
+          <button class="btn btn-gold w-full mt-3" onclick="enviarPedido()">🚀 Enviar para Cozinha</button>
           <button class="btn btn-sm w-full mt-2" onclick="limparCart()">Limpar comanda</button>
         </div>
       </div>
     </div>
 
-    <!-- ═══ COZINHA / KDS ═══ -->
+    <!-- COZINHA -->
     <div class="page" id="page-cozinha">
       <div class="page-header">
         <div>
@@ -180,30 +151,24 @@
       <div class="kds-grid" id="kds-grid"></div>
     </div>
 
-    <!-- ═══ CAIXA ═══ -->
+    <!-- CAIXA -->
     <div class="page" id="page-caixa">
-      <div class="page-header">
-        <div class="page-title">PDV — Caixa</div>
-      </div>
+      <div class="page-header"><div class="page-title">PDV — Caixa</div></div>
       <div class="caixa-layout">
         <div>
           <div class="card-title" style="margin-bottom:8px;">Mesas abertas</div>
-          <div id="caixa-lista">
-            <div class="text-muted text-sm" style="padding:12px 0;">Nenhuma mesa aberta</div>
-          </div>
+          <div id="caixa-lista"><div class="text-muted text-sm" style="padding:12px 0;">Nenhuma mesa aberta</div></div>
         </div>
-        <div class="card" id="caixa-det">
-          <div class="text-center text-muted" style="padding:50px 0;font-size:13px;">Selecione uma mesa para ver a conta</div>
-        </div>
+        <div class="card" id="caixa-det"><div class="text-center text-muted" style="padding:50px 0;font-size:13px;">Selecione uma mesa para ver a conta</div></div>
       </div>
     </div>
 
-    <!-- ═══ ESTOQUE ═══ -->
+    <!-- ESTOQUE -->
     <div class="page" id="page-estoque">
       <div class="page-header">
         <div class="page-title">Controle de Estoque</div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-sm" onclick="openAddIngModal()">+ Ingrediente</button>
+          <button class="btn btn-sm" onclick="openModal('modal-add-ing')">+ Ingrediente</button>
           <button class="btn btn-green btn-sm" onclick="reporTudo()">Repor tudo</button>
         </div>
       </div>
@@ -211,37 +176,18 @@
         <div class="card">
           <div class="card-header">
             <span class="card-title">Ingredientes</span>
-            <input class="input" id="est-search" style="width:140px;" placeholder="Buscar..." oninput="renderEstoque()">
+            <input class="input" id="est-search" style="width:140px;padding:6px 10px;" placeholder="Buscar..." oninput="renderEstoque()">
           </div>
           <div id="est-list"></div>
         </div>
-        <div>
-          <div class="card" style="margin-bottom:12px;">
-            <div class="card-title" style="margin-bottom:10px;">⚠️ Alertas de estoque</div>
-            <div id="alertas-list"></div>
-          </div>
-          <div class="card">
-            <div class="card-title" style="margin-bottom:10px;">Adicionar ingrediente</div>
-            <div class="field"><label class="input-label">Nome</label><input class="input" id="new-ing-nome" placeholder="Ex: Tomate"></div>
-            <div class="g2">
-              <div class="field"><label class="input-label">Qtd atual</label><input class="input" id="new-ing-qty" type="number" placeholder="10"></div>
-              <div class="field"><label class="input-label">Qtd máxima</label><input class="input" id="new-ing-max" type="number" placeholder="30"></div>
-            </div>
-            <div class="g2">
-              <div class="field"><label class="input-label">Unidade</label>
-                <select class="input" id="new-ing-un">
-                  <option>kg</option><option>g</option><option>L</option><option>ml</option><option>un</option><option>cx</option>
-                </select>
-              </div>
-              <div class="field"><label class="input-label">Ícone</label><input class="input" id="new-ing-icon" placeholder="🥕" maxlength="2"></div>
-            </div>
-            <button class="btn btn-primary w-full" onclick="addIngrediente()">Adicionar ingrediente</button>
-          </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:10px;">⚠️ Alertas</div>
+          <div id="alertas-list"></div>
         </div>
       </div>
     </div>
 
-    <!-- ═══ CARDÁPIO ═══ -->
+    <!-- CARDÁPIO ADMIN -->
     <div class="page" id="page-cardapio">
       <div class="page-header">
         <div class="page-title">Gerenciar Cardápio</div>
@@ -251,7 +197,7 @@
       <div class="cardapio-admin-grid" id="cardapio-admin-grid"></div>
     </div>
 
-    <!-- ═══ RELATÓRIOS ═══ -->
+    <!-- RELATÓRIOS -->
     <div class="page" id="page-relatorios">
       <div class="page-header">
         <div class="page-title">Relatórios</div>
@@ -275,88 +221,68 @@
       </div>
       <div class="g2 mt-3">
         <div class="card">
-          <div class="card-title" style="margin-bottom:12px;">Faturamento por categoria</div>
+          <div class="card-title" style="margin-bottom:12px;">Por categoria</div>
           <div id="cat-fat-list"></div>
         </div>
         <div class="card">
-          <div class="card-title" style="margin-bottom:12px;">Formas de pagamento</div>
+          <div class="card-title" style="margin-bottom:12px;">Por pagamento</div>
           <div id="pgto-fat-list"></div>
         </div>
       </div>
     </div>
 
-    <!-- ═══ CONFIGURAÇÕES ═══ -->
+    <!-- CONFIG -->
     <div class="page" id="page-config">
       <div class="page-title" style="margin-bottom:16px;">Configurações</div>
       <div class="g2">
         <div>
           <div class="card config-section">
-            <div class="card-header">
-              <span class="card-title">Restaurante</span>
-            </div>
+            <div class="card-header"><span class="card-title">Restaurante</span></div>
             <div class="field"><label class="input-label">Nome do restaurante</label><input class="input" id="cfg-nome" placeholder="Meu Restaurante"></div>
             <div class="field"><label class="input-label">Taxa de serviço (%)</label><input class="input" id="cfg-taxa" type="number" placeholder="10" min="0" max="30"></div>
             <div class="field"><label class="input-label">Quantidade de mesas</label><input class="input" id="cfg-mesas" type="number" placeholder="15" min="1" max="60"></div>
             <button class="btn btn-primary" onclick="salvarConfig()">Salvar configurações</button>
           </div>
-          <div class="card config-section mt-3">
+          <div class="card mt-3">
             <div class="card-title" style="margin-bottom:10px;">Dados</div>
             <div style="display:flex;flex-direction:column;gap:8px;">
               <button class="btn btn-sm" onclick="exportarDados()">📤 Exportar dados (JSON)</button>
-              <button class="btn btn-sm" onclick="document.getElementById('import-file').click()">📥 Importar dados</button>
-              <input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDados(this)">
               <button class="btn btn-red btn-sm" onclick="resetarSistema()">🗑️ Resetar todos os dados</button>
             </div>
           </div>
         </div>
-        <div>
-          <div class="card config-section">
-            <div class="card-header">
-              <span class="card-title">Usuários ativos</span>
-            </div>
-            <div class="usuarios-list" id="usuarios-list"></div>
-          </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Usuários cadastrados</span></div>
+          <div id="usuarios-list"></div>
         </div>
       </div>
     </div>
-
-  </div><!-- /content -->
+  </div>
 
   <!-- NAV MOBILE -->
-  <nav class="nav-mobile" id="nav-mobile">
+  <nav class="nav-mobile">
     <div class="nav-mobile-inner">
-      <button class="nav-mob-btn active" onclick="goPage('mesas')" data-page="mesas">
-        <span class="nav-mob-icon">⊞</span><span class="nav-mob-label">Mesas</span>
-      </button>
-      <button class="nav-mob-btn" onclick="goPage('pedido')" data-page="pedido">
-        <span class="nav-mob-icon">✏️</span><span class="nav-mob-label">Pedido</span>
-      </button>
-      <button class="nav-mob-btn" onclick="goPage('cozinha')" data-page="cozinha" id="mob-cozinha">
+      <button class="nav-mob-btn active" onclick="goPage('mesas')" data-page="mesas"><span class="nav-mob-icon">⊞</span><span class="nav-mob-label">Mesas</span></button>
+      <button class="nav-mob-btn" onclick="goPage('pedido')" data-page="pedido"><span class="nav-mob-icon">✏️</span><span class="nav-mob-label">Pedido</span></button>
+      <button class="nav-mob-btn" onclick="goPage('cozinha')" data-page="cozinha">
         <span class="nav-mob-icon">🔥</span><span class="nav-mob-label">Cozinha</span>
         <span class="mob-badge" id="mob-kds-badge" style="display:none">0</span>
       </button>
-      <button class="nav-mob-btn" onclick="goPage('caixa')" data-page="caixa">
-        <span class="nav-mob-icon">💳</span><span class="nav-mob-label">Caixa</span>
-      </button>
-      <button class="nav-mob-btn" onclick="goPage('estoque')" data-page="estoque">
-        <span class="nav-mob-icon">📦</span><span class="nav-mob-label">Estoque</span>
-      </button>
-      <button class="nav-mob-btn" onclick="goPage('relatorios')" data-page="relatorios" id="mob-relatorios">
-        <span class="nav-mob-icon">📊</span><span class="nav-mob-label">Mais</span>
-      </button>
+      <button class="nav-mob-btn" onclick="goPage('caixa')" data-page="caixa"><span class="nav-mob-icon">💳</span><span class="nav-mob-label">Caixa</span></button>
+      <button class="nav-mob-btn" onclick="goPage('estoque')" data-page="estoque"><span class="nav-mob-icon">📦</span><span class="nav-mob-label">Estoque</span></button>
+      <button class="nav-mob-btn" onclick="goPage('relatorios')" data-page="relatorios"><span class="nav-mob-icon">📊</span><span class="nav-mob-label">Mais</span></button>
     </div>
   </nav>
-
-</div><!-- /app -->
+</div>
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<!-- MODAL DESELECT MESA -->
+<!-- MODAL: DESMARCAR MESA -->
 <div class="modal-overlay" id="modal-deselect">
   <div class="modal">
     <div class="modal-title">Liberar mesa?</div>
-    <div class="modal-desc" id="modal-deselect-body">Esta ação vai liberar a mesa e remover todos os pedidos em aberto.</div>
+    <div class="modal-desc" id="modal-deselect-body">Esta ação vai liberar a mesa e cancelar pedidos em aberto.</div>
     <div class="modal-footer">
       <button class="btn btn-sm" onclick="closeModal('modal-deselect')">Cancelar</button>
       <button class="btn btn-red btn-sm" onclick="confirmarDeselect()">Sim, liberar</button>
@@ -364,12 +290,12 @@
   </div>
 </div>
 
-<!-- MODAL ADD MESA -->
+<!-- MODAL: ADD MESA -->
 <div class="modal-overlay" id="modal-add-mesa">
   <div class="modal">
     <div class="modal-title">Adicionar mesa</div>
     <div class="field"><label class="input-label">Número da mesa</label><input class="input" id="new-mesa-num" type="number" placeholder="16" min="1"></div>
-    <div class="field"><label class="input-label">Capacidade (lugares)</label><input class="input" id="new-mesa-cap" type="number" placeholder="4" min="1" max="20"></div>
+    <div class="field"><label class="input-label">Capacidade</label><input class="input" id="new-mesa-cap" type="number" placeholder="4" min="1" max="20"></div>
     <div class="modal-footer">
       <button class="btn btn-sm" onclick="closeModal('modal-add-mesa')">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="confirmarAddMesa()">Adicionar</button>
@@ -377,13 +303,13 @@
   </div>
 </div>
 
-<!-- MODAL EDITAR ITEM CARDÁPIO -->
+<!-- MODAL: ITEM CARDÁPIO -->
 <div class="modal-overlay" id="modal-item-cardapio">
   <div class="modal">
     <div class="modal-title" id="modal-item-title">Novo item</div>
     <div class="field"><label class="input-label">Nome</label><input class="input" id="item-nome"></div>
     <div class="g2">
-      <div class="field"><label class="input-label">Preço (R$)</label><input class="input" id="item-preco" type="number" step="0.01" placeholder="0,00"></div>
+      <div class="field"><label class="input-label">Preço (R$)</label><input class="input" id="item-preco" type="number" step="0.01"></div>
       <div class="field"><label class="input-label">Categoria</label>
         <select class="input" id="item-cat">
           <option>Pratos</option><option>Entradas</option><option>Pizzas</option>
@@ -392,8 +318,8 @@
       </div>
     </div>
     <div class="g2">
-      <div class="field"><label class="input-label">Tempo preparo (min)</label><input class="input" id="item-tempo" type="number" placeholder="15" min="1"></div>
-      <div class="field"><label class="input-label">Ícone/Emoji</label><input class="input" id="item-icon" placeholder="🍝" maxlength="2"></div>
+      <div class="field"><label class="input-label">Tempo (min)</label><input class="input" id="item-tempo" type="number" placeholder="15"></div>
+      <div class="field"><label class="input-label">Ícone</label><input class="input" id="item-icon" placeholder="🍝" maxlength="2"></div>
     </div>
     <input type="hidden" id="item-edit-id">
     <div class="modal-footer">
@@ -403,15 +329,34 @@
   </div>
 </div>
 
-<!-- MODAL REPOSIÇÃO MANUAL -->
+<!-- MODAL: ADD INGREDIENTE -->
+<div class="modal-overlay" id="modal-add-ing">
+  <div class="modal">
+    <div class="modal-title">Adicionar ingrediente</div>
+    <div class="field"><label class="input-label">Nome</label><input class="input" id="new-ing-nome" placeholder="Ex: Tomate"></div>
+    <div class="g2">
+      <div class="field"><label class="input-label">Qtd atual</label><input class="input" id="new-ing-qty" type="number" placeholder="10"></div>
+      <div class="field"><label class="input-label">Qtd máxima</label><input class="input" id="new-ing-max" type="number" placeholder="30"></div>
+    </div>
+    <div class="g2">
+      <div class="field"><label class="input-label">Unidade</label>
+        <select class="input" id="new-ing-un"><option>kg</option><option>g</option><option>L</option><option>ml</option><option>un</option><option>cx</option></select>
+      </div>
+      <div class="field"><label class="input-label">Ícone</label><input class="input" id="new-ing-icon" placeholder="🥕" maxlength="2"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeModal('modal-add-ing')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="addIngrediente()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: REPOR INGREDIENTE -->
 <div class="modal-overlay" id="modal-repor">
   <div class="modal">
     <div class="modal-title">Repor ingrediente</div>
     <div class="modal-desc" id="modal-repor-desc"></div>
-    <div class="field">
-      <label class="input-label">Quantidade a adicionar</label>
-      <input class="input" id="repor-qty" type="number" min="0" step="0.1">
-    </div>
+    <div class="field"><label class="input-label">Quantidade a adicionar</label><input class="input" id="repor-qty" type="number" min="0" step="0.1"></div>
     <input type="hidden" id="repor-key">
     <div class="modal-footer">
       <button class="btn btn-sm" onclick="closeModal('modal-repor')">Cancelar</button>
@@ -420,161 +365,127 @@
   </div>
 </div>
 
-<script>
-// ═══════════════════════════════════════════════════════════════════
-// RESTAURANTOS — SISTEMA COMPLETO v2.0 (Firebase Firestore)
-// Módulos: Auth · DB · Mesas · Pedidos · KDS · Caixa · Estoque
-//          Cardápio · Relatórios · Config · UI
-// ═══════════════════════════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════════════════════════
+     FIREBASE + LÓGICA PRINCIPAL
+═══════════════════════════════════════════════════════════════ -->
+<script type="module">
+// ── IMPORTS FIREBASE ──────────────────────────────────────────────────
+import { initializeApp }                            from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {
+  getAuth, onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {
+  getFirestore, collection, doc,
+  getDoc, getDocs, setDoc, updateDoc,
+  addDoc, deleteDoc, onSnapshot,
+  writeBatch, increment, serverTimestamp
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-// ─── MÓDULO: CONFIG DO SISTEMA ──────────────────────────────────────
+// ── CONFIGURAÇÃO FIREBASE ─────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            'AIzaSyCR-_gi_2InOeiv_2lnZByD2QwZg3Wmgo4',
+  authDomain:        'restaurante-os.firebaseapp.com',
+  projectId:         'restaurante-os',
+  storageBucket:     'restaurante-os.firebasestorage.app',
+  messagingSenderId: '374170112531',
+  appId:             '1:374170112531:web:a78ca2e7400cb837f9e5e6',
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const auth  = getAuth(fbApp);
+const db    = getFirestore(fbApp);
+
+// ── HELPERS FIRESTORE ─────────────────────────────────────────────────
+const col  = (c)    => collection(db, c);
+const ref  = (c,id) => doc(db, c, id);
+
+async function fsSet(c, id, data)    { await setDoc(ref(c,id), data); }
+async function fsUpd(c, id, data)    { try{ await updateDoc(ref(c,id),data); } catch{ await setDoc(ref(c,id),data); } }
+async function fsDel(c, id)          { await deleteDoc(ref(c,id)); }
+async function fsAdd(c, data)        { const r = await addDoc(col(c), data); return r.id; }
+async function fsGet(c, id)          { const s = await getDoc(ref(c,id)); return s.exists()?{id:s.id,...s.data()}:null; }
+async function fsAll(c)              { const s = await getDocs(col(c)); return s.docs.map(d=>({id:d.id,...d.data()})); }
+
+// ── CONFIGURAÇÃO DO SISTEMA ────────────────────────────────────────────
 const SYS = {
-  version: '2.0',
-  sessionKey: 'restaurantOS_v2_session',
   taxaServico: 10,
   nMesas: 15,
   nomeRestaurante: 'RestaurantOS',
+  alertaEstoque: 0.25,
   autoRefreshMs: 8000,
-  alertaEstoque: 0.25
 };
 
-// ─── MÓDULO: ESTADO GLOBAL ──────────────────────────────────────────
+// ── ROLE CONFIG ───────────────────────────────────────────────────────
+const ROLE_CONFIG = {
+  garcom:     {label:'Garçom',     color:'#1e40af', bg:'#eff6ff', pages:['mesas','pedido','cozinha'],                                                    canOrder:true,  canKDS:true,  canCaixa:false, canRelatorio:false, canConfig:false, canCardapio:false},
+  cozinheiro: {label:'Cozinheiro', color:'#92400e', bg:'#fff7ed', pages:['cozinha'],                                                                      canOrder:false, canKDS:true,  canCaixa:false, canRelatorio:false, canConfig:false, canCardapio:false},
+  caixa:      {label:'Caixa',      color:'#065f46', bg:'#ecfdf5', pages:['mesas','caixa'],                                                               canOrder:false, canKDS:false, canCaixa:true,  canRelatorio:false, canConfig:false, canCardapio:false},
+  gerente:    {label:'Gerente',    color:'#4c1d95', bg:'#f5f3ff', pages:['mesas','pedido','cozinha','caixa','estoque','cardapio','relatorios','config'],  canOrder:true,  canKDS:true,  canCaixa:true,  canRelatorio:true,  canConfig:true,  canCardapio:true},
+};
+
+// ── CARDÁPIO PADRÃO ────────────────────────────────────────────────────
+const CARDAPIO_PADRAO = [
+  {id:'1',nome:'Filé ao molho madeira',cat:'Pratos',preco:54.90,tempo:20,icon:'🥩',ing:'{"carne":1,"molho":0.5}',ativo:1},
+  {id:'2',nome:'Frango grelhado',cat:'Pratos',preco:38.90,tempo:15,icon:'🍗',ing:'{"frango":1}',ativo:1},
+  {id:'3',nome:'Salmão ao forno',cat:'Pratos',preco:72.90,tempo:22,icon:'🐟',ing:'{"peixe":1,"azeite":0.2}',ativo:1},
+  {id:'4',nome:'Macarrão carbonara',cat:'Pratos',preco:44.90,tempo:18,icon:'🍝',ing:'{"massa":0.3,"ovos":0.5}',ativo:1},
+  {id:'5',nome:'Costela no bafo',cat:'Pratos',preco:89.90,tempo:35,icon:'🍖',ing:'{"carne":1.5}',ativo:1},
+  {id:'6',nome:'Pizza Margherita',cat:'Pizzas',preco:48.90,tempo:25,icon:'🍕',ing:'{"farinha":0.5,"molho":0.3}',ativo:1},
+  {id:'7',nome:'Pizza Calabresa',cat:'Pizzas',preco:52.90,tempo:25,icon:'🍕',ing:'{"farinha":0.5,"molho":0.3}',ativo:1},
+  {id:'8',nome:'Pizza Quatro Queijos',cat:'Pizzas',preco:58.90,tempo:25,icon:'🍕',ing:'{"farinha":0.5}',ativo:1},
+  {id:'9',nome:'Camarão alho e óleo',cat:'Frutos do Mar',preco:79.90,tempo:20,icon:'🦐',ing:'{"camarao":0.4,"azeite":0.1}',ativo:1},
+  {id:'10',nome:'Salada Caesar',cat:'Entradas',preco:28.90,tempo:8,icon:'🥗',ing:'{}',ativo:1},
+  {id:'11',nome:'Bruschetta',cat:'Entradas',preco:22.90,tempo:10,icon:'🫓',ing:'{"pao":0.2}',ativo:1},
+  {id:'12',nome:'Sopa do dia',cat:'Entradas',preco:18.90,tempo:5,icon:'🥣',ing:'{}',ativo:1},
+  {id:'13',nome:'Refrigerante Lata',cat:'Bebidas',preco:8.90,tempo:1,icon:'🥤',ing:'{}',ativo:1},
+  {id:'14',nome:'Suco natural',cat:'Bebidas',preco:14.90,tempo:5,icon:'🍊',ing:'{}',ativo:1},
+  {id:'15',nome:'Água mineral',cat:'Bebidas',preco:5.90,tempo:1,icon:'💧',ing:'{}',ativo:1},
+  {id:'16',nome:'Vinho tinto (taça)',cat:'Bebidas',preco:24.90,tempo:2,icon:'🍷',ing:'{}',ativo:1},
+  {id:'17',nome:'Cerveja artesanal',cat:'Bebidas',preco:19.90,tempo:2,icon:'🍺',ing:'{}',ativo:1},
+  {id:'18',nome:'Pudim de leite',cat:'Sobremesas',preco:16.90,tempo:3,icon:'🍮',ing:'{}',ativo:1},
+  {id:'19',nome:'Petit gateau',cat:'Sobremesas',preco:26.90,tempo:8,icon:'🍫',ing:'{"ovos":0.3}',ativo:1},
+  {id:'20',nome:'Sorvete 3 bolas',cat:'Sobremesas',preco:18.90,tempo:3,icon:'🍨',ing:'{}',ativo:1},
+];
+
+const ESTOQUE_PADRAO = {
+  carne:    {nome:'Carne bovina',icon:'🥩',qty:12,max_qty:25,unidade:'kg'},
+  frango:   {nome:'Frango',icon:'🍗',qty:8,max_qty:18,unidade:'kg'},
+  peixe:    {nome:'Salmão',icon:'🐟',qty:4,max_qty:12,unidade:'kg'},
+  camarao:  {nome:'Camarão',icon:'🦐',qty:3,max_qty:10,unidade:'kg'},
+  massa:    {nome:'Massa',icon:'🍝',qty:15,max_qty:25,unidade:'kg'},
+  farinha:  {nome:'Farinha',icon:'🌾',qty:20,max_qty:35,unidade:'kg'},
+  molho:    {nome:'Molho tomate',icon:'🍅',qty:10,max_qty:22,unidade:'L'},
+  ovos:     {nome:'Ovos',icon:'🥚',qty:30,max_qty:72,unidade:'un'},
+  azeite:   {nome:'Azeite',icon:'🫒',qty:5,max_qty:12,unidade:'L'},
+  pao:      {nome:'Pão',icon:'🍞',qty:20,max_qty:40,unidade:'un'},
+};
+
+// ── ESTADO GLOBAL ─────────────────────────────────────────────────────
 const STATE = {
-  db: null,
+  currentUser: null,   // { uid, email, nome, role }
   dbReady: false,
-  currentUser: null,
   mesaSel: null,
   cartItems: [],
   caixaMesa: null,
   pgtoSel: null,
   deselectMesaId: null,
-  kdsFiltro: 'todos',
+  kdsFilter: 'todos',
   relPeriod: 'hoje',
   cardapioCatFiltro: 'Todos',
   adminCatFiltro: 'Todos',
-  refreshTimer: null,
-  kdsAutoRefresh: null,
 };
 
-// ─── MÓDULO: CARDÁPIO PADRÃO ────────────────────────────────────────
-const CARDAPIO_PADRAO = [
-  {id:1,nome:'Filé ao molho madeira',cat:'Pratos',preco:54.90,tempo:20,icon:'🥩',ing:{carne:1,molho:0.5},ativo:true},
-  {id:2,nome:'Frango grelhado',cat:'Pratos',preco:38.90,tempo:15,icon:'🍗',ing:{frango:1},ativo:true},
-  {id:3,nome:'Salmão ao forno',cat:'Pratos',preco:72.90,tempo:22,icon:'🐟',ing:{peixe:1,azeite:0.2},ativo:true},
-  {id:4,nome:'Macarrão carbonara',cat:'Pratos',preco:44.90,tempo:18,icon:'🍝',ing:{massa:0.3,ovos:0.5},ativo:true},
-  {id:5,nome:'Costela no bafo',cat:'Pratos',preco:89.90,tempo:35,icon:'🍖',ing:{carne:1.5},ativo:true},
-  {id:6,nome:'Pizza Margherita',cat:'Pizzas',preco:48.90,tempo:25,icon:'🍕',ing:{farinha:0.5,molho:0.3},ativo:true},
-  {id:7,nome:'Pizza Calabresa',cat:'Pizzas',preco:52.90,tempo:25,icon:'🍕',ing:{farinha:0.5,molho:0.3},ativo:true},
-  {id:8,nome:'Pizza Quatro Queijos',cat:'Pizzas',preco:58.90,tempo:25,icon:'🍕',ing:{farinha:0.5},ativo:true},
-  {id:9,nome:'Camarão alho e óleo',cat:'Frutos do Mar',preco:79.90,tempo:20,icon:'🦐',ing:{camarao:0.4,azeite:0.1},ativo:true},
-  {id:10,nome:'Salada Caesar',cat:'Entradas',preco:28.90,tempo:8,icon:'🥗',ing:{},ativo:true},
-  {id:11,nome:'Bruschetta',cat:'Entradas',preco:22.90,tempo:10,icon:'🫓',ing:{pao:0.2},ativo:true},
-  {id:12,nome:'Sopa do dia',cat:'Entradas',preco:18.90,tempo:5,icon:'🥣',ing:{},ativo:true},
-  {id:13,nome:'Refrigerante Lata',cat:'Bebidas',preco:8.90,tempo:1,icon:'🥤',ing:{},ativo:true},
-  {id:14,nome:'Suco natural',cat:'Bebidas',preco:14.90,tempo:5,icon:'🍊',ing:{},ativo:true},
-  {id:15,nome:'Água mineral',cat:'Bebidas',preco:5.90,tempo:1,icon:'💧',ing:{},ativo:true},
-  {id:16,nome:'Vinho tinto (taça)',cat:'Bebidas',preco:24.90,tempo:2,icon:'🍷',ing:{},ativo:true},
-  {id:17,nome:'Cerveja artesanal',cat:'Bebidas',preco:19.90,tempo:2,icon:'🍺',ing:{},ativo:true},
-  {id:18,nome:'Pudim de leite',cat:'Sobremesas',preco:16.90,tempo:3,icon:'🍮',ing:{},ativo:true},
-  {id:19,nome:'Petit gateau',cat:'Sobremesas',preco:26.90,tempo:8,icon:'🍫',ing:{ovos:0.3},ativo:true},
-  {id:20,nome:'Sorvete 3 bolas',cat:'Sobremesas',preco:18.90,tempo:3,icon:'🍨',ing:{},ativo:true},
-];
-
-const ESTOQUE_PADRAO = {
-  carne:    {nome:'Carne bovina',icon:'🥩',qty:12,max:25,un:'kg'},
-  frango:   {nome:'Frango',icon:'🍗',qty:8,max:18,un:'kg'},
-  peixe:    {nome:'Salmão',icon:'🐟',qty:4,max:12,un:'kg'},
-  camarao:  {nome:'Camarão',icon:'🦐',qty:3,max:10,un:'kg'},
-  massa:    {nome:'Massa',icon:'🍝',qty:15,max:25,un:'kg'},
-  farinha:  {nome:'Farinha',icon:'🌾',qty:20,max:35,un:'kg'},
-  molho:    {nome:'Molho tomate',icon:'🍅',qty:10,max:22,un:'L'},
-  ovos:     {nome:'Ovos',icon:'🥚',qty:30,max:72,un:'un'},
-  azeite:   {nome:'Azeite',icon:'🫒',qty:5,max:12,un:'L'},
-  pao:      {nome:'Pão',icon:'🍞',qty:20,max:40,un:'un'},
+// ── CACHE LOCAL ───────────────────────────────────────────────────────
+const DB = {
+  mesas:{}, cardapio:{}, pedidos:{}, pedido_itens:{},
+  estoque:{}, config:{}, relatorio_dia:{}, fat_hora:{},
+  ranking_itens:{}, fat_pgto:{}, fat_cat:{}, usuarios:{},
 };
 
-// ─── MÓDULO: AUTH ────────────────────────────────────────────────────
-const ROLE_CONFIG = {
-  garcom:     {label:'Garçom',    color:'#1d4ed8', bg:'#eff6ff', pages:['mesas','pedido','cozinha'],  canOrder:true,  canKDS:true,   canCaixa:false, canRelatorio:false, canConfig:false, canCardapio:false},
-  cozinheiro: {label:'Cozinheiro',color:'#92400e', bg:'#fff7ed', pages:['cozinha'],                    canOrder:false, canKDS:true,   canCaixa:false, canRelatorio:false, canConfig:false, canCardapio:false},
-  caixa:      {label:'Caixa',     color:'#065f46', bg:'#ecfdf5', pages:['mesas','caixa'],               canOrder:false, canKDS:false,  canCaixa:true,  canRelatorio:false, canConfig:false, canCardapio:false},
-  gerente:    {label:'Gerente',   color:'#4c1d95', bg:'#f5f3ff', pages:['mesas','pedido','cozinha','caixa','estoque','cardapio','relatorios','config'], canOrder:true, canKDS:true, canCaixa:true, canRelatorio:true, canConfig:true, canCardapio:true},
-};
-
-let loginRoleSel = 'garcom';
-function selRole(btn) {
-  document.querySelectorAll('.login-role-btn').forEach(b => b.classList.remove('sel'));
-  btn.classList.add('sel');
-  loginRoleSel = btn.dataset.role;
-}
-
-function doLogin() {
-  const nome = document.getElementById('login-name').value.trim() || 'Usuário';
-  const role = loginRoleSel;
-  const rc = ROLE_CONFIG[role];
-  STATE.currentUser = { nome, role, color: rc.color, bg: rc.bg, loginAt: Date.now() };
-  // Salvar sessão
-  try { localStorage.setItem(SYS.sessionKey, JSON.stringify(STATE.currentUser)); } catch(e){}
-  aplicarRole(role);
-  document.getElementById('login-screen').classList.add('hidden');
-  toast(`Bem-vindo, ${nome}! (${rc.label})`, 'success');
-  // Se cozinheiro, vai direto pra cozinha
-  if (role === 'cozinheiro') goPage('cozinha');
-}
-
-function aplicarRole(role) {
-  const rc = ROLE_CONFIG[role];
-  const u = STATE.currentUser;
-  // Avatar
-  const av = document.getElementById('user-avatar');
-  av.textContent = u.nome.charAt(0).toUpperCase();
-  av.style.background = rc.color;
-  document.getElementById('user-name').textContent = u.nome;
-  const rb = document.getElementById('user-role-badge');
-  rb.textContent = rc.label;
-  rb.style.background = rc.bg;
-  rb.style.color = rc.color;
-  // Mostrar/ocultar navs opcionais
-  const optNavs = ['nav-cardapio','nav-relatorios','nav-config'];
-  optNavs.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = rc.canConfig ? '' : 'none';
-  });
-  if (document.getElementById('nav-cardapio'))
-    document.getElementById('nav-cardapio').style.display = rc.canCardapio ? '' : 'none';
-  if (document.getElementById('nav-relatorios'))
-    document.getElementById('nav-relatorios').style.display = rc.canRelatorio ? '' : 'none';
-  if (document.getElementById('nav-config'))
-    document.getElementById('nav-config').style.display = rc.canConfig ? '' : 'none';
-  // Mobile: esconder botão de relatórios se não tem acesso
-  const mobRel = document.getElementById('mob-relatorios');
-  if (mobRel) {
-    mobRel.querySelector('.nav-mob-label').textContent = rc.canRelatorio ? 'Relatórios' : 'Mais';
-  }
-}
-
-function doLogout() {
-  if (!confirm('Deseja sair do sistema?')) return;
-  STATE.currentUser = null;
-  try { localStorage.removeItem(SYS.sessionKey); } catch(e){}
-  document.getElementById('login-screen').classList.remove('hidden');
-  document.getElementById('login-name').value = '';
-}
-
-// Restaurar sessão ao iniciar
-function restoreSession() {
-  try {
-    const saved = localStorage.getItem(SYS.sessionKey);
-    if (saved) {
-      STATE.currentUser = JSON.parse(saved);
-      aplicarRole(STATE.currentUser.role);
-      document.getElementById('login-screen').classList.add('hidden');
-    }
-  } catch(e) {}
-}
-
-// ─── MÓDULO: BANCO DE DADOS (Firebase Firestore) ─────────────────────
-
+// ── LOG ───────────────────────────────────────────────────────────────
 function sysLog(msg, type='msg') {
   const panel = document.getElementById('log-panel');
   if (!panel) return;
@@ -582,588 +493,487 @@ function sysLog(msg, type='msg') {
   const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
   const div = document.createElement('div');
   div.className = 'log-line';
-  const cls = type === 'err' ? 'log-err' : type === 'info' ? 'log-info' : 'log-msg';
+  const cls = type==='err'?'log-err':type==='info'?'log-info':'log-msg';
   div.innerHTML = `<span class="log-ts">${ts}</span><span class="${cls}">${msg}</span>`;
   panel.appendChild(div);
   panel.scrollTop = panel.scrollHeight;
-  while (panel.children.length > 50) panel.removeChild(panel.firstChild);
+  while(panel.children.length > 60) panel.removeChild(panel.firstChild);
+}
+window.clearLog = () => { document.getElementById('log-panel').innerHTML = ''; };
+
+// ── UTILITÁRIOS ───────────────────────────────────────────────────────
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+function tStr(ms) {
+  const m = Math.floor(ms/60000);
+  return m < 60 ? `${m}min` : `${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}`;
+}
+function fmtBRL(v) {
+  return 'R$ ' + Number(v||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+function uuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random()*16|0;
+    return (c==='x'?r:(r&0x3|0x8)).toString(16);
+  });
 }
 
-function clearLog() {
-  document.getElementById('log-panel').innerHTML = '';
-}
+// ═══════════════════════════════════════════════════════════════════
+// AUTENTICAÇÃO FIREBASE AUTH
+// ═══════════════════════════════════════════════════════════════════
 
-// ─── Cache local de dados em memória ─────────────────────────────────
-const DB = {
-  mesas: {},        // { id: {...} }
-  cardapio: {},     // { id: {...} }
-  pedidos: {},      // { id: {...} }
-  pedido_itens: {}, // { id: {...} }
-  estoque: {},      // { chave: {...} }
-  config: {},       // { chave: valor }
-  relatorio_dia: {},// { data: {...} }
-  fat_hora: {},     // { 'data_hora': {...} }
-  ranking_itens: {},// { 'data_nome': {...} }
-  fat_pgto: {},     // { 'data_forma': {...} }
-  fat_cat: {},      // { 'data_cat': {...} }
+let loginRoleSel = 'garcom';
+
+window.selRole = (btn) => {
+  document.querySelectorAll('.login-role-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  loginRoleSel = btn.dataset.role;
 };
 
-function getFirebase() { return window._firebase; }
+function showLoginErr(msg) {
+  const el = document.getElementById('login-err');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function hideLoginErr() {
+  document.getElementById('login-err').classList.remove('show');
+}
+function setLoginLoading(show) {
+  const el = document.getElementById('login-loading');
+  el.classList.toggle('show', show);
+}
 
-async function initDB() {
-  // Aguardar Firebase estar pronto
-  if (!window._firebaseReady) {
-    await new Promise(resolve => document.addEventListener('firebaseReady', resolve, {once:true}));
-  }
+// Login com email+senha
+window.doEmailLogin = async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const senha  = document.getElementById('login-senha').value;
+  if (!email || !senha) { showLoginErr('Preencha e-mail e senha.'); return; }
+  hideLoginErr();
+  setLoginLoading(true);
   try {
-    sysLog('Conectando ao Firebase...', 'info');
-    const { db, collection, getDocs } = getFirebase();
+    await signInWithEmailAndPassword(auth, email, senha);
+    // onAuthStateChanged vai capturar e continuar o fluxo
+  } catch(e) {
+    setLoginLoading(false);
+    const msgs = {
+      'auth/user-not-found':    'Usuário não encontrado.',
+      'auth/wrong-password':    'Senha incorreta.',
+      'auth/invalid-email':     'E-mail inválido.',
+      'auth/invalid-credential':'E-mail ou senha inválidos.',
+      'auth/too-many-requests': 'Muitas tentativas. Aguarde.',
+    };
+    showLoginErr(msgs[e.code] || `Erro: ${e.message}`);
+  }
+};
 
+
+// Logout
+window.doLogout = async () => {
+  if (!confirm('Deseja sair do sistema?')) return;
+  await signOut(auth);
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').classList.remove('hidden');
+  STATE.currentUser = null;
+  STATE.dbReady = false;
+  sysLog('Sessão encerrada');
+};
+
+// ── onAuthStateChanged: central de entrada pós-login ──────────────────
+onAuthStateChanged(auth, async (firebaseUser) => {
+  setLoginLoading(false);
+  if (!firebaseUser) {
+    // Não autenticado: mostrar login
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-screen').classList.remove('hidden');
+    STATE.dbReady = false;
+    return;
+  }
+
+  // Usuário autenticado — buscar perfil no Firestore
+  try {
+    let perfil = await fsGet('usuarios', firebaseUser.uid);
+    if (!perfil) {
+      // Primeiro login via provider externo — criar perfil padrão
+      const defaultNome = firebaseUser.displayName || firebaseUser.email.split('@')[0];
+      perfil = { uid: firebaseUser.uid, nome: defaultNome, role: loginRoleSel || 'garcom', email: firebaseUser.email };
+      await fsSet('usuarios', firebaseUser.uid, { nome: perfil.nome, role: perfil.role, email: perfil.email, criadoEm: new Date().toISOString() });
+    }
+    STATE.currentUser = { uid: firebaseUser.uid, email: firebaseUser.email, nome: perfil.nome, role: perfil.role };
+
+    // Esconder login, mostrar app
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app').style.display = 'flex';
+
+    aplicarRole(STATE.currentUser.role);
+    sysLog(`Login: ${STATE.currentUser.nome} (${STATE.currentUser.role}) — ${STATE.currentUser.email}`, 'info');
+
+    // Inicializar banco
+    await initDB();
+
+    // Se cozinheiro, ir direto para KDS
+    if (STATE.currentUser.role === 'cozinheiro') goPage('cozinha');
+
+  } catch(e) {
+    showLoginErr('Erro ao carregar perfil: ' + e.message);
+    await signOut(auth);
+  }
+});
+
+// ── Aplicar permissões de role na UI ──────────────────────────────────
+function aplicarRole(role) {
+  const rc = ROLE_CONFIG[role] || ROLE_CONFIG.garcom;
+  const u  = STATE.currentUser;
+
+  // Avatar e nome
+  const av = document.getElementById('user-avatar');
+  av.textContent = (u.nome||'?').charAt(0).toUpperCase();
+  av.style.background = rc.color;
+  document.getElementById('user-name').textContent = u.nome;
+  const rb = document.getElementById('user-role-badge');
+  rb.textContent = rc.label;
+  rb.style.background = rc.bg;
+  rb.style.color = rc.color;
+
+  // Nav items opcionais
+  document.getElementById('nav-cardapio').style.display  = rc.canCardapio  ? '' : 'none';
+  document.getElementById('nav-relatorios').style.display= rc.canRelatorio ? '' : 'none';
+  document.getElementById('nav-config').style.display    = rc.canConfig    ? '' : 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BANCO DE DADOS — INICIALIZAÇÃO
+// ═══════════════════════════════════════════════════════════════════
+async function initDB() {
+  sysLog('Conectando ao Firestore...', 'info');
+  try {
     // Carregar todas as coleções em paralelo
-    const [mesasSnap, cardapioSnap, pedidosSnap, itensSnap,
-           estoqueSnap, configSnap, relSnap, fatHoraSnap,
-           rankSnap, fatPgtoSnap, fatCatSnap] = await Promise.all([
-      getDocs(collection(db, 'mesas')),
-      getDocs(collection(db, 'cardapio')),
-      getDocs(collection(db, 'pedidos')),
-      getDocs(collection(db, 'pedido_itens')),
-      getDocs(collection(db, 'estoque')),
-      getDocs(collection(db, 'config')),
-      getDocs(collection(db, 'relatorio_dia')),
-      getDocs(collection(db, 'fat_hora')),
-      getDocs(collection(db, 'ranking_itens')),
-      getDocs(collection(db, 'fat_pgto')),
-      getDocs(collection(db, 'fat_cat')),
+    const [mesasD, cardapioD, pedidosD, itensD, estoqueD, configD,
+           relD, fatHD, rankD, fatPD, fatCD, usersD] = await Promise.all([
+      fsAll('mesas'), fsAll('cardapio'), fsAll('pedidos'), fsAll('pedido_itens'),
+      fsAll('estoque'), fsAll('config'), fsAll('relatorio_dia'), fsAll('fat_hora'),
+      fsAll('ranking_itens'), fsAll('fat_pgto'), fsAll('fat_cat'), fsAll('usuarios'),
     ]);
 
-    mesasSnap.forEach(d => { DB.mesas[d.id] = {id: parseInt(d.id), ...d.data()}; });
-    cardapioSnap.forEach(d => { DB.cardapio[d.id] = {id: parseInt(d.id)||d.id, ...d.data()}; });
-    pedidosSnap.forEach(d => { DB.pedidos[d.id] = {id: d.id, ...d.data()}; });
-    itensSnap.forEach(d => { DB.pedido_itens[d.id] = {id: d.id, ...d.data()}; });
-    estoqueSnap.forEach(d => { DB.estoque[d.id] = {chave: d.id, ...d.data()}; });
-    configSnap.forEach(d => { DB.config[d.id] = d.data().valor; });
-    relSnap.forEach(d => { DB.relatorio_dia[d.id] = {data: d.id, ...d.data()}; });
-    fatHoraSnap.forEach(d => { DB.fat_hora[d.id] = {id: d.id, ...d.data()}; });
-    rankSnap.forEach(d => { DB.ranking_itens[d.id] = {id: d.id, ...d.data()}; });
-    fatPgtoSnap.forEach(d => { DB.fat_pgto[d.id] = {id: d.id, ...d.data()}; });
-    fatCatSnap.forEach(d => { DB.fat_cat[d.id] = {id: d.id, ...d.data()}; });
+    mesasD.forEach(d    => { DB.mesas[d.id]          = d; });
+    cardapioD.forEach(d => { DB.cardapio[d.id]        = d; });
+    pedidosD.forEach(d  => { DB.pedidos[d.id]         = d; });
+    itensD.forEach(d    => { DB.pedido_itens[d.id]    = d; });
+    estoqueD.forEach(d  => { DB.estoque[d.id]         = d; });
+    configD.forEach(d   => { DB.config[d.id]          = d.valor; });
+    relD.forEach(d      => { DB.relatorio_dia[d.id]   = d; });
+    fatHD.forEach(d     => { DB.fat_hora[d.id]        = d; });
+    rankD.forEach(d     => { DB.ranking_itens[d.id]   = d; });
+    fatPD.forEach(d     => { DB.fat_pgto[d.id]        = d; });
+    fatCD.forEach(d     => { DB.fat_cat[d.id]         = d; });
+    usersD.forEach(d    => { DB.usuarios[d.id]        = d; });
 
-    sysLog('Dados carregados do Firebase', 'info');
+    sysLog(`Firestore: ${mesasD.length} mesas, ${cardapioD.length} itens, ${pedidosD.length} pedidos`, 'info');
 
     await ensureInitialData();
     loadConfig();
+
+    // Listeners em tempo real
+    setupRealtimeListeners();
+
     STATE.dbReady = true;
-    checkNightReset();
+    await checkNightReset();
     renderAll();
     sysLog('Sistema pronto ✓', 'info');
 
-    // Listeners em tempo real para KDS e Mesas
-    setupRealtimeListeners();
-
   } catch(e) {
-    sysLog('ERRO ao iniciar Firebase: ' + e.message, 'err');
-    STATE.dbReady = false;
-    toast('Erro ao conectar ao Firebase. Verifique o console.', 'error');
+    sysLog('ERRO Firestore: ' + e.message, 'err');
     console.error(e);
+    toast('Erro ao conectar ao Firestore', 'error');
   }
-}
-
-function setupRealtimeListeners() {
-  const { db, collection, onSnapshot, query, where } = getFirebase();
-
-  // Listener de pedidos em tempo real
-  onSnapshot(collection(db, 'pedidos'), snap => {
-    snap.docChanges().forEach(change => {
-      if (change.type === 'added' || change.type === 'modified') {
-        DB.pedidos[change.doc.id] = {id: change.doc.id, ...change.doc.data()};
-      } else if (change.type === 'removed') {
-        delete DB.pedidos[change.doc.id];
-      }
-    });
-  });
-
-  // Listener de pedido_itens em tempo real
-  onSnapshot(collection(db, 'pedido_itens'), snap => {
-    snap.docChanges().forEach(change => {
-      if (change.type === 'added' || change.type === 'modified') {
-        DB.pedido_itens[change.doc.id] = {id: change.doc.id, ...change.doc.data()};
-      } else if (change.type === 'removed') {
-        delete DB.pedido_itens[change.doc.id];
-      }
-    });
-  });
-
-  // Listener de mesas em tempo real
-  onSnapshot(collection(db, 'mesas'), snap => {
-    snap.docChanges().forEach(change => {
-      if (change.type === 'added' || change.type === 'modified') {
-        DB.mesas[change.doc.id] = {id: parseInt(change.doc.id), ...change.doc.data()};
-      } else if (change.type === 'removed') {
-        delete DB.mesas[change.doc.id];
-      }
-    });
-  });
 }
 
 async function ensureInitialData() {
-  const { db, doc, setDoc } = getFirebase();
-
+  const hoje = todayStr();
   // Mesas
   if (!Object.keys(DB.mesas).length) {
-    const n = SYS.nMesas;
-    for (let i = 1; i <= n; i++) {
+    for (let i=1; i<=SYS.nMesas; i++) {
       const m = {status:'livre', capacidade:4, inicio:null, total:0};
-      await setDoc(doc(db, 'mesas', String(i)), m);
-      DB.mesas[String(i)] = {id: i, ...m};
+      await fsSet('mesas', String(i), m);
+      DB.mesas[String(i)] = {id:String(i), ...m};
     }
-    sysLog(`${n} mesas criadas`, 'info');
+    sysLog(`${SYS.nMesas} mesas criadas`, 'info');
   }
-
   // Cardápio
   if (!Object.keys(DB.cardapio).length) {
     for (const it of CARDAPIO_PADRAO) {
-      const d = {nome:it.nome, cat:it.cat, preco:it.preco, tempo:it.tempo,
-                  icon:it.icon, ing:JSON.stringify(it.ing), ativo:it.ativo ? 1 : 0};
-      await setDoc(doc(db, 'cardapio', String(it.id)), d);
-      DB.cardapio[String(it.id)] = {id: it.id, ...d};
+      await fsSet('cardapio', it.id, {nome:it.nome,cat:it.cat,preco:it.preco,tempo:it.tempo,icon:it.icon,ing:it.ing,ativo:it.ativo});
+      DB.cardapio[it.id] = {id:it.id, nome:it.nome,cat:it.cat,preco:it.preco,tempo:it.tempo,icon:it.icon,ing:it.ing,ativo:it.ativo};
     }
     sysLog(`${CARDAPIO_PADRAO.length} itens de cardápio inseridos`, 'info');
   }
-
   // Estoque
   if (!Object.keys(DB.estoque).length) {
-    for (const [k, v] of Object.entries(ESTOQUE_PADRAO)) {
-      const d = {nome:v.nome, icon:v.icon, qty:v.qty, max_qty:v.max, unidade:v.un};
-      await setDoc(doc(db, 'estoque', k), d);
-      DB.estoque[k] = {chave: k, ...d};
+    for (const [k,v] of Object.entries(ESTOQUE_PADRAO)) {
+      await fsSet('estoque', k, v);
+      DB.estoque[k] = {id:k, ...v};
     }
     sysLog(`${Object.keys(ESTOQUE_PADRAO).length} ingredientes inseridos`, 'info');
   }
-
-  // Registro do dia
-  const hoje = todayStr();
+  // Relatório do dia
   if (!DB.relatorio_dia[hoje]) {
     const rd = {pedidos_total:0, faturamento:0, itens_total:0};
-    await setDoc(doc(db, 'relatorio_dia', hoje), rd);
-    DB.relatorio_dia[hoje] = {data: hoje, ...rd};
+    await fsSet('relatorio_dia', hoje, rd);
+    DB.relatorio_dia[hoje] = {id:hoje, data:hoje, ...rd};
   }
 }
 
-// ─── Firebase helpers: wrappers assíncronos que atualizam DB local ────
-
-async function fsSet(col, id, data) {
-  const { db, doc, setDoc } = getFirebase();
-  await setDoc(doc(db, col, id), data);
+function loadConfig() {
+  if (DB.config['taxa_servico'] !== undefined) SYS.taxaServico = parseFloat(DB.config['taxa_servico']);
+  if (DB.config['nome_restaurante'])           SYS.nomeRestaurante = DB.config['nome_restaurante'];
+  if (DB.config['n_mesas'])                   SYS.nMesas = parseInt(DB.config['n_mesas']);
 }
 
-async function fsUpdate(col, id, data) {
-  const { db, doc, setDoc, getDoc } = getFirebase();
-  const ref = doc(db, col, id);
-  const snap = await getDoc(ref);
-  if (snap.exists()) {
-    const { updateDoc } = getFirebase();
-    await updateDoc(ref, data);
-  } else {
-    await setDoc(ref, data);
-  }
-}
+// Listeners em tempo real para mesas, pedidos e pedido_itens
+function setupRealtimeListeners() {
+  onSnapshot(collection(db,'mesas'), snap => {
+    snap.docChanges().forEach(ch => {
+      if (ch.type==='removed') delete DB.mesas[ch.doc.id];
+      else DB.mesas[ch.doc.id] = {id:ch.doc.id,...ch.doc.data()};
+    });
+    if (STATE.dbReady) {
+      if (document.getElementById('page-mesas').classList.contains('active'))  renderFloor();
+      if (document.getElementById('page-caixa').classList.contains('active'))  renderCaixa();
+    }
+  });
 
-async function fsAdd(col, data) {
-  const { db, collection, addDoc } = getFirebase();
-  const ref = await addDoc(collection(db, col), data);
-  return ref.id;
-}
+  onSnapshot(collection(db,'pedidos'), snap => {
+    snap.docChanges().forEach(ch => {
+      if (ch.type==='removed') delete DB.pedidos[ch.doc.id];
+      else DB.pedidos[ch.doc.id] = {id:ch.doc.id,...ch.doc.data()};
+    });
+    if (STATE.dbReady) {
+      if (document.getElementById('page-cozinha').classList.contains('active')) renderKDS();
+      if (document.getElementById('page-mesas').classList.contains('active'))  renderFloor();
+    }
+  });
 
-async function fsDelete(col, id) {
-  const { db, doc, deleteDoc } = getFirebase();
-  await deleteDoc(doc(db, col, id));
-}
-
-// Incremento atômico de campo numérico
-async function fsIncrement(col, id, field, amount, fallback = {}) {
-  const { db, doc, getDoc, setDoc, updateDoc, increment } = getFirebase();
-  const ref = doc(db, col, id);
-  const snap = await getDoc(ref);
-  if (snap.exists()) {
-    await updateDoc(ref, {[field]: increment(amount)});
-    const newSnap = await getDoc(ref);
-    return newSnap.data()[field];
-  } else {
-    const newData = {...fallback, [field]: (fallback[field]||0) + amount};
-    await setDoc(ref, newData);
-    return newData[field];
-  }
-}
-
-// saveDB é no-op (Firebase salva automaticamente via fsSet/fsUpdate/fsAdd)
-function saveDB() { /* Firebase: gravação já foi feita inline */ }
-
-// UUID v4 simples
-function uuid() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-    const r = Math.random() * 16 | 0;
-    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  onSnapshot(collection(db,'pedido_itens'), snap => {
+    snap.docChanges().forEach(ch => {
+      if (ch.type==='removed') delete DB.pedido_itens[ch.doc.id];
+      else DB.pedido_itens[ch.doc.id] = {id:ch.doc.id,...ch.doc.data()};
+    });
   });
 }
 
-// ─── MÓDULO: CONFIG ───────────────────────────────────────────────────
-function loadConfig() {
-  if (DB.config['taxa_servico'] !== undefined) SYS.taxaServico = parseFloat(DB.config['taxa_servico']);
-  if (DB.config['nome_restaurante']) SYS.nomeRestaurante = DB.config['nome_restaurante'];
-  if (DB.config['n_mesas']) SYS.nMesas = parseInt(DB.config['n_mesas']);
-}
-
-async function salvarConfig() {
-  const nome = document.getElementById('cfg-nome').value.trim() || SYS.nomeRestaurante;
-  const taxa = parseFloat(document.getElementById('cfg-taxa').value) || SYS.taxaServico;
-  const nm = parseInt(document.getElementById('cfg-mesas').value) || SYS.nMesas;
-
-  await Promise.all([
-    fsSet('config', 'nome_restaurante', {valor: nome}),
-    fsSet('config', 'taxa_servico', {valor: String(taxa)}),
-    fsSet('config', 'n_mesas', {valor: String(nm)}),
-  ]);
-  DB.config['nome_restaurante'] = nome;
-  DB.config['taxa_servico'] = String(taxa);
-  DB.config['n_mesas'] = String(nm);
-
-  SYS.nomeRestaurante = nome;
-  SYS.taxaServico = taxa;
-
-  // Adicionar novas mesas se necessário
-  const atualCount = Object.keys(DB.mesas).length;
-  if (nm > atualCount) {
-    for (let i = atualCount + 1; i <= nm; i++) {
-      const id = String(i);
-      if (!DB.mesas[id]) {
-        const m = {status:'livre', capacidade:4, inicio:null, total:0};
-        await fsSet('mesas', id, m);
-        DB.mesas[id] = {id: i, ...m};
-      }
-    }
-  }
-  SYS.nMesas = nm;
-  renderFloor();
-  toast('Configurações salvas!', 'success');
-}
-
-function exportarDados() {
-  const data = {
-    version: SYS.version,
-    exportedAt: new Date().toISOString(),
-    mesas: Object.values(DB.mesas),
-    cardapio: Object.values(DB.cardapio),
-    pedidos: Object.values(DB.pedidos),
-    pedido_itens: Object.values(DB.pedido_itens),
-    estoque: Object.values(DB.estoque),
-    relatorio_dia: Object.values(DB.relatorio_dia),
-    ranking_itens: Object.values(DB.ranking_itens),
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `restaurantOS_backup_${todayStr()}.json`;
-  a.click();
-  toast('Dados exportados!', 'success');
-}
-
-function importarDados(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      JSON.parse(e.target.result);
-      toast('Importação não implementada nesta versão demo', 'info');
-    } catch(err) {
-      toast('Arquivo inválido', 'error');
-    }
-  };
-  reader.readAsText(file);
-  input.value = '';
-}
-
-async function resetarSistema() {
-  if (!confirm('ATENÇÃO: Isso apagará TODOS os dados! Deseja continuar?')) return;
-  if (!confirm('Tem certeza? Esta ação não pode ser desfeita.')) return;
-  toast('Limpando dados no Firebase...', 'info');
-  // Apagar coleções relevantes
-  const cols = ['mesas','cardapio','pedidos','pedido_itens','estoque','config','relatorio_dia','fat_hora','ranking_itens','fat_pgto','fat_cat'];
-  const { db, collection, getDocs, deleteDoc, doc } = getFirebase();
-  for (const col of cols) {
-    const snap = await getDocs(collection(db, col));
-    for (const d of snap.docs) await deleteDoc(doc(db, col, d.id));
-  }
-  Object.keys(DB).forEach(k => { DB[k] = {}; });
-  toast('Dados resetados. Recarregando...', 'info');
-  setTimeout(() => location.reload(), 1500);
-}
-
-// ─── MÓDULO: RESET NOTURNO ────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// RESET NOTURNO
+// ═══════════════════════════════════════════════════════════════════
 async function checkNightReset() {
   if (!STATE.dbReady) return;
-  const now = new Date();
-  const h = now.getHours();
-  const hoje = todayStr();
-  const lastReset = DB.config['last_reset'] || '';
-  if (h >= 2 && lastReset !== hoje) {
-    await doNightReset(hoje);
-  }
+  const now   = new Date();
+  const hoje  = todayStr();
+  const last  = DB.config['last_reset'] || '';
+  if (now.getHours() >= 2 && last !== hoje) await doNightReset(hoje);
 }
 
 async function doNightReset(hoje) {
   sysLog('Executando reset noturno...', 'info');
-  // Liberar todas as mesas
-  for (const [id, m] of Object.entries(DB.mesas)) {
+  const batch = writeBatch(db);
+  Object.entries(DB.mesas).forEach(([id,m]) => {
     if (m.status !== 'livre') {
-      await fsUpdate('mesas', id, {status:'livre', inicio:null, total:0});
+      batch.update(ref('mesas',id), {status:'livre',inicio:null,total:0});
       DB.mesas[id] = {...m, status:'livre', inicio:null, total:0};
     }
-  }
-  // Marcar pedidos abertos como entregues
-  for (const [id, p] of Object.entries(DB.pedidos)) {
-    if (p.status === 'preparo' || p.status === 'pronto') {
-      await fsUpdate('pedidos', id, {status:'entregue'});
+  });
+  Object.entries(DB.pedidos).forEach(([id,p]) => {
+    if (p.status==='preparo'||p.status==='pronto') {
+      batch.update(ref('pedidos',id), {status:'entregue'});
       DB.pedidos[id] = {...p, status:'entregue'};
     }
-  }
-  // Garantir registro do dia
-  if (!DB.relatorio_dia[hoje]) {
-    const rd = {pedidos_total:0, faturamento:0, itens_total:0};
-    await fsSet('relatorio_dia', hoje, rd);
-    DB.relatorio_dia[hoje] = {data: hoje, ...rd};
-  }
-  await fsSet('config', 'last_reset', {valor: hoje});
+  });
+  batch.set(ref('config','last_reset'), {valor:hoje});
+  await batch.commit();
   DB.config['last_reset'] = hoje;
-  sysLog('Reset noturno concluído — ' + hoje, 'info');
+  if (!DB.relatorio_dia[hoje]) {
+    const rd = {pedidos_total:0,faturamento:0,itens_total:0};
+    await fsSet('relatorio_dia', hoje, rd);
+    DB.relatorio_dia[hoje] = {id:hoje, data:hoje, ...rd};
+  }
+  sysLog('Reset noturno concluído — '+hoje, 'info');
   const b = document.getElementById('night-banner');
   b.style.display = 'flex';
-  setTimeout(() => b.style.display = 'none', 8000);
+  setTimeout(() => b.style.display='none', 9000);
 }
 
-// ─── MÓDULO: MESAS ────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// MESAS
+// ═══════════════════════════════════════════════════════════════════
 function renderFloor() {
   if (!STATE.dbReady) return;
-  const mesas = Object.values(DB.mesas).sort((a,b) => a.id - b.id);
+  const mesas = Object.values(DB.mesas).sort((a,b)=>parseInt(a.id)-parseInt(b.id));
   const g = document.getElementById('floor-grid');
-  const canOrder = !STATE.currentUser || ROLE_CONFIG[STATE.currentUser?.role]?.canOrder;
 
   g.innerHTML = mesas.map(m => {
-    const elapsed = m.inicio ? tStr(Date.now() - m.inicio) : '';
-    const pedidos_ativos = m.status !== 'livre'
-      ? Object.values(DB.pedidos).filter(p => p.mesa_id === m.id && (p.status === 'preparo' || p.status === 'pronto')).length
-      : 0;
+    const elapsed = m.inicio ? tStr(Date.now()-m.inicio) : '';
+    const ativos  = m.status!=='livre' ? Object.values(DB.pedidos).filter(p=>p.mesa_id===m.id&&(p.status==='preparo'||p.status==='pronto')).length : 0;
     return `<div class="mesa-wrap">
-      <button class="mesa ${m.status}" onclick="clickMesa(${m.id})" title="Mesa ${m.id} — ${m.status}">
+      <button class="mesa ${m.status}" onclick="clickMesa('${m.id}')">
         <div class="mesa-num">${m.id}</div>
-        <div class="mesa-sub">${m.status === 'livre' ? 'Livre' : m.status === 'ocupada' ? 'Ocupada' : 'Conta'}</div>
-        ${m.inicio ? `<div class="mesa-timer">${elapsed}</div>` : ''}
-        ${pedidos_ativos > 0 ? `<div style="font-size:9px;margin-top:1px;color:var(--amber);font-weight:700;">${pedidos_ativos} ped.</div>` : ''}
+        <div class="mesa-sub">${m.status==='livre'?'Livre':m.status==='ocupada'?'Ocupada':'Conta'}</div>
+        ${elapsed ? `<div class="mesa-timer">${elapsed}</div>` : ''}
+        ${ativos>0 ? `<div style="font-size:9px;color:var(--amber-m);font-weight:700;margin-top:1px;">${ativos} ped.</div>` : ''}
       </button>
-      ${m.status !== 'livre' ? `<button class="mesa-deselect" title="Liberar mesa" onclick="pedirDeselect(${m.id})">✕</button>` : ''}
+      ${m.status!=='livre'?`<button class="mesa-deselect" onclick="pedirDeselect('${m.id}')">✕</button>`:''}
     </div>`;
   }).join('');
 
-  const livres = mesas.filter(m => m.status === 'livre').length;
-  const ocup = mesas.filter(m => m.status !== 'livre').length;
-  const conta = mesas.filter(m => m.status === 'conta').length;
-  const rel = DB.relatorio_dia[todayStr()] || {};
-  const fat = rel.faturamento || 0;
-  const ped = rel.pedidos_total || 0;
+  const livres = mesas.filter(m=>m.status==='livre').length;
+  const ocup   = mesas.filter(m=>m.status!=='livre').length;
+  const rel    = DB.relatorio_dia[todayStr()] || {};
 
-  document.getElementById('floor-sub').textContent =
-    `${livres} livres · ${ocup} ocupadas · ${conta} aguardando conta`;
-
+  document.getElementById('floor-sub').textContent = `${livres} livres · ${ocup} ocupadas`;
   document.getElementById('floor-stats').innerHTML = `
-    <div class="metric-card text-center">
-      <div class="metric-val" style="color:var(--green)">${livres}</div>
-      <div class="metric-label">Livres</div>
-    </div>
-    <div class="metric-card text-center">
-      <div class="metric-val" style="color:var(--amber)">${ocup}</div>
-      <div class="metric-label">Ocupadas</div>
-    </div>
-    <div class="metric-card text-center">
-      <div class="metric-val">${ped}</div>
-      <div class="metric-label">Pedidos hoje</div>
-    </div>
-    <div class="metric-card text-center">
-      <div class="metric-val" style="font-size:20px;">${fmtBRL(fat)}</div>
-      <div class="metric-label">Faturamento</div>
-    </div>
+    <div class="metric-card"><div class="metric-val" style="color:var(--green)">${livres}</div><div class="metric-label">Livres</div></div>
+    <div class="metric-card"><div class="metric-val" style="color:var(--amber)">${ocup}</div><div class="metric-label">Ocupadas</div></div>
+    <div class="metric-card"><div class="metric-val">${rel.pedidos_total||0}</div><div class="metric-label">Pedidos hoje</div></div>
+    <div class="metric-card"><div class="metric-val" style="font-size:18px;">${fmtBRL(rel.faturamento||0)}</div><div class="metric-label">Faturamento</div></div>
   `;
 }
 
-async function clickMesa(id) {
-  const m = DB.mesas[String(id)];
-  const role = STATE.currentUser?.role;
-  const rc = ROLE_CONFIG[role] || {};
-
-  if (role === 'caixa') {
-    STATE.caixaMesa = id;
-    goPage('caixa');
-    return;
-  }
-
-  if (m.status === 'livre') {
-    if (!rc.canOrder && role !== 'gerente') {
-      toast('Sem permissão para abrir mesas', 'error'); return;
-    }
-    const upd = {status:'ocupada', inicio:Date.now(), total: m.total || 0};
-    await fsUpdate('mesas', String(id), upd);
-    DB.mesas[String(id)] = {...m, ...upd};
-    sysLog(`Mesa ${id} aberta por ${STATE.currentUser?.nome || 'sistema'}`);
+window.clickMesa = async (id) => {
+  const m  = DB.mesas[id];
+  const rc = ROLE_CONFIG[STATE.currentUser?.role] || {};
+  if (STATE.currentUser?.role==='caixa') { STATE.caixaMesa=parseInt(id)||id; goPage('caixa'); return; }
+  if (m.status==='livre') {
+    if (!rc.canOrder) { toast('Sem permissão para abrir mesas','error'); return; }
+    const upd = {status:'ocupada', inicio:Date.now()};
+    await fsUpd('mesas', id, upd);
+    DB.mesas[id] = {...m,...upd};
+    sysLog(`Mesa ${id} aberta por ${STATE.currentUser?.nome}`);
     renderFloor();
   }
   STATE.mesaSel = id;
-  if (rc.canOrder || role === 'gerente') {
-    goPage('pedido');
-  } else {
-    goPage('cozinha');
-  }
-}
+  goPage(rc.canOrder ? 'pedido' : 'cozinha');
+};
 
-function pedirDeselect(id) {
+window.pedirDeselect = (id) => {
   STATE.deselectMesaId = id;
-  const m = DB.mesas[String(id)];
-  const pendentes = Object.values(DB.pedidos).filter(p => p.mesa_id === id && p.status !== 'entregue' && p.status !== 'cancelado').length;
+  const m        = DB.mesas[id];
+  const pendentes = Object.values(DB.pedidos).filter(p=>p.mesa_id===id&&p.status!=='entregue'&&p.status!=='cancelado').length;
   document.getElementById('modal-deselect-body').textContent =
-    `Mesa ${id} (${m.status})${pendentes > 0 ? ` — ${pendentes} pedido(s) em aberto.` : '.'} Esta ação libera a mesa e cancela pedidos pendentes. Continuar?`;
+    `Mesa ${id} (${m?.status})${pendentes>0?` — ${pendentes} pedido(s) em aberto.`:'.'} Pedidos pendentes serão cancelados. Continuar?`;
   openModal('modal-deselect');
-}
+};
 
-async function confirmarDeselect() {
-  if (!STATE.deselectMesaId) return;
+window.confirmarDeselect = async () => {
   const id = STATE.deselectMesaId;
-  // Cancelar pedidos pendentes
-  for (const [pid, p] of Object.entries(DB.pedidos)) {
-    if (p.mesa_id === id && (p.status === 'preparo' || p.status === 'pronto')) {
-      await fsUpdate('pedidos', pid, {status:'cancelado'});
-      DB.pedidos[pid] = {...p, status:'cancelado'};
+  if (!id) return;
+  const batch = writeBatch(db);
+  Object.entries(DB.pedidos).forEach(([pid,p]) => {
+    if (p.mesa_id===id && (p.status==='preparo'||p.status==='pronto')) {
+      batch.update(ref('pedidos',pid),{status:'cancelado'});
+      DB.pedidos[pid] = {...p,status:'cancelado'};
     }
-  }
-  await fsUpdate('mesas', String(id), {status:'livre', inicio:null, total:0});
-  DB.mesas[String(id)] = {...DB.mesas[String(id)], status:'livre', inicio:null, total:0};
-  sysLog(`Mesa ${id} liberada (pedidos cancelados)`);
+  });
+  batch.update(ref('mesas',id),{status:'livre',inicio:null,total:0});
+  await batch.commit();
+  DB.mesas[id] = {...DB.mesas[id],status:'livre',inicio:null,total:0};
+  sysLog(`Mesa ${id} liberada e pedidos cancelados`);
   closeModal('modal-deselect');
   STATE.deselectMesaId = null;
-  renderFloor();
-  renderKDS();
-  renderCaixa();
-  toast(`Mesa ${id} liberada`, 'success');
-}
+  renderFloor(); renderKDS(); renderCaixa();
+  toast(`Mesa ${id} liberada`,'success');
+};
 
-function openAddMesaModal() {
-  const maxId = Math.max(0, ...Object.keys(DB.mesas).map(Number));
-  document.getElementById('new-mesa-num').value = maxId + 1;
-  document.getElementById('new-mesa-cap').value = 4;
-  openModal('modal-add-mesa');
-}
-
-async function confirmarAddMesa() {
+window.confirmarAddMesa = async () => {
   const num = parseInt(document.getElementById('new-mesa-num').value);
-  const cap = parseInt(document.getElementById('new-mesa-cap').value) || 4;
-  if (!num || num < 1) { toast('Número inválido', 'error'); return; }
-  if (DB.mesas[String(num)]) { toast(`Mesa ${num} já existe`, 'error'); return; }
-  const m = {status:'livre', capacidade:cap, inicio:null, total:0};
-  await fsSet('mesas', String(num), m);
-  DB.mesas[String(num)] = {id: num, ...m};
+  const cap = parseInt(document.getElementById('new-mesa-cap').value)||4;
+  if (!num||num<1) { toast('Número inválido','error'); return; }
+  if (DB.mesas[String(num)]) { toast(`Mesa ${num} já existe`,'error'); return; }
+  const m = {status:'livre',capacidade:cap,inicio:null,total:0};
+  await fsSet('mesas',String(num),m);
+  DB.mesas[String(num)] = {id:String(num),...m};
   closeModal('modal-add-mesa');
   renderFloor();
-  toast(`Mesa ${num} adicionada!`, 'success');
-}
+  toast(`Mesa ${num} adicionada!`,'success');
+};
 
-// ─── MÓDULO: PEDIDOS ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// PEDIDO
+// ═══════════════════════════════════════════════════════════════════
 function renderMesaSelector() {
-  const mesas = Object.values(DB.mesas).sort((a,b) => a.id - b.id);
-  const grid = document.getElementById('mesa-sel-grid');
-  grid.innerHTML = mesas.map(m => `
-    <button class="mesa-sel-btn ${m.status} ${STATE.mesaSel === m.id ? 'sel' : ''}"
-      onclick="selMesa(${m.id})" title="Mesa ${m.id} — ${m.status}">
-      ${m.id}
-    </button>`).join('');
+  const mesas = Object.values(DB.mesas).sort((a,b)=>parseInt(a.id)-parseInt(b.id));
+  document.getElementById('mesa-sel-grid').innerHTML = mesas.map(m => `
+    <button class="mesa-sel-btn ${m.status} ${STATE.mesaSel===m.id||STATE.mesaSel===String(m.id)?'sel':''}"
+      onclick="selMesa('${m.id}')">${m.id}</button>`).join('');
 }
 
-async function selMesa(id) {
-  const m = DB.mesas[String(id)];
-  if (m.status === 'livre') {
-    const upd = {status:'ocupada', inicio:Date.now()};
-    await fsUpdate('mesas', String(id), upd);
-    DB.mesas[String(id)] = {...m, ...upd};
-    sysLog(`Mesa ${id} aberta via pedido`);
+window.selMesa = async (id) => {
+  const m = DB.mesas[id];
+  if (m.status==='livre') {
+    const upd = {status:'ocupada',inicio:Date.now()};
+    await fsUpd('mesas',id,upd);
+    DB.mesas[id] = {...m,...upd};
     renderFloor();
   }
   STATE.mesaSel = id;
   document.getElementById('ped-mesa-lbl').textContent = `Mesa ${id} selecionada`;
   renderMesaSelector();
-  sysLog(`Mesa ${id} selecionada para pedido`);
-}
+};
 
 function renderCardapio() {
-  const catFiltro = STATE.cardapioCatFiltro;
-  const itens = Object.values(DB.cardapio).sort((a,b) => (a.cat+a.nome).localeCompare(b.cat+b.nome));
-  const cats = ['Todos', ...new Set(itens.map(i => i.cat))];
+  const cat   = STATE.cardapioCatFiltro;
+  const itens = Object.values(DB.cardapio).sort((a,b)=>(a.cat+a.nome).localeCompare(b.cat+b.nome));
+  const cats  = ['Todos',...new Set(itens.map(i=>i.cat))];
 
-  document.getElementById('cat-bar').innerHTML = cats.map(c =>
-    `<button class="cat-chip ${c === catFiltro ? 'active' : ''}" onclick="filtCardapio('${c}')">${c}</button>`
-  ).join('');
+  document.getElementById('cat-bar').innerHTML = cats.map(c=>
+    `<button class="cat-chip ${c===cat?'active':''}" onclick="filtCardapio('${c}')">${c}</button>`).join('');
 
-  const filtered = catFiltro === 'Todos' ? itens : itens.filter(i => i.cat === catFiltro);
-
-  document.getElementById('cardapio-grid').innerHTML = filtered.map(i => {
-    const ing = JSON.parse(i.ing || '{}');
-    const semEstoque = Object.entries(ing).some(([k, v]) => {
-      const est = DB.estoque[k];
-      return est && est.qty < v;
-    });
-    const indisponivel = !i.ativo || semEstoque;
-    return `<button class="item-card ${indisponivel ? 'unavailable' : ''}"
-      onclick="${indisponivel ? '' : `addItem(${i.id})`}"
-      ${indisponivel ? 'disabled' : ''}>
+  const filtered = cat==='Todos' ? itens : itens.filter(i=>i.cat===cat);
+  document.getElementById('cardapio-grid').innerHTML = filtered.map(i=>{
+    const ing = JSON.parse(i.ing||'{}');
+    const sem = Object.entries(ing).some(([k,v])=>{ const e=DB.estoque[k]; return e&&e.qty<v; });
+    const dis = !i.ativo||sem;
+    return `<button class="item-card" onclick="${dis?'':'addItem('+i.id+')'}" ${dis?'disabled':''}>
       <div class="item-cat">${i.cat}</div>
-      <div style="font-size:20px;margin-bottom:4px;">${i.icon || '🍽️'}</div>
+      <div style="font-size:22px;margin-bottom:3px;">${i.icon||'🍽️'}</div>
       <div class="item-name">${i.nome}</div>
       <div class="item-price">${fmtBRL(i.preco)}</div>
-      ${i.tempo ? `<div style="font-size:10px;color:var(--text-3);margin-top:3px;">⏱ ${i.tempo}min</div>` : ''}
-      ${semEstoque ? '<div style="font-size:10px;color:var(--red);margin-top:3px;">Esgotado</div>' : ''}
+      ${i.tempo?`<div style="font-size:10px;color:var(--text3);margin-top:2px;">⏱ ${i.tempo}min</div>`:''}
+      ${sem?'<div style="font-size:10px;color:var(--red);margin-top:2px;">Esgotado</div>':''}
     </button>`;
   }).join('');
 }
 
-function filtCardapio(cat) {
-  STATE.cardapioCatFiltro = cat;
-  renderCardapio();
-}
+window.filtCardapio = (cat) => { STATE.cardapioCatFiltro=cat; renderCardapio(); };
 
-function addItem(id) {
+window.addItem = (id) => {
   const item = DB.cardapio[String(id)];
   if (!item) return;
-  const ex = STATE.cartItems.find(c => c.id === id);
+  const ing = JSON.parse(item.ing||'{}');
+  const ex  = STATE.cartItems.find(c=>c.id===String(id));
   if (ex) ex.qty++;
-  else STATE.cartItems.push({ id, nome: item.nome, preco: item.preco, cat: item.cat, ing: JSON.parse(item.ing || '{}'), qty: 1 });
+  else STATE.cartItems.push({id:String(id),nome:item.nome,preco:item.preco,cat:item.cat,ing,qty:1});
   renderCart();
-}
+};
 
-function removeItem(id) {
-  const ex = STATE.cartItems.find(c => c.id === id);
+window.removeItem = (id) => {
+  const ex = STATE.cartItems.find(c=>c.id===String(id));
   if (!ex) return;
-  if (ex.qty > 1) ex.qty--;
-  else STATE.cartItems = STATE.cartItems.filter(c => c.id !== id);
+  if (ex.qty>1) ex.qty--;
+  else STATE.cartItems = STATE.cartItems.filter(c=>c.id!==String(id));
   renderCart();
-}
+};
 
 function renderCart() {
   const el = document.getElementById('cart-items');
   if (!STATE.cartItems.length) {
-    el.innerHTML = '<div class="text-center text-muted" style="padding:20px 0;font-size:13px;">Nenhum item adicionado</div>';
-    document.getElementById('cart-total').textContent = 'R$ 0,00';
+    el.innerHTML='<div class="text-center text-muted" style="padding:20px 0;font-size:13px;">Nenhum item</div>';
+    document.getElementById('cart-total').textContent='R$ 0,00';
     return;
   }
-  el.innerHTML = STATE.cartItems.map(c => `
+  el.innerHTML = STATE.cartItems.map(c=>`
     <div class="cart-item">
       <div class="cart-item-info">
         <div class="cart-item-name">${c.nome}</div>
-        <div class="cart-item-price">${fmtBRL(c.preco)} × ${c.qty} = ${fmtBRL(c.preco * c.qty)}</div>
+        <div class="cart-item-price">${fmtBRL(c.preco)} × ${c.qty} = ${fmtBRL(c.preco*c.qty)}</div>
       </div>
       <div class="cart-item-ctrl">
         <button class="qty-btn" onclick="removeItem(${c.id})">−</button>
@@ -1171,447 +981,359 @@ function renderCart() {
         <button class="qty-btn" onclick="addItem(${c.id})">+</button>
       </div>
     </div>`).join('');
-  const tot = STATE.cartItems.reduce((s, c) => s + c.preco * c.qty, 0);
+  const tot = STATE.cartItems.reduce((s,c)=>s+c.preco*c.qty,0);
   document.getElementById('cart-total').textContent = fmtBRL(tot);
 }
 
-function limparCart() {
-  STATE.cartItems = [];
-  renderCart();
-}
+window.limparCart = () => { STATE.cartItems=[]; renderCart(); };
 
-async function enviarPedido() {
-  if (!STATE.mesaSel) { toast('Selecione uma mesa primeiro!', 'error'); return; }
-  if (!STATE.cartItems.length) { toast('Adicione itens ao pedido!', 'error'); return; }
-
-  const obs = document.getElementById('obs-inp').value.trim();
-  const tot = STATE.cartItems.reduce((s, c) => s + c.preco * c.qty, 0);
-  const now = Date.now();
-  const pedidoId = uuid();
-  const usuario = STATE.currentUser?.nome || 'Sistema';
-  const hoje = todayStr();
-  const h = new Date().getHours();
+window.enviarPedido = async () => {
+  if (!STATE.mesaSel) { toast('Selecione uma mesa!','error'); return; }
+  if (!STATE.cartItems.length) { toast('Adicione itens!','error'); return; }
+  const obs    = document.getElementById('obs-inp').value.trim();
+  const tot    = STATE.cartItems.reduce((s,c)=>s+c.preco*c.qty,0);
+  const now    = Date.now();
+  const pedId  = uuid();
+  const hoje   = todayStr();
+  const h      = new Date().getHours();
+  const user   = STATE.currentUser?.nome||'Sistema';
 
   // Inserir pedido
-  const pedData = {mesa_id: STATE.mesaSel, usuario, obs, total: tot, status:'preparo', criado: now, atualizado: now};
-  await fsSet('pedidos', pedidoId, pedData);
-  DB.pedidos[pedidoId] = {id: pedidoId, ...pedData};
+  const pedData = {mesa_id:STATE.mesaSel, usuario:user, obs, total:tot, status:'preparo', criado:now};
+  await fsSet('pedidos', pedId, pedData);
+  DB.pedidos[pedId] = {id:pedId,...pedData};
+  sysLog(`Pedido #${pedId.substring(0,8)} — Mesa ${STATE.mesaSel} — ${fmtBRL(tot)}`);
 
-  sysLog(`Pedido #${pedidoId.substring(0,8)} — Mesa ${STATE.mesaSel} — ${fmtBRL(tot)}`);
+  const batch = writeBatch(db);
 
-  // Inserir itens + baixa de estoque + ranking
   for (const c of STATE.cartItems) {
-    const itemId = await fsAdd('pedido_itens', {pedido_id: pedidoId, item_id: c.id, nome: c.nome, preco: c.preco, qty: c.qty});
-    DB.pedido_itens[itemId] = {id: itemId, pedido_id: pedidoId, item_id: c.id, nome: c.nome, preco: c.preco, qty: c.qty};
+    // Inserir item
+    const itemRef = doc(collection(db,'pedido_itens'));
+    batch.set(itemRef, {pedido_id:pedId,item_id:c.id,nome:c.nome,preco:c.preco,qty:c.qty});
+    DB.pedido_itens[itemRef.id] = {id:itemRef.id,pedido_id:pedId,item_id:c.id,nome:c.nome,preco:c.preco,qty:c.qty};
 
     // Baixa de estoque
-    if (c.ing) {
-      for (const [k, v] of Object.entries(c.ing)) {
-        if (DB.estoque[k]) {
-          const novaQty = Math.max(0, DB.estoque[k].qty - v * c.qty);
-          await fsUpdate('estoque', k, {qty: novaQty});
-          DB.estoque[k] = {...DB.estoque[k], qty: novaQty};
-        }
+    Object.entries(c.ing||{}).forEach(([k,v])=>{
+      if (DB.estoque[k]) {
+        const nq = Math.max(0, DB.estoque[k].qty - v*c.qty);
+        batch.update(ref('estoque',k),{qty:nq});
+        DB.estoque[k] = {...DB.estoque[k],qty:nq};
       }
-    }
+    });
 
     // Ranking
-    const rkKey = `${hoje}_${c.nome}`;
-    if (DB.ranking_itens[rkKey]) {
-      const rk = DB.ranking_itens[rkKey];
-      await fsUpdate('ranking_itens', rkKey, {qty: rk.qty + c.qty, faturamento: rk.faturamento + c.preco * c.qty});
-      DB.ranking_itens[rkKey] = {...rk, qty: rk.qty + c.qty, faturamento: rk.faturamento + c.preco * c.qty};
+    const rkKey = `${hoje}_${c.nome}`.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_\-]/g,'');
+    const rk    = DB.ranking_itens[rkKey];
+    if (rk) {
+      batch.update(ref('ranking_itens',rkKey),{qty:rk.qty+c.qty,faturamento:(rk.faturamento||0)+c.preco*c.qty});
+      DB.ranking_itens[rkKey]={...rk,qty:rk.qty+c.qty,faturamento:(rk.faturamento||0)+c.preco*c.qty};
     } else {
-      const rk = {data: hoje, nome: c.nome, cat: c.cat, qty: c.qty, faturamento: c.preco * c.qty};
-      await fsSet('ranking_itens', rkKey, rk);
-      DB.ranking_itens[rkKey] = {id: rkKey, ...rk};
+      const nrk={data:hoje,nome:c.nome,cat:c.cat,qty:c.qty,faturamento:c.preco*c.qty};
+      batch.set(ref('ranking_itens',rkKey),nrk);
+      DB.ranking_itens[rkKey]={id:rkKey,...nrk};
     }
 
     // Fat por categoria
-    const catKey = `${hoje}_${c.cat}`;
-    if (DB.fat_cat[catKey]) {
-      const fc = DB.fat_cat[catKey];
-      await fsUpdate('fat_cat', catKey, {valor: fc.valor + c.preco * c.qty});
-      DB.fat_cat[catKey] = {...fc, valor: fc.valor + c.preco * c.qty};
+    const catKey = `${hoje}_${c.cat}`.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_\-]/g,'');
+    const fc = DB.fat_cat[catKey];
+    if (fc) {
+      batch.update(ref('fat_cat',catKey),{valor:fc.valor+c.preco*c.qty});
+      DB.fat_cat[catKey]={...fc,valor:fc.valor+c.preco*c.qty};
     } else {
-      const fc = {data: hoje, cat: c.cat, valor: c.preco * c.qty};
-      await fsSet('fat_cat', catKey, fc);
-      DB.fat_cat[catKey] = {id: catKey, ...fc};
+      const nfc={data:hoje,cat:c.cat,valor:c.preco*c.qty};
+      batch.set(ref('fat_cat',catKey),nfc);
+      DB.fat_cat[catKey]={id:catKey,...nfc};
     }
   }
 
-  // Atualizar total da mesa
-  const mesa = DB.mesas[String(STATE.mesaSel)];
-  const novoTotal = (mesa.total || 0) + tot;
-  await fsUpdate('mesas', String(STATE.mesaSel), {total: novoTotal});
-  DB.mesas[String(STATE.mesaSel)] = {...mesa, total: novoTotal};
+  // Total da mesa
+  const mesa   = DB.mesas[String(STATE.mesaSel)];
+  const nTotal = (mesa?.total||0)+tot;
+  batch.update(ref('mesas',String(STATE.mesaSel)),{total:nTotal});
+  DB.mesas[String(STATE.mesaSel)] = {...mesa,total:nTotal};
 
   // Fat por hora
   const horaKey = `${hoje}_${h}`;
-  if (DB.fat_hora[horaKey]) {
-    const fh = DB.fat_hora[horaKey];
-    await fsUpdate('fat_hora', horaKey, {valor: fh.valor + tot});
-    DB.fat_hora[horaKey] = {...fh, valor: fh.valor + tot};
+  const fh = DB.fat_hora[horaKey];
+  if (fh) {
+    batch.update(ref('fat_hora',horaKey),{valor:fh.valor+tot});
+    DB.fat_hora[horaKey]={...fh,valor:fh.valor+tot};
   } else {
-    const fh = {data: hoje, hora: h, valor: tot};
-    await fsSet('fat_hora', horaKey, fh);
-    DB.fat_hora[horaKey] = {id: horaKey, ...fh};
+    const nfh={data:hoje,hora:h,valor:tot};
+    batch.set(ref('fat_hora',horaKey),nfh);
+    DB.fat_hora[horaKey]={id:horaKey,...nfh};
   }
 
-  // Limpar
-  STATE.cartItems = [];
-  document.getElementById('obs-inp').value = '';
-  renderCart();
-  renderKDS();
-  renderFloor();
+  await batch.commit();
 
-  toast(`Pedido enviado para a cozinha! (${fmtBRL(tot)})`, 'success');
-}
+  STATE.cartItems=[];
+  document.getElementById('obs-inp').value='';
+  renderCart(); renderKDS(); renderFloor();
+  toast(`Pedido enviado! ${fmtBRL(tot)}`,'success');
+};
 
-// ─── MÓDULO: COZINHA / KDS ────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// COZINHA / KDS
+// ═══════════════════════════════════════════════════════════════════
 let kdsFilter = 'todos';
-
-function filtKDS(f, btn) {
+window.filtKDS = (f, btn) => {
   kdsFilter = f;
-  document.querySelectorAll('.kds-filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.kds-filter-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   renderKDS();
-}
+};
 
 function renderKDS() {
   if (!STATE.dbReady) return;
-  const pedidos = Object.values(DB.pedidos)
-    .filter(p => p.status !== 'cancelado')
-    .sort((a,b) => a.criado - b.criado);
+  const pedidos = Object.values(DB.pedidos).filter(p=>p.status!=='cancelado').sort((a,b)=>a.criado-b.criado);
+  const prep    = pedidos.filter(p=>p.status==='preparo').length;
+  const pronto  = pedidos.filter(p=>p.status==='pronto').length;
+  const total_ab = prep+pronto;
 
-  const preparo = pedidos.filter(p => p.status === 'preparo').length;
-  const pronto = pedidos.filter(p => p.status === 'pronto').length;
-
-  document.getElementById('kd-prep').textContent = `${preparo} preparo`;
+  document.getElementById('kd-prep').textContent   = `${prep} preparo`;
   document.getElementById('kd-pronto').textContent = `${pronto} prontos`;
-
-  const total_abertos = preparo + pronto;
-  const badge = document.getElementById('kds-count-badge');
-  const mobBadge = document.getElementById('mob-kds-badge');
-  if (total_abertos > 0) {
-    badge.textContent = total_abertos; badge.style.display = '';
-    if (mobBadge) { mobBadge.textContent = total_abertos; mobBadge.style.display = ''; }
+  const b1=document.getElementById('kds-count-badge'), b2=document.getElementById('mob-kds-badge');
+  if (total_ab>0) {
+    b1.textContent=total_ab; b1.style.display='';
+    if(b2){b2.textContent=total_ab;b2.style.display='';}
   } else {
-    badge.style.display = 'none';
-    if (mobBadge) mobBadge.style.display = 'none';
+    b1.style.display='none';
+    if(b2) b2.style.display='none';
   }
 
-  let filtered = pedidos;
-  if (kdsFilter !== 'todos') filtered = pedidos.filter(p => p.status === kdsFilter);
-  if (kdsFilter === 'todos') filtered = pedidos.filter(p => p.status !== 'entregue');
+  let filtered = kdsFilter==='todos' ? pedidos.filter(p=>p.status!=='entregue') : pedidos.filter(p=>p.status===kdsFilter);
 
   const grid = document.getElementById('kds-grid');
   if (!filtered.length) {
-    grid.innerHTML = `<div class="kds-empty" style="grid-column:1/-1">
-      <div style="font-size:40px;margin-bottom:12px;">✅</div>
-      <div>Nenhum pedido${kdsFilter !== 'todos' ? ' neste filtro' : ' em aberto'}</div>
-    </div>`;
+    grid.innerHTML=`<div class="kds-empty" style="grid-column:1/-1">✅<br><br>Nenhum pedido${kdsFilter!=='todos'?' neste filtro':' em aberto'}</div>`;
     return;
   }
 
   grid.innerHTML = filtered.map(p => {
-    const itens = Object.values(DB.pedido_itens).filter(i => i.pedido_id === p.id);
-    const elapsed = Date.now() - p.criado;
-    const mins = Math.floor(elapsed / 60000);
-    const timerCls = mins > 20 ? 'late' : mins > 10 ? 'warn' : 'ok';
-    const urgente = mins > 20 && p.status === 'preparo';
-
-    return `<div class="kds-card ${p.status} ${urgente ? 'urgente' : ''}">
+    const itens   = Object.values(DB.pedido_itens).filter(i=>i.pedido_id===p.id);
+    const elapsed = Date.now()-p.criado;
+    const mins    = Math.floor(elapsed/60000);
+    const tc      = mins>20?'late':mins>10?'warn':'ok';
+    return `<div class="kds-card ${p.status} ${mins>20&&p.status==='preparo'?'urgente':''}">
       <div class="kds-card-header">
         <div>
           <div class="kds-mesa">Mesa ${p.mesa_id}</div>
-          <div style="font-size:10px;color:var(--text-3);">por ${p.usuario}</div>
+          <div style="font-size:10px;color:var(--text3);">por ${p.usuario}</div>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-          <span class="kds-timer ${timerCls}">⏱ ${tStr(elapsed)}</span>
-          <span class="badge ${p.status === 'preparo' ? 'b-amber' : p.status === 'pronto' ? 'b-green' : 'b-brand'}" style="font-size:10px;">
-            ${p.status === 'preparo' ? 'Preparo' : p.status === 'pronto' ? 'Pronto' : 'Entregue'}
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
+          <span class="kds-timer ${tc}">⏱ ${tStr(elapsed)}</span>
+          <span class="badge ${p.status==='preparo'?'b-amber':p.status==='pronto'?'b-green':'b-blue'}" style="font-size:10px;">
+            ${p.status==='preparo'?'Preparo':p.status==='pronto'?'Pronto':'Entregue'}
           </span>
         </div>
       </div>
       <div class="kds-items">
-        ${itens.map(i => `<div class="kds-item">
-          <span><span class="kds-item-qty">${i.qty}×</span> ${i.nome}</span>
-          <span style="color:var(--text-2);font-size:11px;">${fmtBRL(i.preco * i.qty)}</span>
-        </div>`).join('')}
+        ${itens.map(i=>`<div class="kds-item"><span><span class="kds-item-qty">${i.qty}×</span> ${i.nome}</span><span style="color:var(--text2);font-size:11px;">${fmtBRL(i.preco*i.qty)}</span></div>`).join('')}
       </div>
-      ${p.obs ? `<div class="kds-obs">📝 ${p.obs}</div>` : ''}
+      ${p.obs?`<div class="kds-obs">📝 ${p.obs}</div>`:''}
       <div class="kds-actions">
-        ${p.status === 'preparo' ? `<button class="btn btn-green btn-sm" onclick="avancarPedido('${p.id}')">✅ Marcar Pronto</button>` : ''}
-        ${p.status === 'pronto' ? `<button class="btn btn-primary btn-sm" onclick="avancarPedido('${p.id}')">🚀 Marcar Entregue</button>` : ''}
-        ${p.status === 'entregue' ? `<span class="text-muted text-xs">Entregue</span>` : ''}
-        <button class="btn btn-xs btn-red" onclick="cancelarPedido('${p.id}')" style="margin-left:auto;">Cancelar</button>
+        ${p.status==='preparo'?`<button class="btn btn-green btn-sm" onclick="avancarPedido('${p.id}')">✅ Pronto</button>`:''}
+        ${p.status==='pronto'?`<button class="btn btn-primary btn-sm" onclick="avancarPedido('${p.id}')">🚀 Entregue</button>`:''}
+        <button class="btn btn-xs btn-red" style="margin-left:auto;" onclick="cancelarPedido('${p.id}')">Cancelar</button>
       </div>
     </div>`;
   }).join('');
 }
 
-async function avancarPedido(id) {
-  const p = DB.pedidos[id];
+window.avancarPedido = async (id) => {
+  const p   = DB.pedidos[id];
   if (!p) return;
   const now = Date.now();
-
-  if (p.status === 'preparo') {
-    await fsUpdate('pedidos', id, {status:'pronto', atualizado: now});
-    DB.pedidos[id] = {...p, status:'pronto', atualizado: now};
-    sysLog(`Pedido ${id.substring(0,8)} → Pronto (Mesa ${p.mesa_id})`);
-    toast(`Pronto! Mesa ${p.mesa_id}`, 'success');
-  } else if (p.status === 'pronto') {
-    await fsUpdate('pedidos', id, {status:'entregue', atualizado: now});
-    DB.pedidos[id] = {...p, status:'entregue', atualizado: now};
-
-    // Atualizar relatório
-    const itens = Object.values(DB.pedido_itens).filter(i => i.pedido_id === id);
-    const qtdItens = itens.reduce((s, i) => s + i.qty, 0);
-    const hoje = todayStr();
-    if (!DB.relatorio_dia[hoje]) {
-      const rd = {pedidos_total:0, faturamento:0, itens_total:0};
-      await fsSet('relatorio_dia', hoje, rd);
-      DB.relatorio_dia[hoje] = {data: hoje, ...rd};
-    }
-    const rd = DB.relatorio_dia[hoje];
-    const newRd = {pedidos_total: (rd.pedidos_total||0)+1, faturamento: (rd.faturamento||0)+p.total, itens_total: (rd.itens_total||0)+qtdItens};
-    await fsUpdate('relatorio_dia', hoje, newRd);
-    DB.relatorio_dia[hoje] = {...rd, ...newRd};
-
-    sysLog(`Pedido ${id.substring(0,8)} → Entregue (Mesa ${p.mesa_id}) ${fmtBRL(p.total)}`);
-    toast(`Pedido entregue! Mesa ${p.mesa_id}`, 'success');
+  if (p.status==='preparo') {
+    await fsUpd('pedidos',id,{status:'pronto',atualizado:now});
+    DB.pedidos[id]={...p,status:'pronto',atualizado:now};
+    toast(`Pronto! Mesa ${p.mesa_id}`,'success');
+  } else if (p.status==='pronto') {
+    await fsUpd('pedidos',id,{status:'entregue',atualizado:now});
+    DB.pedidos[id]={...p,status:'entregue',atualizado:now};
+    const itens   = Object.values(DB.pedido_itens).filter(i=>i.pedido_id===id);
+    const qtd     = itens.reduce((s,i)=>s+i.qty,0);
+    const hoje    = todayStr();
+    const rd      = DB.relatorio_dia[hoje]||{};
+    const newRd   = {pedidos_total:(rd.pedidos_total||0)+1, faturamento:(rd.faturamento||0)+p.total, itens_total:(rd.itens_total||0)+qtd};
+    await fsUpd('relatorio_dia',hoje,newRd);
+    DB.relatorio_dia[hoje]={...(DB.relatorio_dia[hoje]||{}),...newRd,id:hoje,data:hoje};
+    sysLog(`Entregue #${id.substring(0,8)} — Mesa ${p.mesa_id} — ${fmtBRL(p.total)}`);
+    toast(`Entregue! Mesa ${p.mesa_id}`,'success');
   }
-  renderKDS();
-  renderFloor();
-  renderCaixa();
-  if (document.getElementById('page-relatorios').classList.contains('active')) renderRelatorios();
-}
+  renderKDS(); renderFloor(); renderCaixa();
+  if(document.getElementById('page-relatorios').classList.contains('active')) renderRelatorios();
+};
 
-async function cancelarPedido(id) {
+window.cancelarPedido = async (id) => {
   if (!confirm('Cancelar este pedido?')) return;
   const p = DB.pedidos[id];
-  await fsUpdate('pedidos', id, {status:'cancelado'});
-  DB.pedidos[id] = {...p, status:'cancelado'};
-  sysLog(`Pedido ${id.substring(0,8)} cancelado (Mesa ${p?.mesa_id})`);
-  renderKDS();
-  renderFloor();
-  toast('Pedido cancelado', 'info');
-}
-// ─── MÓDULO: CAIXA ────────────────────────────────────────────────────
+  await fsUpd('pedidos',id,{status:'cancelado'});
+  DB.pedidos[id]={...p,status:'cancelado'};
+  sysLog(`Pedido ${id.substring(0,8)} cancelado`);
+  renderKDS(); renderFloor();
+  toast('Pedido cancelado','info');
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// CAIXA
+// ═══════════════════════════════════════════════════════════════════
 function renderCaixa() {
   if (!STATE.dbReady) return;
-  const abertas = Object.values(DB.mesas).filter(m => m.status !== 'livre' && m.total > 0).sort((a,b) => a.id - b.id);
-  const lista = document.getElementById('caixa-lista');
-
-  if (!abertas.length) {
-    lista.innerHTML = '<div class="text-muted text-sm" style="padding:12px 0;font-size:13px;">Nenhuma mesa aberta</div>';
-    return;
-  }
-  lista.innerHTML = abertas.map(m => `
-    <button class="mesa-list-btn ${STATE.caixaMesa === m.id ? 'active' : ''}" onclick="selCaixaMesa(${m.id})">
+  const abertas = Object.values(DB.mesas).filter(m=>m.status!=='livre'&&m.total>0).sort((a,b)=>parseInt(a.id)-parseInt(b.id));
+  const lista   = document.getElementById('caixa-lista');
+  if (!abertas.length) { lista.innerHTML='<div class="text-muted text-sm" style="padding:12px 0;">Nenhuma mesa aberta</div>'; return; }
+  lista.innerHTML = abertas.map(m=>`
+    <button class="mesa-list-btn ${STATE.caixaMesa===m.id||STATE.caixaMesa===String(m.id)?'active':''}" onclick="selCaixaMesa('${m.id}')">
       <div class="mesa-list-num">Mesa ${m.id}</div>
       <div class="mesa-list-total">${fmtBRL(m.total)}</div>
-      ${m.inicio ? `<div class="mesa-list-time">Aberta há ${tStr(Date.now() - m.inicio)}</div>` : ''}
+      ${m.inicio?`<div class="mesa-list-time">há ${tStr(Date.now()-m.inicio)}</div>`:''}
     </button>`).join('');
-
   if (STATE.caixaMesa) renderCaixaDet();
 }
 
-function selCaixaMesa(id) {
-  STATE.caixaMesa = id;
-  STATE.pgtoSel = null;
-  renderCaixa();
-}
+window.selCaixaMesa = (id) => { STATE.caixaMesa=id; STATE.pgtoSel=null; renderCaixa(); };
 
 function renderCaixaDet() {
-  const m = DB.mesas[String(STATE.caixaMesa)];
+  const m       = DB.mesas[String(STATE.caixaMesa)];
   if (!m) return;
-
-  const pedidos = Object.values(DB.pedidos).filter(p => p.mesa_id === STATE.caixaMesa && p.status !== 'cancelado' && p.status !== 'entregue');
-  const pedidos_entregues = Object.values(DB.pedidos).filter(p => p.mesa_id === STATE.caixaMesa && p.status === 'entregue');
-  const todos_pedidos = [...pedidos, ...pedidos_entregues];
-
+  const todos   = Object.values(DB.pedidos).filter(p=>(p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa))&&p.status!=='cancelado');
   const todosItens = [];
-  todos_pedidos.forEach(p => {
-    Object.values(DB.pedido_itens).filter(i => i.pedido_id === p.id).forEach(i => {
-      const ex = todosItens.find(x => x.nome === i.nome && x.preco === i.preco);
-      if (ex) ex.qty += i.qty;
-      else todosItens.push({ ...i });
-    });
-  });
-
-  const sub = todosItens.reduce((s, i) => s + i.preco * i.qty, 0);
-  const taxa = sub * (SYS.taxaServico / 100);
-  const tot = sub + taxa;
-  const pedidos_abertos = pedidos.length;
+  todos.forEach(p=>Object.values(DB.pedido_itens).filter(i=>i.pedido_id===p.id).forEach(i=>{
+    const ex=todosItens.find(x=>x.nome===i.nome&&x.preco===i.preco);
+    if(ex) ex.qty+=i.qty; else todosItens.push({...i});
+  }));
+  const sub  = todosItens.reduce((s,i)=>s+i.preco*i.qty,0);
+  const taxa = sub*(SYS.taxaServico/100);
+  const tot  = sub+taxa;
+  const abertos = todos.filter(p=>p.status!=='entregue').length;
 
   document.getElementById('caixa-det').innerHTML = `
     <div class="flex justify-between items-center" style="margin-bottom:14px;">
       <div>
         <div style="font-size:16px;font-weight:700;">Mesa ${STATE.caixaMesa}</div>
-        ${m.inicio ? `<div class="text-muted text-xs">Aberta há ${tStr(Date.now() - m.inicio)}</div>` : ''}
+        ${m.inicio?`<div class="text-muted text-xs">Aberta há ${tStr(Date.now()-m.inicio)}</div>`:''}
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <span class="badge b-amber">${m.status}</span>
-        ${pedidos_abertos > 0 ? `<span class="badge b-gold">${pedidos_abertos} pedido(s) em preparo/pronto</span>` : ''}
+        ${abertos>0?`<span class="badge b-red">${abertos} em aberto</span>`:''}
       </div>
     </div>
-    <div style="max-height:220px;overflow-y:auto;">
-      ${todosItens.map(i => `
-        <div class="conta-item">
-          <div>
-            <div class="conta-item-name">${i.nome}</div>
-            <div class="conta-item-qty">${i.qty}× ${fmtBRL(i.preco)}</div>
-          </div>
-          <div style="font-weight:600;">${fmtBRL(i.preco * i.qty)}</div>
-        </div>`).join('')}
-      ${!todosItens.length ? '<div class="text-center text-muted" style="padding:16px;">Nenhum item</div>' : ''}
+    <div style="max-height:200px;overflow-y:auto;">
+      ${todosItens.map(i=>`<div class="conta-item"><div><div class="conta-item-name">${i.nome}</div><div class="conta-item-qty">${i.qty}× ${fmtBRL(i.preco)}</div></div><div style="font-weight:700;">${fmtBRL(i.preco*i.qty)}</div></div>`).join('')}
+      ${!todosItens.length?'<div class="text-center text-muted" style="padding:16px;">Nenhum item</div>':''}
     </div>
     <div class="divider"></div>
     <div class="conta-total-row"><span class="text-muted">Subtotal</span><span>${fmtBRL(sub)}</span></div>
-    <div class="conta-total-row"><span class="text-muted">Taxa de serviço (${SYS.taxaServico}%)</span><span>${fmtBRL(taxa)}</span></div>
-    <div class="conta-total-row" style="border-top:2px solid var(--border);padding-top:10px;margin-top:4px;">
-      <span class="conta-total-final">Total</span>
-      <span class="conta-total-final">${fmtBRL(tot)}</span>
+    <div class="conta-total-row"><span class="text-muted">Taxa (${SYS.taxaServico}%)</span><span>${fmtBRL(taxa)}</span></div>
+    <div class="conta-total-row" style="border-top:1.5px solid var(--border-strong);padding-top:10px;margin-top:4px;">
+      <span class="conta-total-final">Total</span><span class="conta-total-final">${fmtBRL(tot)}</span>
     </div>
     <div class="divider"></div>
-    <div class="card-title" style="margin-bottom:10px;">Forma de pagamento</div>
+    <div class="card-title" style="margin-bottom:10px;">Pagamento</div>
     <div class="pgto-grid">
-      <button class="pgto-btn ${STATE.pgtoSel === 'dinheiro' ? 'selected' : ''}" onclick="selPgto('dinheiro',${tot.toFixed(2)})">
-        <span class="pgto-icon">💵</span><div class="pgto-label">Dinheiro</div>
-      </button>
-      <button class="pgto-btn ${STATE.pgtoSel === 'debito' ? 'selected' : ''}" onclick="selPgto('debito',${tot.toFixed(2)})">
-        <span class="pgto-icon">💳</span><div class="pgto-label">Débito</div>
-      </button>
-      <button class="pgto-btn ${STATE.pgtoSel === 'credito' ? 'selected' : ''}" onclick="selPgto('credito',${tot.toFixed(2)})">
-        <span class="pgto-icon">💳</span><div class="pgto-label">Crédito</div>
-      </button>
-      <button class="pgto-btn ${STATE.pgtoSel === 'pix' ? 'selected' : ''}" onclick="selPgto('pix',${tot.toFixed(2)})">
-        <span class="pgto-icon">📱</span><div class="pgto-label">Pix</div>
-      </button>
+      <button class="pgto-btn ${STATE.pgtoSel==='dinheiro'?'selected':''}" onclick="selPgto('dinheiro',${tot.toFixed(2)})"><span class="pgto-icon">💵</span><div class="pgto-label">Dinheiro</div></button>
+      <button class="pgto-btn ${STATE.pgtoSel==='debito'?'selected':''}"   onclick="selPgto('debito',${tot.toFixed(2)})"><span class="pgto-icon">💳</span><div class="pgto-label">Débito</div></button>
+      <button class="pgto-btn ${STATE.pgtoSel==='credito'?'selected':''}"  onclick="selPgto('credito',${tot.toFixed(2)})"><span class="pgto-icon">💳</span><div class="pgto-label">Crédito</div></button>
+      <button class="pgto-btn ${STATE.pgtoSel==='pix'?'selected':''}"      onclick="selPgto('pix',${tot.toFixed(2)})"><span class="pgto-icon">📱</span><div class="pgto-label">Pix</div></button>
     </div>
-    <div class="troco-input-wrap ${STATE.pgtoSel === 'dinheiro' ? 'visible' : ''}" id="troco-wrap">
-      <label class="input-label">Valor recebido (para troco)</label>
+    <div class="troco-input-wrap ${STATE.pgtoSel==='dinheiro'?'visible':''}" id="troco-wrap">
+      <label class="input-label">Valor recebido</label>
       <input class="input mt-2" id="troco-val" type="number" step="0.01" placeholder="${tot.toFixed(2)}" min="${tot.toFixed(2)}">
-      <div id="troco-result" style="font-size:13px;color:var(--green);font-weight:600;margin-top:6px;"></div>
+      <div id="troco-result" style="font-size:13px;color:var(--green);font-weight:700;margin-top:6px;"></div>
     </div>
-    <button class="btn btn-gold w-full mt-3" onclick="fecharConta(${sub.toFixed(2)},${taxa.toFixed(2)},${tot.toFixed(2)})">
-      ✅ Fechar Conta
-    </button>
+    <button class="btn btn-gold w-full mt-3" onclick="fecharConta(${sub.toFixed(2)},${taxa.toFixed(2)},${tot.toFixed(2)})">✅ Fechar Conta</button>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
       <button class="btn btn-sm" onclick="dividirConta(${tot.toFixed(2)})">÷ Dividir conta</button>
-      <button class="btn btn-sm" onclick="solicitarConta()">📋 Imprimir conta</button>
+      <button class="btn btn-sm" onclick="toast('Conta impressa (simulado)','info')">🖨️ Imprimir</button>
     </div>
   `;
-
-  const trocoEl = document.getElementById('troco-val');
-  if (trocoEl) {
-    trocoEl.addEventListener('input', () => {
-      const recebido = parseFloat(trocoEl.value) || 0;
-      const troco = recebido - tot;
-      const res = document.getElementById('troco-result');
-      if (res) res.textContent = troco >= 0 ? `Troco: ${fmtBRL(troco)}` : '';
-    });
-  }
-}
-
-function selPgto(p, tot) {
-  STATE.pgtoSel = p;
-  const tw = document.getElementById('troco-wrap');
-  if (tw) tw.className = `troco-input-wrap ${p === 'dinheiro' ? 'visible' : ''}`;
-  document.querySelectorAll('.pgto-btn').forEach((b, i) => {
-    const formas = ['dinheiro','debito','credito','pix'];
-    b.classList.toggle('selected', formas[i] === p);
+  const tv=document.getElementById('troco-val');
+  if(tv) tv.addEventListener('input',()=>{
+    const rec=parseFloat(tv.value)||0;
+    const tr=document.getElementById('troco-result');
+    if(tr) tr.textContent=rec>=(tot)?`Troco: ${fmtBRL(rec-tot)}`:'';
   });
 }
 
-async function fecharConta(sub, taxa, tot) {
-  if (!STATE.pgtoSel) { toast('Selecione a forma de pagamento!', 'error'); return; }
-  const id = STATE.caixaMesa;
+window.selPgto = (p,tot) => {
+  STATE.pgtoSel=p;
+  const tw=document.getElementById('troco-wrap');
+  if(tw) tw.className=`troco-input-wrap ${p==='dinheiro'?'visible':''}`;
+  document.querySelectorAll('.pgto-btn').forEach((b,i)=>{
+    b.classList.toggle('selected',['dinheiro','debito','credito','pix'][i]===p);
+  });
+};
+
+window.fecharConta = async (sub,taxa,tot) => {
+  if (!STATE.pgtoSel) { toast('Selecione a forma de pagamento!','error'); return; }
+  const id  = String(STATE.caixaMesa);
   const now = Date.now();
-
   let troco = 0;
-  if (STATE.pgtoSel === 'dinheiro') {
-    const recebido = parseFloat(document.getElementById('troco-val')?.value) || tot;
-    troco = Math.max(0, recebido - tot);
+  if (STATE.pgtoSel==='dinheiro') {
+    const rec=parseFloat(document.getElementById('troco-val')?.value)||tot;
+    troco=Math.max(0,rec-tot);
   }
-
-  // Registrar pagamento
-  await fsAdd('pagamentos', {mesa_id: id, forma: STATE.pgtoSel, subtotal: sub, taxa, total: tot, troco, criado: now});
-
   const hoje = todayStr();
-  // Fat por pgto
-  const pgtoKey = `${hoje}_${STATE.pgtoSel}`;
-  if (DB.fat_pgto[pgtoKey]) {
-    const fp = DB.fat_pgto[pgtoKey];
-    await fsUpdate('fat_pgto', pgtoKey, {valor: fp.valor + tot, qtd: fp.qtd + 1});
-    DB.fat_pgto[pgtoKey] = {...fp, valor: fp.valor + tot, qtd: fp.qtd + 1};
-  } else {
-    const fp = {data: hoje, forma: STATE.pgtoSel, valor: tot, qtd: 1};
-    await fsSet('fat_pgto', pgtoKey, fp);
-    DB.fat_pgto[pgtoKey] = {id: pgtoKey, ...fp};
-  }
+  const batch = writeBatch(db);
 
-  // Atualizar pedidos abertos e relatório
-  const pedidosAbertos = Object.values(DB.pedidos).filter(p => p.mesa_id === id && p.status !== 'cancelado' && p.status !== 'entregue');
-  let fatExtra = 0, itenExtra = 0;
-  for (const p of pedidosAbertos) {
-    const its = Object.values(DB.pedido_itens).filter(i => i.pedido_id === p.id);
-    itenExtra += its.reduce((s, i) => s + i.qty, 0);
-    fatExtra += p.total;
-    await fsUpdate('pedidos', p.id, {status:'entregue'});
-    DB.pedidos[p.id] = {...p, status:'entregue'};
+  // Registrar fat por pgto
+  const pgtoKey=`${hoje}_${STATE.pgtoSel}`;
+  const fp=DB.fat_pgto[pgtoKey];
+  if(fp){batch.update(ref('fat_pgto',pgtoKey),{valor:fp.valor+tot,qtd:fp.qtd+1});DB.fat_pgto[pgtoKey]={...fp,valor:fp.valor+tot,qtd:fp.qtd+1};}
+  else{const nfp={data:hoje,forma:STATE.pgtoSel,valor:tot,qtd:1};batch.set(ref('fat_pgto',pgtoKey),nfp);DB.fat_pgto[pgtoKey]={id:pgtoKey,...nfp};}
+
+  // Pedidos abertos → entregues
+  const abertos = Object.values(DB.pedidos).filter(p=>(p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa))&&p.status!=='entregue'&&p.status!=='cancelado');
+  let fatExtra=0,itExtra=0;
+  for(const p of abertos){
+    const its=Object.values(DB.pedido_itens).filter(i=>i.pedido_id===p.id);
+    itExtra+=its.reduce((s,i)=>s+i.qty,0);
+    fatExtra+=p.total;
+    batch.update(ref('pedidos',p.id),{status:'entregue'});
+    DB.pedidos[p.id]={...p,status:'entregue'};
   }
-  if (fatExtra > 0) {
-    if (!DB.relatorio_dia[hoje]) {
-      const rd = {pedidos_total:0, faturamento:0, itens_total:0};
-      await fsSet('relatorio_dia', hoje, rd);
-      DB.relatorio_dia[hoje] = {data: hoje, ...rd};
-    }
-    const rd = DB.relatorio_dia[hoje];
-    const newRd = {pedidos_total: (rd.pedidos_total||0)+1, faturamento: (rd.faturamento||0)+fatExtra, itens_total: (rd.itens_total||0)+itenExtra};
-    await fsUpdate('relatorio_dia', hoje, newRd);
-    DB.relatorio_dia[hoje] = {...rd, ...newRd};
+  if(fatExtra>0){
+    const rd=DB.relatorio_dia[hoje]||{};
+    const nrd={pedidos_total:(rd.pedidos_total||0)+1,faturamento:(rd.faturamento||0)+fatExtra,itens_total:(rd.itens_total||0)+itExtra};
+    batch.update(ref('relatorio_dia',hoje),nrd);
+    DB.relatorio_dia[hoje]={...(DB.relatorio_dia[hoje]||{}),...nrd,id:hoje,data:hoje};
   }
 
   // Liberar mesa
-  await fsUpdate('mesas', String(id), {status:'livre', inicio:null, total:0});
-  DB.mesas[String(id)] = {...DB.mesas[String(id)], status:'livre', inicio:null, total:0};
-  sysLog(`Conta fechada — Mesa ${id} — ${fmtBRL(tot)} (${STATE.pgtoSel})`);
+  batch.update(ref('mesas',id),{status:'livre',inicio:null,total:0});
+  await batch.commit();
+  DB.mesas[id]={...DB.mesas[id],status:'livre',inicio:null,total:0};
+  sysLog(`Conta fechada Mesa ${id} — ${fmtBRL(tot)} (${STATE.pgtoSel})`);
+  const p=STATE.pgtoSel;
+  STATE.caixaMesa=null; STATE.pgtoSel=null;
+  document.getElementById('caixa-det').innerHTML='<div class="text-center text-muted" style="padding:50px 0;font-size:13px;">Selecione uma mesa</div>';
+  renderCaixa(); renderFloor();
+  if(document.getElementById('page-relatorios').classList.contains('active')) renderRelatorios();
+  toast(`Conta fechada! ${fmtBRL(tot)} — ${p}${troco>0?` — Troco: ${fmtBRL(troco)}`:''}`, 'success');
+};
 
-  const pgtoSel = STATE.pgtoSel;
-  STATE.caixaMesa = null;
-  STATE.pgtoSel = null;
-  document.getElementById('caixa-det').innerHTML = '<div class="text-center text-muted" style="padding:50px 0;">Selecione uma mesa para ver a conta</div>';
-  renderCaixa();
-  renderFloor();
-  if (document.getElementById('page-relatorios').classList.contains('active')) renderRelatorios();
-  toast(`Conta fechada! ${fmtBRL(tot)} — ${pgtoSel}${troco > 0 ? ` — Troco: ${fmtBRL(troco)}` : ''}`, 'success');
-}
+window.dividirConta = (tot) => {
+  const n=prompt('Dividir entre quantas pessoas?','2');
+  if(!n||isNaN(n)||parseInt(n)<1) return;
+  toast(`${n} pessoas — ${fmtBRL(tot/parseInt(n))} cada`,'info');
+};
 
-function dividirConta(tot) {
-  const n = prompt('Dividir entre quantas pessoas?', '2');
-  if (!n || isNaN(n) || parseInt(n) < 1) return;
-  toast(`${n} pessoas — ${fmtBRL(tot / parseInt(n))} cada`, 'info');
-}
-
-function solicitarConta() {
-  toast('Conta enviada para impressora (simulado)', 'info');
-}
-
-// ─── MÓDULO: ESTOQUE ──────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// ESTOQUE
+// ═══════════════════════════════════════════════════════════════════
 function renderEstoque() {
   if (!STATE.dbReady) return;
-  const busca = document.getElementById('est-search')?.value?.toLowerCase() || '';
-  let itens = Object.values(DB.estoque).sort((a,b) => a.nome.localeCompare(b.nome));
-  if (busca) itens = itens.filter(i => i.nome.toLowerCase().includes(busca));
+  const busca = document.getElementById('est-search')?.value?.toLowerCase()||'';
+  let itens   = Object.values(DB.estoque).sort((a,b)=>a.nome.localeCompare(b.nome));
+  if(busca) itens=itens.filter(i=>i.nome.toLowerCase().includes(busca));
 
-  document.getElementById('est-list').innerHTML = itens.map(v => {
-    const pct = Math.min(1, v.qty / v.max_qty);
-    const cor = pct < 0.2 ? 'var(--red-m)' : pct < 0.4 ? 'var(--amber-m)' : 'var(--green-m)';
+  document.getElementById('est-list').innerHTML = itens.map(v=>{
+    const id  = v.id||v.chave;
+    const pct = Math.min(1,v.qty/v.max_qty);
+    const cor = pct<0.2?'var(--red-m)':pct<0.4?'var(--amber-m)':'var(--green-m)';
     return `<div class="est-item">
-      <div class="est-icon">${v.icon || '📦'}</div>
+      <div class="est-icon">${v.icon||'📦'}</div>
       <div class="est-info">
         <div class="est-name">${v.nome}</div>
         <div class="est-qty-text">${Number(v.qty).toFixed(1)} / ${v.max_qty} ${v.unidade}</div>
@@ -1619,428 +1341,334 @@ function renderEstoque() {
       </div>
       <div class="est-pct" style="color:${cor}">${Math.round(pct*100)}%</div>
       <div class="est-actions">
-        <button class="btn btn-xs" onclick="openReporModal('${v.chave}')">Repor</button>
-        <button class="btn btn-xs btn-red" onclick="removerIngrediente('${v.chave}')">✕</button>
+        <button class="btn btn-xs" onclick="openReporModal('${id}')">Repor</button>
+        <button class="btn btn-xs btn-red" onclick="removerIngrediente('${id}')">✕</button>
       </div>
     </div>`;
   }).join('');
 
-  const alertas = Object.values(DB.estoque).filter(v => v.qty < v.max_qty * SYS.alertaEstoque).sort((a,b) => (a.qty/a.max_qty) - (b.qty/b.max_qty));
-  const al = document.getElementById('alertas-list');
-  al.innerHTML = alertas.length ? alertas.map(v => `
-    <div class="alerta-item">
-      <div>
-        <div class="alerta-name">${v.icon || '⚠️'} ${v.nome}</div>
-        <div class="alerta-qty">Resta ${Number(v.qty).toFixed(1)} ${v.unidade} (${Math.round(v.qty/v.max_qty*100)}%)</div>
-      </div>
-      <button class="btn btn-xs btn-green" onclick="reporItem('${v.chave}')">Repor</button>
-    </div>`).join('') : '<div class="text-muted text-sm" style="padding:12px 0;text-align:center;">Sem alertas 🎉</div>';
+  const alertas = Object.values(DB.estoque).filter(v=>v.qty<v.max_qty*SYS.alertaEstoque).sort((a,b)=>a.qty/a.max_qty-b.qty/b.max_qty);
+  document.getElementById('alertas-list').innerHTML = alertas.length
+    ? alertas.map(v=>`<div class="alerta-item"><div><div class="alerta-name">${v.icon||'⚠️'} ${v.nome}</div><div class="alerta-qty">Resta ${Number(v.qty).toFixed(1)} ${v.unidade}</div></div><button class="btn btn-xs btn-green" onclick="reporItem('${v.id||v.chave}')">Repor</button></div>`).join('')
+    : '<div class="text-muted text-sm text-center" style="padding:12px 0;">Sem alertas 🎉</div>';
 }
 
-function openReporModal(chave) {
-  const item = DB.estoque[chave];
-  document.getElementById('modal-repor-desc').textContent = `${item.nome}: ${Number(item.qty).toFixed(1)} ${item.unidade} restantes (máx: ${item.max_qty}).`;
-  document.getElementById('repor-qty').value = (item.max_qty - item.qty).toFixed(1);
-  document.getElementById('repor-key').value = chave;
+window.openReporModal = (chave) => {
+  const item=DB.estoque[chave];
+  document.getElementById('modal-repor-desc').textContent=`${item.nome}: ${Number(item.qty).toFixed(1)} ${item.unidade} (máx: ${item.max_qty}).`;
+  document.getElementById('repor-qty').value=(item.max_qty-item.qty).toFixed(1);
+  document.getElementById('repor-key').value=chave;
   openModal('modal-repor');
-}
-
-async function confirmarRepor() {
-  const chave = document.getElementById('repor-key').value;
-  const qty = parseFloat(document.getElementById('repor-qty').value) || 0;
-  const item = DB.estoque[chave];
-  const novaQty = Math.min(item.max_qty, item.qty + qty);
-  await fsUpdate('estoque', chave, {qty: novaQty});
-  DB.estoque[chave] = {...item, qty: novaQty};
-  sysLog(`Estoque reposto: ${item.nome} → ${novaQty.toFixed(1)} ${item.unidade}`);
-  closeModal('modal-repor');
-  renderEstoque();
-  toast(`${item.nome} reposto!`, 'success');
-}
-
-async function reporItem(chave) {
-  const item = DB.estoque[chave];
-  await fsUpdate('estoque', chave, {qty: item.max_qty});
-  DB.estoque[chave] = {...item, qty: item.max_qty};
-  sysLog(`Estoque ${item.nome} → máximo`);
-  renderEstoque();
-  toast(`${item.nome} reposto ao máximo!`, 'success');
-}
-
-async function reporTudo() {
-  if (!confirm('Repor todos os ingredientes ao máximo?')) return;
-  for (const [k, item] of Object.entries(DB.estoque)) {
-    await fsUpdate('estoque', k, {qty: item.max_qty});
-    DB.estoque[k] = {...item, qty: item.max_qty};
-  }
-  sysLog('Todos os ingredientes repostos');
-  renderEstoque();
-  toast('Estoque totalmente reposto!', 'success');
-}
-
-async function addIngrediente() {
-  const nome = document.getElementById('new-ing-nome').value.trim();
-  const qty = parseFloat(document.getElementById('new-ing-qty').value) || 0;
-  const max = parseFloat(document.getElementById('new-ing-max').value) || 10;
-  const un = document.getElementById('new-ing-un').value;
-  const icon = document.getElementById('new-ing-icon').value || '📦';
-  if (!nome) { toast('Informe o nome do ingrediente', 'error'); return; }
-  const chave = nome.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
-  if (DB.estoque[chave]) { toast('Ingrediente já existe', 'error'); return; }
-  const d = {nome, icon, qty, max_qty: max, unidade: un};
-  await fsSet('estoque', chave, d);
-  DB.estoque[chave] = {chave, ...d};
-  sysLog(`Ingrediente adicionado: ${nome}`);
-  ['new-ing-nome','new-ing-qty','new-ing-max','new-ing-icon'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  renderEstoque();
-  toast(`${nome} adicionado ao estoque!`, 'success');
-}
-
-async function removerIngrediente(chave) {
-  const item = DB.estoque[chave];
-  if (!confirm(`Remover "${item?.nome}" do estoque?`)) return;
-  await fsDelete('estoque', chave);
+};
+window.confirmarRepor = async () => {
+  const chave=document.getElementById('repor-key').value;
+  const qty=parseFloat(document.getElementById('repor-qty').value)||0;
+  const item=DB.estoque[chave];
+  const nq=Math.min(item.max_qty,item.qty+qty);
+  await fsUpd('estoque',chave,{qty:nq});
+  DB.estoque[chave]={...item,qty:nq};
+  sysLog(`Reposto: ${item.nome} → ${nq.toFixed(1)} ${item.unidade}`);
+  closeModal('modal-repor'); renderEstoque();
+  toast(`${item.nome} reposto!`,'success');
+};
+window.reporItem = async (chave) => {
+  const item=DB.estoque[chave];
+  await fsUpd('estoque',chave,{qty:item.max_qty});
+  DB.estoque[chave]={...item,qty:item.max_qty};
+  renderEstoque(); toast(`${item.nome} reposto!`,'success');
+};
+window.reporTudo = async () => {
+  if(!confirm('Repor tudo ao máximo?')) return;
+  const batch=writeBatch(db);
+  Object.entries(DB.estoque).forEach(([k,v])=>{batch.update(ref('estoque',k),{qty:v.max_qty});DB.estoque[k]={...v,qty:v.max_qty};});
+  await batch.commit();
+  renderEstoque(); toast('Estoque reposto!','success');
+};
+window.addIngrediente = async () => {
+  const nome=document.getElementById('new-ing-nome').value.trim();
+  const qty=parseFloat(document.getElementById('new-ing-qty').value)||0;
+  const max=parseFloat(document.getElementById('new-ing-max').value)||10;
+  const un=document.getElementById('new-ing-un').value;
+  const icon=document.getElementById('new-ing-icon').value||'📦';
+  if(!nome){toast('Informe o nome','error');return;}
+  const chave=nome.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+  if(DB.estoque[chave]){toast('Já existe','error');return;}
+  const d={nome,icon,qty,max_qty:max,unidade:un};
+  await fsSet('estoque',chave,d);
+  DB.estoque[chave]={id:chave,...d};
+  ['new-ing-nome','new-ing-qty','new-ing-max','new-ing-icon'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  closeModal('modal-add-ing'); renderEstoque();
+  toast(`${nome} adicionado!`,'success');
+};
+window.removerIngrediente = async (chave) => {
+  const item=DB.estoque[chave];
+  if(!confirm(`Remover "${item?.nome}"?`)) return;
+  await fsDel('estoque',chave);
   delete DB.estoque[chave];
-  renderEstoque();
-  toast('Ingrediente removido', 'info');
-}
+  renderEstoque(); toast('Ingrediente removido','info');
+};
 
-// ─── MÓDULO: CARDÁPIO ADMIN ───────────────────────────────────────────
-let adminCatFiltro = 'Todos';
-
+// ═══════════════════════════════════════════════════════════════════
+// CARDÁPIO ADMIN
+// ═══════════════════════════════════════════════════════════════════
+let adminCatFiltro='Todos';
 function renderCardapioAdmin() {
-  if (!STATE.dbReady) return;
-  const itens = Object.values(DB.cardapio).sort((a,b) => (a.cat+a.nome).localeCompare(b.cat+b.nome));
-  const cats = ['Todos', ...new Set(itens.map(i => i.cat))];
-
-  document.getElementById('cardapio-cat-bar').innerHTML = cats.map(c =>
-    `<button class="cat-chip ${c === adminCatFiltro ? 'active' : ''}" onclick="filtAdminCat('${c}')">${c}</button>`
-  ).join('');
-
-  const filtered = adminCatFiltro === 'Todos' ? itens : itens.filter(i => i.cat === adminCatFiltro);
-  document.getElementById('cardapio-admin-grid').innerHTML = filtered.map(i => `
-    <div class="cardapio-admin-card ${!i.ativo ? 'unavailable' : ''}">
+  if(!STATE.dbReady) return;
+  const itens=Object.values(DB.cardapio).sort((a,b)=>(a.cat+a.nome).localeCompare(b.cat+b.nome));
+  const cats=['Todos',...new Set(itens.map(i=>i.cat))];
+  document.getElementById('cardapio-cat-bar').innerHTML=cats.map(c=>`<button class="cat-chip ${c===adminCatFiltro?'active':''}" onclick="filtAdminCat('${c}')">${c}</button>`).join('');
+  const filtered=adminCatFiltro==='Todos'?itens:itens.filter(i=>i.cat===adminCatFiltro);
+  document.getElementById('cardapio-admin-grid').innerHTML=filtered.map(i=>`
+    <div class="cardapio-admin-card ${!i.ativo?'unavailable':''}">
       <div class="cardapio-admin-top">
-        <div>
-          <div style="font-size:22px;">${i.icon || '🍽️'}</div>
-          <div class="cardapio-admin-name">${i.nome}</div>
-          <div class="cardapio-admin-cat">${i.cat}</div>
-        </div>
+        <div><div style="font-size:22px;">${i.icon||'🍽️'}</div><div class="cardapio-admin-name">${i.nome}</div><div class="cardapio-admin-cat">${i.cat}</div></div>
         <button class="btn btn-xs" onclick="openEditItemModal('${i.id}')">✏️</button>
       </div>
       <div class="cardapio-admin-price">${fmtBRL(i.preco)}</div>
-      <div style="font-size:11px;color:var(--text-3);">⏱ ${i.tempo || 15}min</div>
+      <div style="font-size:11px;color:var(--text3);">⏱ ${i.tempo||15}min</div>
       <div class="cardapio-admin-footer">
-        <span class="badge ${i.ativo ? 'b-green' : 'b-red'}">${i.ativo ? 'Ativo' : 'Inativo'}</span>
-        <label class="toggle">
-          <input type="checkbox" ${i.ativo ? 'checked' : ''} onchange="toggleItem('${i.id}',this.checked)">
-          <span class="toggle-slider"></span>
-        </label>
+        <span class="badge ${i.ativo?'b-green':'b-red'}">${i.ativo?'Ativo':'Inativo'}</span>
+        <label class="toggle"><input type="checkbox" ${i.ativo?'checked':''} onchange="toggleItem('${i.id}',this.checked)"><span class="toggle-slider"></span></label>
       </div>
     </div>`).join('');
 }
-
-function filtAdminCat(cat) {
-  adminCatFiltro = cat;
-  renderCardapioAdmin();
-}
-
-function openAddItemModal() {
-  document.getElementById('modal-item-title').textContent = 'Novo item';
-  document.getElementById('item-edit-id').value = '';
-  ['item-nome','item-preco','item-icon','item-tempo'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
+window.filtAdminCat=(cat)=>{adminCatFiltro=cat;renderCardapioAdmin();};
+window.openAddItemModal=()=>{
+  document.getElementById('modal-item-title').textContent='Novo item';
+  document.getElementById('item-edit-id').value='';
+  ['item-nome','item-preco','item-icon','item-tempo'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   openModal('modal-item-cardapio');
-}
-
-function openEditItemModal(id) {
-  const item = DB.cardapio[String(id)];
-  if (!item) return;
-  document.getElementById('modal-item-title').textContent = 'Editar item';
-  document.getElementById('item-edit-id').value = id;
-  document.getElementById('item-nome').value = item.nome;
-  document.getElementById('item-preco').value = item.preco;
-  document.getElementById('item-cat').value = item.cat;
-  document.getElementById('item-tempo').value = item.tempo || 15;
-  document.getElementById('item-icon').value = item.icon || '';
+};
+window.openEditItemModal=(id)=>{
+  const item=DB.cardapio[String(id)];
+  if(!item) return;
+  document.getElementById('modal-item-title').textContent='Editar item';
+  document.getElementById('item-edit-id').value=id;
+  document.getElementById('item-nome').value=item.nome;
+  document.getElementById('item-preco').value=item.preco;
+  document.getElementById('item-cat').value=item.cat;
+  document.getElementById('item-tempo').value=item.tempo||15;
+  document.getElementById('item-icon').value=item.icon||'';
   openModal('modal-item-cardapio');
-}
-
-async function salvarItem() {
-  const id = document.getElementById('item-edit-id').value;
-  const nome = document.getElementById('item-nome').value.trim();
-  const preco = parseFloat(document.getElementById('item-preco').value);
-  const cat = document.getElementById('item-cat').value;
-  const tempo = parseInt(document.getElementById('item-tempo').value) || 15;
-  const icon = document.getElementById('item-icon').value || '🍽️';
-
-  if (!nome) { toast('Informe o nome', 'error'); return; }
-  if (!preco || preco <= 0) { toast('Preço inválido', 'error'); return; }
-
-  if (id) {
-    const upd = {nome, preco, cat, tempo, icon};
-    await fsUpdate('cardapio', String(id), upd);
-    DB.cardapio[String(id)] = {...DB.cardapio[String(id)], ...upd};
-    sysLog(`Item atualizado: ${nome}`);
-    toast('Item atualizado!', 'success');
+};
+window.salvarItem=async()=>{
+  const id=document.getElementById('item-edit-id').value;
+  const nome=document.getElementById('item-nome').value.trim();
+  const preco=parseFloat(document.getElementById('item-preco').value);
+  const cat=document.getElementById('item-cat').value;
+  const tempo=parseInt(document.getElementById('item-tempo').value)||15;
+  const icon=document.getElementById('item-icon').value||'🍽️';
+  if(!nome){toast('Informe o nome','error');return;}
+  if(!preco||preco<=0){toast('Preço inválido','error');return;}
+  if(id){
+    await fsUpd('cardapio',String(id),{nome,preco,cat,tempo,icon});
+    DB.cardapio[String(id)]={...DB.cardapio[String(id)],nome,preco,cat,tempo,icon};
+    toast('Item atualizado!','success');
   } else {
-    const newId = await fsAdd('cardapio', {nome, cat, preco, tempo, icon, ing:'{}', ativo:1});
-    DB.cardapio[newId] = {id: newId, nome, cat, preco, tempo, icon, ing:'{}', ativo:1};
-    sysLog(`Item adicionado: ${nome}`);
-    toast('Item adicionado!', 'success');
+    const nid=await fsAdd('cardapio',{nome,cat,preco,tempo,icon,ing:'{}',ativo:1});
+    DB.cardapio[nid]={id:nid,nome,cat,preco,tempo,icon,ing:'{}',ativo:1};
+    toast('Item adicionado!','success');
   }
   closeModal('modal-item-cardapio');
-  renderCardapioAdmin();
-  renderCardapio();
-}
+  renderCardapioAdmin(); renderCardapio();
+};
+window.toggleItem=async(id,ativo)=>{
+  await fsUpd('cardapio',String(id),{ativo:ativo?1:0});
+  DB.cardapio[String(id)]={...DB.cardapio[String(id)],ativo:ativo?1:0};
+  renderCardapioAdmin(); renderCardapio();
+};
 
-async function toggleItem(id, ativo) {
-  const val = ativo ? 1 : 0;
-  await fsUpdate('cardapio', String(id), {ativo: val});
-  DB.cardapio[String(id)] = {...DB.cardapio[String(id)], ativo: val};
-  sysLog(`Item ${id} → ${ativo ? 'ativo' : 'inativo'}`);
-  renderCardapioAdmin();
-  renderCardapio();
-}
-
-// ─── MÓDULO: RELATÓRIOS ───────────────────────────────────────────────
-let relPeriod = 'hoje';
-
-function setRelPeriod(p, btn) {
-  relPeriod = p;
-  document.querySelectorAll('.rel-period-btn').forEach(b => b.classList.remove('active'));
+// ═══════════════════════════════════════════════════════════════════
+// RELATÓRIOS
+// ═══════════════════════════════════════════════════════════════════
+let relPeriod='hoje';
+window.setRelPeriod=(p,btn)=>{
+  relPeriod=p;
+  document.querySelectorAll('.rel-period-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   renderRelatorios();
-}
-
-function getRelDatas() {
-  const hoje = todayStr();
-  if (relPeriod === 'hoje') return [hoje];
-  const count = relPeriod === 'semana' ? 7 : 30;
-  const datas = [];
-  for (let i = count - 1; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    datas.push(d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate());
-  }
+};
+function getRelDatas(){
+  const hoje=todayStr();
+  if(relPeriod==='hoje') return [hoje];
+  const count=relPeriod==='semana'?7:30;
+  const datas=[];
+  for(let i=count-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);datas.push(`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`);}
   return datas;
 }
-
-function renderRelatorios() {
-  if (!STATE.dbReady) return;
-  const datas = new Set(getRelDatas());
-
-  const rels = Object.values(DB.relatorio_dia).filter(r => datas.has(r.data));
-  const fat = rels.reduce((s, r) => s + (r.faturamento || 0), 0);
-  const ped = rels.reduce((s, r) => s + (r.pedidos_total || 0), 0);
-  const itens = rels.reduce((s, r) => s + (r.itens_total || 0), 0);
-  const ticket = ped > 0 ? fat / ped : 0;
-
-  document.getElementById('rel-metrics').innerHTML = `
-    <div class="metric-card text-center">
-      <div class="metric-val">${fmtBRL(fat)}</div>
-      <div class="metric-label">Faturamento</div>
-    </div>
-    <div class="metric-card text-center">
-      <div class="metric-val">${ped}</div>
-      <div class="metric-label">Pedidos</div>
-    </div>
-    <div class="metric-card text-center">
-      <div class="metric-val">${fmtBRL(ticket)}</div>
-      <div class="metric-label">Ticket médio</div>
-    </div>
-    <div class="metric-card text-center">
-      <div class="metric-val">${itens}</div>
-      <div class="metric-label">Itens vendidos</div>
-    </div>
+function renderRelatorios(){
+  if(!STATE.dbReady) return;
+  const datas=new Set(getRelDatas());
+  const rels=Object.values(DB.relatorio_dia).filter(r=>datas.has(r.id||r.data));
+  const fat=rels.reduce((s,r)=>s+(r.faturamento||0),0);
+  const ped=rels.reduce((s,r)=>s+(r.pedidos_total||0),0);
+  const itens=rels.reduce((s,r)=>s+(r.itens_total||0),0);
+  const ticket=ped>0?fat/ped:0;
+  document.getElementById('rel-metrics').innerHTML=`
+    <div class="metric-card text-center"><div class="metric-val">${fmtBRL(fat)}</div><div class="metric-label">Faturamento</div></div>
+    <div class="metric-card text-center"><div class="metric-val">${ped}</div><div class="metric-label">Pedidos</div></div>
+    <div class="metric-card text-center"><div class="metric-val">${fmtBRL(ticket)}</div><div class="metric-label">Ticket médio</div></div>
+    <div class="metric-card text-center"><div class="metric-val">${itens}</div><div class="metric-label">Itens vendidos</div></div>
   `;
-
-  if (relPeriod === 'hoje') {
-    const horas = Object.values(DB.fat_hora).filter(h => h.data === todayStr()).sort((a,b) => a.hora - b.hora);
-    const maxH = Math.max(...horas.map(h => h.valor), 1);
-    document.getElementById('chart-horas').innerHTML = horas.length
-      ? horas.map(h => `<div class="chart-bar-col"><div class="chart-bar-val">${h.valor >= 1000 ? (h.valor/1000).toFixed(1)+'k' : fmtBRL(h.valor).replace('R$ ','')}</div><div class="chart-bar-rect" style="height:${Math.max(4,Math.round(h.valor/maxH*100))}px"></div></div>`).join('')
-      : '<div class="text-center text-muted" style="padding:20px;width:100%">Sem dados hoje</div>';
-    document.getElementById('chart-horas-labels').innerHTML = horas.map(h => `<span class="chart-bar-label">${h.hora}h</span>`).join('');
+  // Gráfico
+  if(relPeriod==='hoje'){
+    const horas=Object.values(DB.fat_hora).filter(h=>datas.has(h.data)).sort((a,b)=>a.hora-b.hora);
+    const maxH=Math.max(...horas.map(h=>h.valor),1);
+    document.getElementById('chart-horas').innerHTML=horas.length?horas.map(h=>`<div class="chart-bar-col"><div class="chart-bar-val">${h.valor>=1000?(h.valor/1000).toFixed(1)+'k':Math.round(h.valor)}</div><div class="chart-bar-rect" style="height:${Math.max(4,Math.round(h.valor/maxH*100))}px"></div></div>`).join(''):'<div class="text-center text-muted" style="padding:20px;width:100%">Sem dados</div>';
+    document.getElementById('chart-horas-labels').innerHTML=horas.map(h=>`<span class="chart-bar-label">${h.hora}h</span>`).join('');
   } else {
-    const datasArr = [...datas].sort();
-    const fatPorDia = datasArr.map(data => ({data, f: (DB.relatorio_dia[data]?.faturamento || 0)}));
-    const maxD = Math.max(...fatPorDia.map(d => d.f), 1);
-    document.getElementById('chart-horas').innerHTML = fatPorDia.length
-      ? fatPorDia.map(d => `<div class="chart-bar-col"><div class="chart-bar-val">${d.f >= 1000 ? (d.f/1000).toFixed(1)+'k' : Math.round(d.f)}</div><div class="chart-bar-rect" style="height:${Math.max(4,Math.round(d.f/maxD*100))}px"></div></div>`).join('')
-      : '<div class="text-center text-muted" style="padding:20px;width:100%">Sem dados</div>';
-    document.getElementById('chart-horas-labels').innerHTML = fatPorDia.map(d => {
-      const parts = d.data.split('-');
-      return `<span class="chart-bar-label">${parts[2]}/${parts[1]}</span>`;
-    }).join('');
+    const datasArr=[...datas].sort();
+    const fatD=datasArr.map(d=>({d,f:(DB.relatorio_dia[d]?.faturamento||0)}));
+    const maxD=Math.max(...fatD.map(x=>x.f),1);
+    document.getElementById('chart-horas').innerHTML=fatD.map(x=>`<div class="chart-bar-col"><div class="chart-bar-val">${x.f>=1000?(x.f/1000).toFixed(1)+'k':Math.round(x.f)}</div><div class="chart-bar-rect" style="height:${Math.max(4,Math.round(x.f/maxD*100))}px"></div></div>`).join('');
+    document.getElementById('chart-horas-labels').innerHTML=fatD.map(x=>{const p=x.d.split('-');return`<span class="chart-bar-label">${p[2]}/${p[1]}</span>`;}).join('');
   }
-
   // Ranking
-  const rankMap = {};
-  Object.values(DB.ranking_itens).filter(r => datas.has(r.data)).forEach(r => {
-    if (!rankMap[r.nome]) rankMap[r.nome] = {nome: r.nome, qty: 0, fat: 0};
-    rankMap[r.nome].qty += r.qty || 0;
-    rankMap[r.nome].fat += r.faturamento || 0;
+  const rankMap={};
+  Object.values(DB.ranking_itens).filter(r=>datas.has(r.data)).forEach(r=>{
+    if(!rankMap[r.nome]) rankMap[r.nome]={nome:r.nome,qty:0,fat:0};
+    rankMap[r.nome].qty+=r.qty||0; rankMap[r.nome].fat+=r.faturamento||0;
   });
-  const rank = Object.values(rankMap).sort((a,b) => b.qty - a.qty).slice(0, 8);
-  const maxR = rank.length ? rank[0].qty : 1;
-  document.getElementById('ranking-list').innerHTML = rank.length
-    ? rank.map((r, i) => `<div class="rank-item"><div class="rank-pos">${i+1}</div><div class="rank-name">${r.nome}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(r.qty/maxR*100)}%"></div></div><div class="rank-qty">${r.qty}</div></div>`).join('')
-    : '<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
-
+  const rank=Object.values(rankMap).sort((a,b)=>b.qty-a.qty).slice(0,8);
+  const maxR=rank.length?rank[0].qty:1;
+  document.getElementById('ranking-list').innerHTML=rank.length?rank.map((r,i)=>`<div class="rank-item"><div class="rank-pos">${i+1}</div><div class="rank-name">${r.nome}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(r.qty/maxR*100)}%"></div></div><div class="rank-qty">${r.qty}</div></div>`).join(''):'<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
   // Por categoria
-  const catMap = {};
-  Object.values(DB.fat_cat).filter(r => datas.has(r.data)).forEach(r => {
-    catMap[r.cat] = (catMap[r.cat] || 0) + (r.valor || 0);
-  });
-  const fatCat = Object.entries(catMap).map(([cat,v]) => ({cat,v})).sort((a,b) => b.v - a.v);
-  const maxCat = fatCat.length ? fatCat[0].v : 1;
-  document.getElementById('cat-fat-list').innerHTML = fatCat.length
-    ? fatCat.map(c => `<div class="rank-item"><div class="rank-name">${c.cat}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(c.v/maxCat*100)}%;background:var(--brand)"></div></div><div class="rank-qty">${fmtBRL(c.v)}</div></div>`).join('')
-    : '<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
-
-  // Por forma de pagamento
-  const pgtoMap = {};
-  Object.values(DB.fat_pgto).filter(r => datas.has(r.data)).forEach(r => {
-    if (!pgtoMap[r.forma]) pgtoMap[r.forma] = {forma: r.forma, v: 0, qtd: 0};
-    pgtoMap[r.forma].v += r.valor || 0;
-    pgtoMap[r.forma].qtd += r.qtd || 0;
-  });
-  const fatPgto = Object.values(pgtoMap).sort((a,b) => b.v - a.v);
-  const pgtoIcons = {dinheiro:'💵',debito:'💳',credito:'💳',pix:'📱'};
-  document.getElementById('pgto-fat-list').innerHTML = fatPgto.length
-    ? fatPgto.map(p => `<div class="conta-total-row" style="padding:8px 0;"><span>${pgtoIcons[p.forma] || '💳'} ${p.forma} (${p.qtd}×)</span><span style="font-weight:600;">${fmtBRL(p.v)}</span></div>`).join('')
-    : '<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
+  const catMap={};
+  Object.values(DB.fat_cat).filter(r=>datas.has(r.data)).forEach(r=>{catMap[r.cat]=(catMap[r.cat]||0)+(r.valor||0);});
+  const fatCat=Object.entries(catMap).map(([c,v])=>({c,v})).sort((a,b)=>b.v-a.v);
+  const maxC=fatCat.length?fatCat[0].v:1;
+  document.getElementById('cat-fat-list').innerHTML=fatCat.length?fatCat.map(x=>`<div class="rank-item"><div class="rank-name">${x.c}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(x.v/maxC*100)}%;background:var(--brand-m)"></div></div><div class="rank-qty">${fmtBRL(x.v)}</div></div>`).join(''):'<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
+  // Por pgto
+  const pgtoMap={};
+  Object.values(DB.fat_pgto).filter(r=>datas.has(r.data)).forEach(r=>{if(!pgtoMap[r.forma])pgtoMap[r.forma]={f:r.forma,v:0,q:0};pgtoMap[r.forma].v+=r.valor||0;pgtoMap[r.forma].q+=r.qtd||0;});
+  const icons={dinheiro:'💵',debito:'💳',credito:'💳',pix:'📱'};
+  document.getElementById('pgto-fat-list').innerHTML=Object.values(pgtoMap).sort((a,b)=>b.v-a.v).length
+    ?Object.values(pgtoMap).sort((a,b)=>b.v-a.v).map(p=>`<div class="conta-total-row" style="padding:8px 0;"><span>${icons[p.f]||'💳'} ${p.f} (${p.q}×)</span><span style="font-weight:700;">${fmtBRL(p.v)}</span></div>`).join('')
+    :'<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
 }
 
-// ─── MÓDULO: CONFIG PAGE ─────────────────────────────────────────────
-function renderConfigPage() {
-  document.getElementById('cfg-nome').value = SYS.nomeRestaurante;
-  document.getElementById('cfg-taxa').value = SYS.taxaServico;
-  document.getElementById('cfg-mesas').value = Object.keys(DB.mesas).length || SYS.nMesas;
-
-  const roles = Object.entries(ROLE_CONFIG);
-  document.getElementById('usuarios-list').innerHTML = roles.map(([role, rc]) => {
-    const isCurrentUser = STATE.currentUser?.role === role;
-    return `<div class="usuario-card ${isCurrentUser ? 'style="border-color:var(--gold-m)"' : ''}">
-      <div class="usuario-avatar" style="background:${rc.color}">${rc.label.charAt(0)}</div>
-      <div class="usuario-info">
-        <div class="usuario-name">${isCurrentUser ? `${STATE.currentUser.nome} (você)` : rc.label}</div>
-        <div class="usuario-role">${rc.label} ${isCurrentUser ? '• Online' : '• Perfil disponível'}</div>
-      </div>
-      <span class="badge" style="background:${rc.bg};color:${rc.color};">${role}</span>
-    </div>`;
-  }).join('');
-}
-
-// ─── MÓDULO: NAVEGAÇÃO ────────────────────────────────────────────────
-function goPage(name) {
-  const role = STATE.currentUser?.role;
-  const rc = ROLE_CONFIG[role];
-
-  // Verificar permissão
-  if (rc && !rc.pages.includes(name)) {
-    toast('Sem permissão para acessar esta área', 'error');
-    return;
+// ═══════════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════════
+window.salvarConfig = async () => {
+  const nome=document.getElementById('cfg-nome').value.trim()||SYS.nomeRestaurante;
+  const taxa=parseFloat(document.getElementById('cfg-taxa').value)||SYS.taxaServico;
+  const nm=parseInt(document.getElementById('cfg-mesas').value)||SYS.nMesas;
+  await Promise.all([
+    fsSet('config','nome_restaurante',{valor:nome}),
+    fsSet('config','taxa_servico',{valor:String(taxa)}),
+    fsSet('config','n_mesas',{valor:String(nm)}),
+  ]);
+  DB.config['nome_restaurante']=nome; DB.config['taxa_servico']=String(taxa); DB.config['n_mesas']=String(nm);
+  SYS.nomeRestaurante=nome; SYS.taxaServico=taxa;
+  const atualCount=Object.keys(DB.mesas).length;
+  if(nm>atualCount){
+    for(let i=atualCount+1;i<=nm;i++){
+      const m={status:'livre',capacidade:4,inicio:null,total:0};
+      await fsSet('mesas',String(i),m);
+      DB.mesas[String(i)]={id:String(i),...m};
+    }
   }
+  renderFloor(); toast('Configurações salvas!','success');
+};
 
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn, .nav-mob-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
+window.exportarDados = () => {
+  const data={version:'2.0',exportedAt:new Date().toISOString(),mesas:Object.values(DB.mesas),cardapio:Object.values(DB.cardapio),pedidos:Object.values(DB.pedidos),pedido_itens:Object.values(DB.pedido_itens),estoque:Object.values(DB.estoque),relatorio_dia:Object.values(DB.relatorio_dia),ranking_itens:Object.values(DB.ranking_itens)};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`restaurantOS_${todayStr()}.json`;a.click();
+  toast('Dados exportados!','success');
+};
 
-  // Ativar botões
-  document.querySelectorAll(`[data-page="${name}"]`).forEach(b => b.classList.add('active'));
+window.resetarSistema = async () => {
+  if(!confirm('APAGAR TODOS OS DADOS?')) return;
+  if(!confirm('Tem certeza?')) return;
+  const cols=['mesas','cardapio','pedidos','pedido_itens','estoque','config','relatorio_dia','fat_hora','ranking_itens','fat_pgto','fat_cat'];
+  for(const c of cols){const snaps=await getDocs(collection(db,c));for(const d of snaps.docs)await fsDel(c,d.id);}
+  Object.keys(DB).forEach(k=>{DB[k]={};});
+  toast('Dados apagados. Recarregando...','info');
+  setTimeout(()=>location.reload(),1500);
+};
 
-  // Renderizar página
-  const renders = {
-    mesas: renderFloor,
-    pedido: () => { renderMesaSelector(); renderCardapio(); renderCart(); },
-    cozinha: renderKDS,
-    caixa: renderCaixa,
-    estoque: renderEstoque,
-    cardapio: renderCardapioAdmin,
-    relatorios: renderRelatorios,
-    config: renderConfigPage,
+function renderConfigPage(){
+  document.getElementById('cfg-nome').value=SYS.nomeRestaurante;
+  document.getElementById('cfg-taxa').value=SYS.taxaServico;
+  document.getElementById('cfg-mesas').value=Object.keys(DB.mesas).length||SYS.nMesas;
+  document.getElementById('usuarios-list').innerHTML=Object.values(DB.usuarios).map(u=>{
+    const rc=ROLE_CONFIG[u.role]||ROLE_CONFIG.garcom;
+    const isMe=STATE.currentUser?.uid===u.uid||STATE.currentUser?.uid===(u.id||u.uid);
+    return `<div class="usuario-card">
+      <div class="usuario-avatar" style="background:${rc.color}">${(u.nome||'?').charAt(0).toUpperCase()}</div>
+      <div class="usuario-info">
+        <div class="usuario-name">${u.nome||u.email}${isMe?' (você)':''}</div>
+        <div class="usuario-role">${u.email||''}</div>
+      </div>
+      <span class="badge" style="background:${rc.bg};color:${rc.color};">${rc.label}</span>
+    </div>`;
+  }).join('')||'<div class="text-muted text-sm" style="padding:12px 0;">Nenhum usuário encontrado</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NAVEGAÇÃO
+// ═══════════════════════════════════════════════════════════════════
+function goPage(name) {
+  const rc=ROLE_CONFIG[STATE.currentUser?.role]||ROLE_CONFIG.garcom;
+  if(!rc.pages.includes(name)){ toast('Sem permissão','error'); return; }
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn,.nav-mob-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll(`[data-page="${name}"]`).forEach(b=>b.classList.add('active'));
+  const renders={
+    mesas:renderFloor,
+    pedido:()=>{renderMesaSelector();renderCardapio();renderCart();},
+    cozinha:renderKDS, caixa:renderCaixa,
+    estoque:renderEstoque, cardapio:renderCardapioAdmin,
+    relatorios:renderRelatorios, config:renderConfigPage,
   };
   renders[name]?.();
 }
+window.goPage = goPage;
 
-function renderAll() {
-  renderFloor();
-  renderKDS();
-}
+function renderAll(){ renderFloor(); renderKDS(); }
 
-// ─── MÓDULO: UI HELPERS ───────────────────────────────────────────────
-function openModal(id) {
-  document.getElementById(id).classList.add('open');
-}
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-}
-
-let toastTimer = null;
-function toast(msg, type = 'success') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `toast ${type} show`;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-function updateClock() {
-  const n = new Date();
-  document.getElementById('clock').textContent =
-    String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
-}
-
-function todayStr() {
-  const d = new Date();
-  return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
-}
-
-function tStr(ms) {
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  const h = Math.floor(m / 60);
-  if (h > 0) return `${h}h${String(m % 60).padStart(2,'0')}`;
-  return `${m}min`;
-}
-
-function fmtBRL(v) {
-  return 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
-
-// ─── INICIALIZAÇÃO ─────────────────────────────────────────────────────
-updateClock();
-setInterval(updateClock, 30000);
-
-// Auto-refresh para KDS e Floor (8 segundos)
-setInterval(() => {
-  if (!STATE.dbReady) return;
-  checkNightReset();
-  const activePage = document.querySelector('.page.active')?.id;
-  if (activePage === 'page-mesas') renderFloor();
-  if (activePage === 'page-cozinha') renderKDS();
-  if (activePage === 'page-caixa') renderCaixa();
-}, SYS.autoRefreshMs);
-
-// Fechar modal ao clicar no overlay
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) overlay.classList.remove('open');
-  });
+// ═══════════════════════════════════════════════════════════════════
+// MODAIS
+// ═══════════════════════════════════════════════════════════════════
+window.openModal  = (id) => document.getElementById(id).classList.add('open');
+window.closeModal = (id) => document.getElementById(id).classList.remove('open');
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
 });
 
-// Restaurar sessão
-restoreSession();
+// ═══════════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════════
+let toastTimer=null;
+function toast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
+}
+window.toast=toast;
 
-// Iniciar banco
-initDB();
+// ═══════════════════════════════════════════════════════════════════
+// CLOCK + AUTO-REFRESH
+// ═══════════════════════════════════════════════════════════════════
+function updateClock(){
+  const n=new Date();
+  document.getElementById('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+}
+updateClock();
+setInterval(updateClock,30000);
+setInterval(()=>{
+  if(!STATE.dbReady) return;
+  checkNightReset();
+  const ap=document.querySelector('.page.active')?.id;
+  if(ap==='page-mesas')     renderFloor();
+  if(ap==='page-cozinha')   renderKDS();
+  if(ap==='page-caixa')     renderCaixa();
+}, SYS.autoRefreshMs);
+
 </script>
 </body>
 </html>
