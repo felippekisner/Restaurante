@@ -1595,16 +1595,6 @@ window.exportarDados = () => {
   toast('Dados exportados!','success');
 };
 
-window.resetarSistema = async () => {
-  if(!confirm('APAGAR TODOS OS DADOS?')) return;
-  if(!confirm('Tem certeza?')) return;
-  const cols=['mesas','cardapio','pedidos','pedido_itens','estoque','config','relatorio_dia','fat_hora','ranking_itens','fat_pgto','fat_cat'];
-  for(const c of cols){const snaps=await getDocs(collection(db,c));for(const d of snaps.docs)await fsDel(c,d.id);}
-  Object.keys(DB).forEach(k=>{DB[k]={};});
-  toast('Dados apagados. Recarregando...','info');
-  setTimeout(()=>location.reload(),1500);
-};
-
 function renderConfigPage(){
   document.getElementById('cfg-nome').value=SYS.nomeRestaurante;
   document.getElementById('cfg-taxa').value=SYS.taxaServico;
