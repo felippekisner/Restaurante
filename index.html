@@ -247,6 +247,7 @@
             <div class="card-title" style="margin-bottom:10px;">Dados</div>
             <div style="display:flex;flex-direction:column;gap:8px;">
               <button class="btn btn-sm" onclick="exportarDados()">📤 Exportar dados (JSON)</button>
+              <button class="btn btn-sm" style="background:var(--brand,#7c3aed);color:#fff;border-color:var(--brand,#7c3aed);" onclick="exportarRelatorioPDF()">📄 Exportar Relatório (PDF)</button>
               <button class="btn btn-red btn-sm" onclick="resetarSistema()">🗑️ Resetar todos os dados</button>
             </div>
           </div>
@@ -1192,7 +1193,9 @@ function renderCaixa() {
   if (STATE.caixaMesa) renderCaixaDet();
 }
 
-window.selCaixaMesa = (id) => { STATE.caixaMesa=id; STATE.pgtoSel=null; renderCaixa(); };
+window.selCaixaMesa = (id) => { STATE.caixaMesa=id; STATE.pgtoSel=null; STATE.removerTaxa=false; renderCaixa(); };
+
+window.toggleTaxa = () => { STATE.removerTaxa = !STATE.removerTaxa; renderCaixaDet(); };
 
 function renderCaixaDet() {
   const m       = DB.mesas[String(STATE.caixaMesa)];
@@ -1204,7 +1207,8 @@ function renderCaixaDet() {
     if(ex) ex.qty+=i.qty; else todosItens.push({...i});
   }));
   const sub  = todosItens.reduce((s,i)=>s+i.preco*i.qty,0);
-  const taxa = sub*(SYS.taxaServico/100);
+  const taxaAplicada = STATE.removerTaxa ? 0 : sub*(SYS.taxaServico/100);
+  const taxa = taxaAplicada;
   const tot  = sub+taxa;
   const abertos = todos.filter(p=>p.status!=='entregue').length;
 
@@ -1227,6 +1231,19 @@ function renderCaixaDet() {
     <div class="conta-total-row"><span class="text-muted">Subtotal</span><span>${fmtBRL(sub)}</span></div>
     <div class="conta-total-row"><span class="text-muted">Taxa (${SYS.taxaServico}%)</span><span>${fmtBRL(taxa)}</span></div>
     <div class="conta-total-row" style="border-top:1.5px solid var(--border-strong);padding-top:10px;margin-top:4px;">
+    <div class="conta-total-row" style="align-items:center;">
+      <span class="text-muted" style="display:flex;align-items:center;gap:8px;">
+        Taxa (${SYS.taxaServico}%)
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:var(--text2);">
+          <div onclick="toggleTaxa()" style="position:relative;display:inline-block;width:36px;height:20px;">
+            <div style="position:absolute;inset:0;background:${STATE.removerTaxa?'var(--red-m,#ef4444)':'var(--green-m,#22c55e)'};border-radius:20px;transition:background .2s;"></div>
+            <div style="position:absolute;top:3px;left:${STATE.removerTaxa?'3px':'17px'};width:14px;height:14px;background:#fff;border-radius:50%;transition:left .2s;"></div>
+          </div>
+          <span style="color:${STATE.removerTaxa?'var(--red,#dc2626)':'var(--green,#16a34a)'};">${STATE.removerTaxa?'Removida':'Cobrar'}</span>
+        </label>
+      </span>
+      <span style="${STATE.removerTaxa?'text-decoration:line-through;color:var(--text3);':''}">${fmtBRL(sub*(SYS.taxaServico/100))}</span>
+    </div>
       <span class="conta-total-final">Total</span><span class="conta-total-final">${fmtBRL(tot)}</span>
     </div>
     <div class="divider"></div>
@@ -1650,6 +1667,261 @@ function toast(msg,type='success'){
   toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
 }
 window.toast=toast;
+
+
+window.exportarRelatorioPDF = async () => {
+  toast('Gerando relatório PDF...', 'info');
+  try {
+    // Carregar jsPDF dinamicamente
+    if (!window.jspdf) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const W = 210, M = 16;
+    let y = 0;
+ 
+    const cor = { roxo: [124,58,237], roxoClaro: [237,233,254], cinza: [100,100,100], cinzaClaro: [245,245,245], branco: [255,255,255], preto: [30,30,30], verde: [22,163,74], vermelho: [220,38,38], linha: [220,220,220] };
+    const fmtN = (v) => 'R$ ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const addPage = () => { doc.addPage(); y = 20; };
+    const checkY = (need=20) => { if (y + need > 280) addPage(); };
+ 
+    // ── CABEÇALHO ──
+    doc.setFillColor(...cor.roxo);
+    doc.rect(0, 0, W, 38, 'F');
+    doc.setFillColor(...cor.roxoClaro);
+    doc.rect(0, 38, W, 2, 'F');
+    doc.setTextColor(...cor.branco);
+    doc.setFontSize(22); doc.setFont('helvetica','bold');
+    doc.text('RestaurantOS', M, 16);
+    doc.setFontSize(11); doc.setFont('helvetica','normal');
+    doc.text('Relatório Gerencial Completo', M, 24);
+    doc.setFontSize(9);
+    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}   |   ${SYS.nomeRestaurante}`, M, 32);
+    // Ícone decorativo direita
+    doc.setFontSize(26);
+    doc.text('', W - 28, 22);
+    y = 50;
+ 
+    // ── RESUMO GERAL ──
+    const datas = Object.keys(DB.relatorio_dia).sort();
+    const totFat = Object.values(DB.relatorio_dia).reduce((s,r)=>s+(r.faturamento||0),0);
+    const totPed = Object.values(DB.relatorio_dia).reduce((s,r)=>s+(r.pedidos_total||0),0);
+    const totIten = Object.values(DB.relatorio_dia).reduce((s,r)=>s+(r.itens_total||0),0);
+    const ticketMedio = totPed > 0 ? totFat / totPed : 0;
+ 
+    const drawSecTitle = (titulo) => {
+      checkY(14);
+      doc.setFillColor(...cor.roxo);
+      doc.roundedRect(M, y, W-M*2, 9, 2, 2, 'F');
+      doc.setTextColor(...cor.branco);
+      doc.setFontSize(10); doc.setFont('helvetica','bold');
+      doc.text(titulo, M+4, y+6.2);
+      y += 13;
+    };
+ 
+    const drawMetricCard = (label, value, x, w, destaque=false) => {
+      doc.setFillColor(...(destaque ? cor.roxoClaro : cor.cinzaClaro));
+      doc.roundedRect(x, y, w, 18, 2, 2, 'F');
+      doc.setDrawColor(...cor.linha);
+      doc.roundedRect(x, y, w, 18, 2, 2, 'S');
+      doc.setTextColor(...cor.cinza);
+      doc.setFontSize(7.5); doc.setFont('helvetica','normal');
+      doc.text(label, x+4, y+6);
+      doc.setTextColor(...(destaque ? cor.roxo : cor.preto));
+      doc.setFontSize(11); doc.setFont('helvetica','bold');
+      doc.text(value, x+4, y+14);
+    };
+ 
+    drawSecTitle(' Resumo Geral');
+    const cw = (W - M*2 - 9) / 4;
+    drawMetricCard('Faturamento Total', fmtN(totFat), M, cw, true);
+    drawMetricCard('Total de Pedidos', String(totPed), M+cw+3, cw);
+    drawMetricCard('Itens Vendidos', String(totIten), M+cw*2+6, cw);
+    drawMetricCard('Ticket Médio', fmtN(ticketMedio), M+cw*3+9, cw);
+    y += 24;
+ 
+    // ── FATURAMENTO POR DIA ──
+    if (datas.length) {
+      drawSecTitle('Faturamento por Dia');
+      // Cabeçalho tabela
+      doc.setFillColor(...cor.roxoClaro);
+      doc.rect(M, y, W-M*2, 7, 'F');
+      doc.setTextColor(...cor.roxo);
+      doc.setFontSize(8); doc.setFont('helvetica','bold');
+      doc.text('Data', M+3, y+5);
+      doc.text('Pedidos', M+55, y+5);
+      doc.text('Itens', M+85, y+5);
+      doc.text('Faturamento', M+115, y+5);
+      y += 7;
+      let alt = false;
+      for (const d of datas.slice(-30)) {
+        checkY(7);
+        const r = DB.relatorio_dia[d]||{};
+        const [aa,mm,dd] = d.split('-');
+        doc.setFillColor(...(alt ? [250,248,255] : cor.branco));
+        doc.rect(M, y, W-M*2, 7, 'F');
+        doc.setTextColor(...cor.preto);
+        doc.setFontSize(8); doc.setFont('helvetica','normal');
+        doc.text(`${dd}/${mm}/${aa}`, M+3, y+5);
+        doc.text(String(r.pedidos_total||0), M+55, y+5);
+        doc.text(String(r.itens_total||0), M+85, y+5);
+        doc.setFont('helvetica','bold');
+        doc.text(fmtN(r.faturamento||0), M+115, y+5);
+        // linha divisória
+        doc.setDrawColor(...cor.linha);
+        doc.line(M, y+7, W-M, y+7);
+        y += 7; alt = !alt;
+      }
+      // Linha total
+      checkY(8);
+      doc.setFillColor(...cor.roxo);
+      doc.rect(M, y, W-M*2, 8, 'F');
+      doc.setTextColor(...cor.branco);
+      doc.setFontSize(8.5); doc.setFont('helvetica','bold');
+      doc.text('TOTAL', M+3, y+5.5);
+      doc.text(String(totPed), M+55, y+5.5);
+      doc.text(String(totIten), M+85, y+5.5);
+      doc.text(fmtN(totFat), M+115, y+5.5);
+      y += 14;
+    }
+ 
+    // ── RANKING DE ITENS ──
+    const rankMap = {};
+    Object.values(DB.ranking_itens).forEach(r=>{
+      if(!rankMap[r.nome]) rankMap[r.nome]={nome:r.nome,qty:0,fat:0};
+      rankMap[r.nome].qty += r.qty||0; rankMap[r.nome].fat += r.faturamento||0;
+    });
+    const rank = Object.values(rankMap).sort((a,b)=>b.qty-a.qty).slice(0,10);
+    if (rank.length) {
+      checkY(60);
+      drawSecTitle('Top 10 Itens Mais Vendidos');
+      doc.setFillColor(...cor.roxoClaro);
+      doc.rect(M, y, W-M*2, 7, 'F');
+      doc.setTextColor(...cor.roxo);
+      doc.setFontSize(8); doc.setFont('helvetica','bold');
+      doc.text('#', M+3, y+5);
+      doc.text('Item', M+12, y+5);
+      doc.text('Qtd', M+110, y+5);
+      doc.text('Faturamento', M+130, y+5);
+      y += 7;
+      rank.forEach((r,i)=>{
+        checkY(7);
+        doc.setFillColor(...(i%2===0 ? cor.branco : [250,248,255]));
+        doc.rect(M, y, W-M*2, 7, 'F');
+        doc.setTextColor(...(i<3 ? cor.roxo : cor.preto));
+        doc.setFontSize(8); doc.setFont('helvetica', i<3?'bold':'normal');
+        doc.text(String(i+1), M+3, y+5);
+        doc.text(r.nome.length>38?r.nome.slice(0,36)+'…':r.nome, M+12, y+5);
+        doc.text(String(r.qty), M+110, y+5);
+        doc.setFont('helvetica','bold');
+        doc.text(fmtN(r.fat), M+130, y+5);
+        doc.setDrawColor(...cor.linha);
+        doc.line(M, y+7, W-M, y+7);
+        y += 7;
+      });
+      y += 6;
+    }
+ 
+    // ── POR FORMA DE PAGAMENTO ──
+    const pgtoMap = {};
+    Object.values(DB.fat_pgto).forEach(r=>{
+      if(!pgtoMap[r.forma]) pgtoMap[r.forma]={f:r.forma,v:0,q:0};
+      pgtoMap[r.forma].v += r.valor||0; pgtoMap[r.forma].q += r.qtd||0;
+    });
+    const pgtos = Object.values(pgtoMap).sort((a,b)=>b.v-a.v);
+    if (pgtos.length) {
+      checkY(50);
+      drawSecTitle('Receita por Forma de Pagamento');
+      doc.setFillColor(...cor.roxoClaro);
+      doc.rect(M, y, W-M*2, 7, 'F');
+      doc.setTextColor(...cor.roxo);
+      doc.setFontSize(8); doc.setFont('helvetica','bold');
+      doc.text('Forma', M+3, y+5);
+      doc.text('Qtd Transações', M+70, y+5);
+      doc.text('Total', M+130, y+5);
+      y += 7;
+      pgtos.forEach((p,i)=>{
+        checkY(7);
+        doc.setFillColor(...(i%2===0 ? cor.branco : [250,248,255]));
+        doc.rect(M, y, W-M*2, 7, 'F');
+        doc.setTextColor(...cor.preto);
+        doc.setFontSize(8); doc.setFont('helvetica','normal');
+        const icons={dinheiro:'Dinheiro',debito:'Cartão Débito',credito:'Cartão Crédito',pix:'Pix'};
+        doc.text(icons[p.f]||p.f, M+3, y+5);
+        doc.text(String(p.q), M+70, y+5);
+        doc.setFont('helvetica','bold');
+        doc.text(fmtN(p.v), M+130, y+5);
+        doc.setDrawColor(...cor.linha);
+        doc.line(M, y+7, W-M, y+7);
+        y += 7;
+      });
+      y += 6;
+    }
+ 
+    // ── ESTOQUE ATUAL ──
+    const estItens = Object.values(DB.estoque).sort((a,b)=>a.qty/a.max_qty - b.qty/b.max_qty);
+    if (estItens.length) {
+      checkY(60);
+      drawSecTitle(' Status do Estoque');
+      doc.setFillColor(...cor.roxoClaro);
+      doc.rect(M, y, W-M*2, 7, 'F');
+      doc.setTextColor(...cor.roxo);
+      doc.setFontSize(8); doc.setFont('helvetica','bold');
+      doc.text('Ingrediente', M+3, y+5);
+      doc.text('Qtd Atual', M+80, y+5);
+      doc.text('Máximo', M+110, y+5);
+      doc.text('%', M+138, y+5);
+      doc.text('Status', M+152, y+5);
+      y += 7;
+      estItens.forEach((v,i)=>{
+        checkY(7);
+        const pct = Math.min(1, v.qty/v.max_qty);
+        const status = pct<0.2?'Crítico':pct<0.4?'Baixo':'OK';
+        const cor2 = pct<0.2?cor.vermelho:pct<0.4?[217,119,6]:cor.verde;
+        doc.setFillColor(...(i%2===0 ? cor.branco : [250,248,255]));
+        doc.rect(M, y, W-M*2, 7, 'F');
+        doc.setTextColor(...cor.preto);
+        doc.setFontSize(8); doc.setFont('helvetica','normal');
+        doc.text(v.nome, M+3, y+5);
+        doc.text(`${Number(v.qty).toFixed(1)} ${v.unidade}`, M+80, y+5);
+        doc.text(`${v.max_qty} ${v.unidade}`, M+110, y+5);
+        doc.text(`${Math.round(pct*100)}%`, M+138, y+5);
+        doc.setTextColor(...cor2);
+        doc.setFont('helvetica','bold');
+        doc.text(status, M+152, y+5);
+        doc.setDrawColor(...cor.linha);
+        doc.line(M, y+7, W-M, y+7);
+        y += 7;
+      });
+      y += 6;
+    }
+ 
+    // ── RODAPÉ EM TODAS AS PÁGINAS ──
+    const total_pages = doc.getNumberOfPages();
+    for (let p = 1; p <= total_pages; p++) {
+      doc.setPage(p);
+      doc.setFillColor(...cor.cinzaClaro);
+      doc.rect(0, 289, W, 8, 'F');
+      doc.setTextColor(...cor.cinza);
+      doc.setFontSize(7); doc.setFont('helvetica','normal');
+      doc.text(`RestaurantOS — Relatório Gerencial   |   ${new Date().toLocaleDateString('pt-BR')}`, M, 294);
+      doc.text(`Página ${p} de ${total_pages}`, W-M-20, 294);
+    }
+ 
+    const nome = `relatorio_${SYS.nomeRestaurante.replace(/\s+/g,'_')}_${todayStr()}.pdf`;
+    doc.save(nome);
+    toast('Relatório PDF exportado!', 'success');
+  } catch(e) {
+    console.error(e);
+    toast('Erro ao gerar PDF. Verifique o console.', 'error');
+  }
+};
 
 // ═══════════════════════════════════════════════════════════════════
 // CLOCK + AUTO-REFRESH
