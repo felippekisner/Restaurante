@@ -248,6 +248,7 @@
             <div style="display:flex;flex-direction:column;gap:8px;">
               <button class="btn btn-sm" onclick="exportarDados()">📤 Exportar dados (JSON)</button>
               <button class="btn btn-sm" style="background:var(--brand,#7c3aed);color:#fff;border-color:var(--brand,#7c3aed);" onclick="exportarRelatorioPDF()">📄 Exportar Relatório (PDF)</button>
+              <button class="btn btn-red btn-sm" onclick="resetarSistema()">🗑️ Resetar todos os dados</button>
             </div>
           </div>
         </div>
@@ -741,6 +742,35 @@ function setupRealtimeListeners() {
       if (document.getElementById('page-mesas').classList.contains('active'))  renderFloor();
       if (document.getElementById('page-caixa').classList.contains('active'))  renderCaixa();
     }
+  });
+  onSnapshot(collection(db, 'relatorio_dia'), snap => {
+  snap.docChanges().forEach(change => {
+    DB.relatorio_dia[change.doc.id] = {data: change.doc.id, ...change.doc.data()};
+  });
+});
+
+  onSnapshot(collection(db, 'fat_hora'), snap => {
+    snap.docChanges().forEach(change => {
+      DB.fat_hora[change.doc.id] = {id: change.doc.id, ...change.doc.data()};
+    });
+  });
+
+  onSnapshot(collection(db, 'ranking_itens'), snap => {
+    snap.docChanges().forEach(change => {
+      DB.ranking_itens[change.doc.id] = {id: change.doc.id, ...change.doc.data()};
+    });
+  });
+
+  onSnapshot(collection(db, 'fat_pgto'), snap => {
+    snap.docChanges().forEach(change => {
+      DB.fat_pgto[change.doc.id] = {id: change.doc.id, ...change.doc.data()};
+    });
+  });
+
+  onSnapshot(collection(db, 'fat_cat'), snap => {
+    snap.docChanges().forEach(change => {
+      DB.fat_cat[change.doc.id] = {id: change.doc.id, ...change.doc.data()};
+    });
   });
 
   onSnapshot(collection(db,'pedidos'), snap => {
@@ -1593,6 +1623,16 @@ window.exportarDados = () => {
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`restaurantOS_${todayStr()}.json`;a.click();
   toast('Dados exportados!','success');
+};
+
+window.resetarSistema = async () => {
+  if(!confirm('APAGAR TODOS OS DADOS?')) return;
+  if(!confirm('Tem certeza?')) return;
+  const cols=['mesas','cardapio','pedidos','pedido_itens','estoque','config','relatorio_dia','fat_hora','ranking_itens','fat_pgto','fat_cat'];
+  for(const c of cols){const snaps=await getDocs(collection(db,c));for(const d of snaps.docs)await fsDel(c,d.id);}
+  Object.keys(DB).forEach(k=>{DB[k]={};});
+  toast('Dados apagados. Recarregando...','info');
+  setTimeout(()=>location.reload(),1500);
 };
 
 function renderConfigPage(){
