@@ -18,6 +18,20 @@
       <h1>RestaurantOS</h1>
       <p>Sistema de Gestão Profissional</p>
     </div>
+    <!-- MODAL: RECUPERAR SENHA -->
+<div class="modal-overlay" id="modal-recuperar-senha">
+  <div class="modal">
+    <div class="modal-title">Recuperar senha</div>
+    <div class="modal-desc">Informe seu e-mail e enviaremos um link para redefinir sua senha.</div>
+    <div class="field"><label class="login-label" style="color:var(--text2);">E-mail</label><input class="input" id="reset-email" type="email" placeholder="seu@email.com"></div>
+    <div class="login-err" id="reset-err"></div>
+    <div class="login-loading" id="reset-loading">Enviando...</div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeModal('modal-recuperar-senha')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="enviarResetSenha()">Enviar link</button>
+    </div>
+  </div>
+</div>
 
     <!-- Tab: Email/Senha -->
     <div id="login-form-wrap">
@@ -35,6 +49,9 @@
 <br><br>
       <button class="login-btn" style="background:rgba(255,255,255,.12);margin-top:0;" onclick="window.location.href='cadastro.html'"> Criar conta nova
 </button>    </div>
+    <div class="login-hint" style="margin-top:6px;">
+      <a href="#" onclick="abrirRecuperarSenha(event)" style="color:rgba(255,255,255,.45);text-decoration:underline;font-size:11px;">Esqueci minha senha</a>
+    </div>
     <div class="login-hint">Seus dados são salvos no Firebase</div>
   </div>
 </div>
@@ -146,6 +163,9 @@
             <button class="kds-filter-btn" onclick="filtKDS('pronto',this)">Prontos</button>
             <button class="kds-filter-btn" onclick="filtKDS('entregue',this)">Entregues</button>
           </div>
+          <button class="kds-sound-indicator" id="btn-som-kds" onclick="toggleSomKDS()" title="Ativar/desativar alerta sonoro">
+            🔔 Som
+          </button>
         </div>
       </div>
       <div class="kds-grid" id="kds-grid"></div>
@@ -153,7 +173,10 @@
 
     <!-- CAIXA -->
     <div class="page" id="page-caixa">
-      <div class="page-header"><div class="page-title">PDV — Caixa</div></div>
+      <div class="page-header">
+        <div class="page-title">PDV — Caixa</div>
+        <button class="btn btn-sm" onclick="abrirHistoricoGeral()">📋 Histórico de contas</button>
+      </div>
       <div class="caixa-layout">
         <div>
           <div class="card-title" style="margin-bottom:8px;">Mesas abertas</div>
@@ -248,7 +271,6 @@
             <div style="display:flex;flex-direction:column;gap:8px;">
               <button class="btn btn-sm" onclick="exportarDados()">📤 Exportar dados (JSON)</button>
               <button class="btn btn-sm" style="background:var(--brand,#7c3aed);color:#fff;border-color:var(--brand,#7c3aed);" onclick="exportarRelatorioPDF()">📄 Exportar Relatório (PDF)</button>
-              <button class="btn btn-red btn-sm" onclick="resetarSistema()">🗑️ Resetar todos os dados</button>
             </div>
           </div>
         </div>
@@ -274,6 +296,61 @@
       <button class="nav-mob-btn" onclick="goPage('relatorios')" data-page="relatorios"><span class="nav-mob-icon">📊</span><span class="nav-mob-label">Mais</span></button>
     </div>
   </nav>
+</div>
+
+<!-- MODAL: RECUPERAR SENHA -->
+<div class="modal-overlay" id="modal-recuperar-senha">
+  <div class="modal">
+    <div class="modal-title">Recuperar senha</div>
+    <div class="modal-desc">Informe seu e-mail e enviaremos um link para redefinir sua senha.</div>
+    <div class="field"><label class="login-label" style="color:var(--text2);">E-mail</label><input class="input" id="reset-email" type="email" placeholder="seu@email.com"></div>
+    <div class="login-err" id="reset-err"></div>
+    <div class="login-loading" id="reset-loading">Enviando...</div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeModal('modal-recuperar-senha')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="enviarResetSenha()">Enviar link</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: HISTÓRICO DE CONTAS FECHADAS -->
+<div class="modal-overlay" id="modal-historico">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-title">Histórico de Contas Fechadas</div>
+    <div class="modal-desc" id="modal-historico-sub" style="margin-bottom:10px;"></div>
+    <div style="max-height:340px;overflow-y:auto;" id="modal-historico-list"></div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeModal('modal-historico')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: GERENCIAR USUÁRIO -->
+<div class="modal-overlay" id="modal-gerenciar-usuario">
+  <div class="modal">
+    <div class="modal-title" id="modal-usuario-title">Gerenciar usuário</div>
+    <input type="hidden" id="usuario-edit-uid">
+    <div class="field">
+      <label class="input-label">Perfil</label>
+      <div class="login-roles" style="margin-top:4px;">
+        <button class="login-role-btn" data-role="garcom" onclick="selRoleUsuario(this)"><span class="login-role-icon">🍽️</span>Garçom</button>
+        <button class="login-role-btn" data-role="cozinheiro" onclick="selRoleUsuario(this)"><span class="login-role-icon">👨‍🍳</span>Cozinheiro</button>
+        <button class="login-role-btn" data-role="caixa" onclick="selRoleUsuario(this)"><span class="login-role-icon">💳</span>Caixa</button>
+        <button class="login-role-btn" data-role="gerente" onclick="selRoleUsuario(this)"><span class="login-role-icon">📊</span>Gerente</button>
+      </div>
+    </div>
+    <div class="field" style="margin-top:8px;">
+      <label class="input-label">Status</label>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <button class="btn btn-sm btn-green" id="btn-ativar-usuario" onclick="setStatusUsuario(true)">✅ Ativo</button>
+        <button class="btn btn-sm btn-red" id="btn-desativar-usuario" onclick="setStatusUsuario(false)">🚫 Desativar</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeModal('modal-gerenciar-usuario')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarUsuario()">Salvar</button>
+    </div>
+  </div>
 </div>
 
 <!-- TOAST -->
@@ -376,6 +453,7 @@ import {
   getAuth, onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
@@ -477,6 +555,8 @@ const STATE = {
   relPeriod: 'hoje',
   cardapioCatFiltro: 'Todos',
   adminCatFiltro: 'Todos',
+  usuarioEditRole: 'garcom',
+  removerTaxa: false,
 };
 
 // ── CACHE LOCAL ───────────────────────────────────────────────────────
@@ -484,6 +564,7 @@ const DB = {
   mesas:{}, cardapio:{}, pedidos:{}, pedido_itens:{},
   estoque:{}, config:{}, relatorio_dia:{}, fat_hora:{},
   ranking_itens:{}, fat_pgto:{}, fat_cat:{}, usuarios:{},
+  contas_fechadas:{},
 };
 
 // ── LOG ───────────────────────────────────────────────────────────────
@@ -651,10 +732,11 @@ async function initDB() {
   try {
     // Carregar todas as coleções em paralelo
     const [mesasD, cardapioD, pedidosD, itensD, estoqueD, configD,
-           relD, fatHD, rankD, fatPD, fatCD, usersD] = await Promise.all([
+           relD, fatHD, rankD, fatPD, fatCD, usersD, contasD] = await Promise.all([
       fsAll('mesas'), fsAll('cardapio'), fsAll('pedidos'), fsAll('pedido_itens'),
       fsAll('estoque'), fsAll('config'), fsAll('relatorio_dia'), fsAll('fat_hora'),
       fsAll('ranking_itens'), fsAll('fat_pgto'), fsAll('fat_cat'), fsAll('usuarios'),
+      fsAll('contas_fechadas'),
     ]);
 
     mesasD.forEach(d    => { DB.mesas[d.id]          = d; });
@@ -669,6 +751,7 @@ async function initDB() {
     fatPD.forEach(d     => { DB.fat_pgto[d.id]        = d; });
     fatCD.forEach(d     => { DB.fat_cat[d.id]         = d; });
     usersD.forEach(d    => { DB.usuarios[d.id]        = d; });
+    contasD.forEach(d   => { DB.contas_fechadas[d.id] = d; });
 
     sysLog(`Firestore: ${mesasD.length} mesas, ${cardapioD.length} itens, ${pedidosD.length} pedidos`, 'info');
 
@@ -774,11 +857,18 @@ function setupRealtimeListeners() {
   });
 
   onSnapshot(collection(db,'pedidos'), snap => {
+    let temNovo = false;
     snap.docChanges().forEach(ch => {
       if (ch.type==='removed') delete DB.pedidos[ch.doc.id];
-      else DB.pedidos[ch.doc.id] = {id:ch.doc.id,...ch.doc.data()};
+      else {
+        const anterior = DB.pedidos[ch.doc.id];
+        const novo = {id:ch.doc.id,...ch.doc.data()};
+        if (ch.type==='added' && novo.status==='preparo') temNovo = true;
+        DB.pedidos[ch.doc.id] = novo;
+      }
     });
     if (STATE.dbReady) {
+      if (temNovo) tocarAlertaKDS();
       if (document.getElementById('page-cozinha').classList.contains('active')) renderKDS();
       if (document.getElementById('page-mesas').classList.contains('active'))  renderFloor();
     }
@@ -788,6 +878,13 @@ function setupRealtimeListeners() {
     snap.docChanges().forEach(ch => {
       if (ch.type==='removed') delete DB.pedido_itens[ch.doc.id];
       else DB.pedido_itens[ch.doc.id] = {id:ch.doc.id,...ch.doc.data()};
+    });
+  });
+
+  onSnapshot(collection(db,'contas_fechadas'), snap => {
+    snap.docChanges().forEach(ch => {
+      if (ch.type==='removed') delete DB.contas_fechadas[ch.doc.id];
+      else DB.contas_fechadas[ch.doc.id] = {id:ch.doc.id,...ch.doc.data()};
     });
   });
 }
@@ -1289,8 +1386,9 @@ function renderCaixaDet() {
       <div id="troco-result" style="font-size:13px;color:var(--green);font-weight:700;margin-top:6px;"></div>
     </div>
     <button class="btn btn-gold w-full mt-3" onclick="fecharConta(${sub.toFixed(2)},${taxa.toFixed(2)},${tot.toFixed(2)})">✅ Fechar Conta</button>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-      <button class="btn btn-sm" onclick="dividirConta(${tot.toFixed(2)})">÷ Dividir conta</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;">
+      <button class="btn btn-sm" onclick="dividirConta(${tot.toFixed(2)})">÷ Dividir</button>
+      <button class="btn btn-sm" onclick="abrirHistoricoMesa(${STATE.caixaMesa})">📋 Histórico</button>
       <button class="btn btn-sm" onclick="toast('Conta impressa (simulado)','info')">🖨️ Imprimir</button>
     </div>
   `;
@@ -1323,6 +1421,16 @@ window.fecharConta = async (sub,taxa,tot) => {
   const hoje = todayStr();
   const batch = writeBatch(db);
 
+  // Montar itens da conta para histórico
+  const pedidosDaMesa = Object.values(DB.pedidos).filter(p=>(p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa))&&p.status!=='cancelado');
+  const itensDaConta = [];
+  for (const p of pedidosDaMesa) {
+    Object.values(DB.pedido_itens).filter(i=>i.pedido_id===p.id).forEach(i=>{
+      const ex=itensDaConta.find(x=>x.nome===i.nome&&x.preco===i.preco);
+      if(ex) ex.qty+=i.qty; else itensDaConta.push({...i});
+    });
+  }
+
   // Registrar fat por pgto
   const pgtoKey=`${hoje}_${STATE.pgtoSel}`;
   const fp=DB.fat_pgto[pgtoKey];
@@ -1350,6 +1458,23 @@ window.fecharConta = async (sub,taxa,tot) => {
   batch.update(ref('mesas',id),{status:'livre',inicio:null,total:0});
   await batch.commit();
   DB.mesas[id]={...DB.mesas[id],status:'livre',inicio:null,total:0};
+
+  // Salvar histórico de conta fechada
+  const contaId = uuid();
+  const contaData = {
+    mesa_id: id,
+    fechadoEm: Date.now(),
+    fechadoPor: STATE.currentUser?.nome||'Sistema',
+    subtotal: sub,
+    taxa,
+    total: tot,
+    forma_pagamento: STATE.pgtoSel,
+    troco,
+    itens: itensDaConta,
+  };
+  await fsSet('contas_fechadas', contaId, contaData);
+  DB.contas_fechadas[contaId] = {id:contaId, ...contaData};
+
   sysLog(`Conta fechada Mesa ${id} — ${fmtBRL(tot)} (${STATE.pgtoSel})`);
   const p=STATE.pgtoSel;
   STATE.caixaMesa=null; STATE.pgtoSel=null;
@@ -1625,15 +1750,6 @@ window.exportarDados = () => {
   toast('Dados exportados!','success');
 };
 
-window.resetarSistema = async () => {
-  if(!confirm('APAGAR TODOS OS DADOS?')) return;
-  if(!confirm('Tem certeza?')) return;
-  const cols=['mesas','cardapio','pedidos','pedido_itens','estoque','config','relatorio_dia','fat_hora','ranking_itens','fat_pgto','fat_cat'];
-  for(const c of cols){const snaps=await getDocs(collection(db,c));for(const d of snaps.docs)await fsDel(c,d.id);}
-  Object.keys(DB).forEach(k=>{DB[k]={};});
-  toast('Dados apagados. Recarregando...','info');
-  setTimeout(()=>location.reload(),1500);
-};
 
 function renderConfigPage(){
   document.getElementById('cfg-nome').value=SYS.nomeRestaurante;
@@ -1642,13 +1758,14 @@ function renderConfigPage(){
   document.getElementById('usuarios-list').innerHTML=Object.values(DB.usuarios).map(u=>{
     const rc=ROLE_CONFIG[u.role]||ROLE_CONFIG.garcom;
     const isMe=STATE.currentUser?.uid===u.uid||STATE.currentUser?.uid===(u.id||u.uid);
-    return `<div class="usuario-card">
+    return `<div class="usuario-card${u.ativo===false?' inativo':''}">
       <div class="usuario-avatar" style="background:${rc.color}">${(u.nome||'?').charAt(0).toUpperCase()}</div>
       <div class="usuario-info">
         <div class="usuario-name">${u.nome||u.email}${isMe?' (você)':''}</div>
         <div class="usuario-role">${u.email||''}</div>
       </div>
       <span class="badge" style="background:${rc.bg};color:${rc.color};">${rc.label}</span>
+      ${!isMe&&STATE.currentUser?.role==='gerente'?`<button class="btn btn-xs" style="margin-left:6px;" onclick="abrirGerenciarUsuario('${u.id||u.uid}')">✏️</button>`:''}
     </div>`;
   }).join('')||'<div class="text-muted text-sm" style="padding:12px 0;">Nenhum usuário encontrado</div>';
 }
@@ -1952,6 +2069,189 @@ window.exportarRelatorioPDF = async () => {
   }
 };
 
+let _somKDSMuted = false;
+window.toggleSomKDS = () => {
+  _somKDSMuted = !_somKDSMuted;
+  const btn = document.getElementById('btn-som-kds');
+  if (btn) {
+    btn.textContent = _somKDSMuted ? '🔕 Mudo' : '🔔 Som';
+    btn.classList.toggle('muted', _somKDSMuted);
+  }
+  toast(_somKDSMuted ? 'Alerta sonoro desativado' : 'Alerta sonoro ativado', 'info');
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// RECUPERAÇÃO DE SENHA
+// ═══════════════════════════════════════════════════════════════════
+window.abrirRecuperarSenha = (e) => {
+  e.preventDefault();
+  document.getElementById('reset-err').style.display = 'none';
+  document.getElementById('reset-err').textContent = '';
+  document.getElementById('reset-loading').style.display = 'none';
+  document.getElementById('reset-email').value = document.getElementById('login-email')?.value || '';
+  openModal('modal-recuperar-senha');
+};
+
+window.enviarResetSenha = async () => {
+  const email = document.getElementById('reset-email').value.trim();
+  const errEl = document.getElementById('reset-err');
+  const loadEl = document.getElementById('reset-loading');
+  errEl.style.display = 'none';
+  if (!email) { errEl.textContent = 'Informe o e-mail.'; errEl.style.display = 'block'; return; }
+  loadEl.style.display = 'block';
+  try {
+    await sendPasswordResetEmail(auth, email);
+    loadEl.style.display = 'none';
+    closeModal('modal-recuperar-senha');
+    toast('Link enviado! Verifique seu e-mail.', 'success');
+  } catch(e) {
+    loadEl.style.display = 'none';
+    const msgs = {
+      'auth/user-not-found': 'Nenhuma conta com esse e-mail.',
+      'auth/invalid-email':  'E-mail inválido.',
+    };
+    errEl.textContent = msgs[e.code] || 'Erro ao enviar. Tente novamente.';
+    errEl.style.display = 'block';
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// HISTÓRICO DE CONTAS FECHADAS
+// ═══════════════════════════════════════════════════════════════════
+window.abrirHistoricoGeral = () => {
+  const contas = Object.values(DB.contas_fechadas).sort((a,b) => b.fechadoEm - a.fechadoEm);
+  document.getElementById('modal-historico-sub').textContent =
+    `${contas.length} conta(s) fechada(s) no sistema`;
+  renderHistoricoLista(contas);
+  openModal('modal-historico');
+};
+
+window.abrirHistoricoMesa = (mesaId) => {
+  const contas = Object.values(DB.contas_fechadas)
+    .filter(c => String(c.mesa_id) === String(mesaId))
+    .sort((a,b) => b.fechadoEm - a.fechadoEm);
+  document.getElementById('modal-historico-sub').textContent =
+    `Mesa ${mesaId} — ${contas.length} conta(s) fechada(s)`;
+  renderHistoricoLista(contas);
+  openModal('modal-historico');
+};
+
+function renderHistoricoLista(contas) {
+  const pgtoIcone = {dinheiro:'💵',debito:'💳',credito:'💳',pix:'📱'};
+  const pgtoNome  = {dinheiro:'Dinheiro',debito:'Débito',credito:'Crédito',pix:'Pix'};
+  if (!contas.length) {
+    document.getElementById('modal-historico-list').innerHTML =
+      '<div class="text-center text-muted" style="padding:24px 0;">Nenhuma conta encontrada</div>';
+    return;
+  }
+  document.getElementById('modal-historico-list').innerHTML = contas.map(c => {
+    const d = new Date(c.fechadoEm);
+    const dataStr = d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const itensStr = (c.itens||[]).map(i=>`${i.qty}× ${i.nome}`).join(', ') || '—';
+    return `<div style="border-bottom:0.5px solid var(--border);padding:10px 0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-size:13px;font-weight:700;">Mesa ${c.mesa_id} <span style="font-size:11px;font-weight:400;color:var(--text2);">por ${c.fechadoPor||'—'}</span></div>
+        <span style="font-size:13px;font-weight:700;color:var(--green);">${fmtBRL(c.total)}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">${dataStr}</div>
+      <div style="font-size:11px;color:var(--text2);">
+        ${pgtoIcone[c.forma_pagamento]||'💰'} ${pgtoNome[c.forma_pagamento]||c.forma_pagamento}
+        ${c.troco>0?` · Troco: ${fmtBRL(c.troco)}`:''}
+        ${c.taxa>0?` · Taxa: ${fmtBRL(c.taxa)}`:''}
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${itensStr}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ALERTA SONORO — COZINHA KDS
+// ═══════════════════════════════════════════════════════════════════
+let _kdsPrevCount = 0;
+let _audioCtx = null;
+
+function tocarAlertaKDS() {
+  if (_somKDSMuted) return;
+  try {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _audioCtx;
+    const play = (freq, start, dur) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.4, ctx.currentTime + start);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + dur + 0.05);
+    };
+    play(880, 0,    0.12);
+    play(1100, 0.15, 0.12);
+    play(880, 0.30, 0.18);
+  } catch(e) { /* silently fail */ }
+}
+
+function verificarNovosPedidosKDS() {
+  const count = Object.values(DB.pedidos).filter(p => p.status === 'preparo').length;
+  if (STATE.dbReady && count > _kdsPrevCount) {
+    tocarAlertaKDS();
+  }
+  _kdsPrevCount = count;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// GESTÃO DE USUÁRIOS (GERENTE)
+// ═══════════════════════════════════════════════════════════════════
+let _usuarioEditStatus = true;
+
+window.abrirGerenciarUsuario = (uid) => {
+  const u = DB.usuarios[uid];
+  if (!u) return;
+  document.getElementById('usuario-edit-uid').value = uid;
+  document.getElementById('modal-usuario-title').textContent = `Gerenciar: ${u.nome||u.email}`;
+  STATE.usuarioEditRole = u.role || 'garcom';
+  _usuarioEditStatus = u.ativo !== false; // default ativo
+  // Marcar role
+  document.querySelectorAll('#modal-gerenciar-usuario .login-role-btn').forEach(b => {
+    b.classList.toggle('sel', b.dataset.role === STATE.usuarioEditRole);
+  });
+  // Marcar status
+  atualizarBotoesStatus();
+  openModal('modal-gerenciar-usuario');
+};
+
+window.selRoleUsuario = (btn) => {
+  document.querySelectorAll('#modal-gerenciar-usuario .login-role-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  STATE.usuarioEditRole = btn.dataset.role;
+};
+
+window.setStatusUsuario = (ativo) => {
+  _usuarioEditStatus = ativo;
+  atualizarBotoesStatus();
+};
+
+function atualizarBotoesStatus() {
+  const btnAt = document.getElementById('btn-ativar-usuario');
+  const btnDes = document.getElementById('btn-desativar-usuario');
+  if (!btnAt || !btnDes) return;
+  btnAt.style.opacity  = _usuarioEditStatus ? '1' : '0.45';
+  btnDes.style.opacity = _usuarioEditStatus ? '0.45' : '1';
+}
+
+window.salvarUsuario = async () => {
+  const uid = document.getElementById('usuario-edit-uid').value;
+  if (!uid) return;
+  const upd = { role: STATE.usuarioEditRole, ativo: _usuarioEditStatus };
+  await fsUpd('usuarios', uid, upd);
+  DB.usuarios[uid] = { ...DB.usuarios[uid], ...upd };
+  closeModal('modal-gerenciar-usuario');
+  renderConfigPage();
+  toast('Usuário atualizado!', 'success');
+  sysLog(`Usuário ${DB.usuarios[uid]?.nome||uid} → perfil: ${STATE.usuarioEditRole}, ativo: ${_usuarioEditStatus}`);
+};
+
 // ═══════════════════════════════════════════════════════════════════
 // CLOCK + AUTO-REFRESH
 // ═══════════════════════════════════════════════════════════════════
@@ -1959,11 +2259,17 @@ function updateClock(){
   const n=new Date();
   document.getElementById('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
 }
+// Desbloquear áudio no primeiro clique
+document.addEventListener('click', () => {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+}, { once: false });
 updateClock();
 setInterval(updateClock,30000);
 setInterval(()=>{
   if(!STATE.dbReady) return;
   checkNightReset();
+  verificarNovosPedidosKDS();
   const ap=document.querySelector('.page.active')?.id;
   if(ap==='page-mesas')     renderFloor();
   if(ap==='page-cozinha')   renderKDS();
