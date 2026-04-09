@@ -271,6 +271,12 @@
             <div style="display:flex;flex-direction:column;gap:8px;">
               <button class="btn btn-sm" onclick="exportarDados()">📤 Exportar dados (JSON)</button>
               <button class="btn btn-sm" style="background:var(--brand,#7c3aed);color:#fff;border-color:var(--brand,#7c3aed);" onclick="exportarRelatorioPDF()">📄 Exportar Relatório (PDF)</button>
+              <button class="btn btn-sm" onclick="mostrarChaveAcesso()" id="btn-chave-acesso">🔑 Ver chave de acesso</button>
+              <div id="chave-acesso-display" style="display:none;margin-top:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">Chave do período (válida por ~10 dias)</div>
+              <div id="chave-acesso-valor" style="font-size:22px;font-weight:700;letter-spacing:3px;color:var(--text);font-family:monospace;"></div>
+              <div id="chave-acesso-validade" style="font-size:11px;color:var(--text3);margin-top:4px;"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -294,6 +300,7 @@
       <button class="nav-mob-btn" onclick="goPage('caixa')" data-page="caixa"><span class="nav-mob-icon">💳</span><span class="nav-mob-label">Caixa</span></button>
       <button class="nav-mob-btn" onclick="goPage('estoque')" data-page="estoque"><span class="nav-mob-icon">📦</span><span class="nav-mob-label">Estoque</span></button>
       <button class="nav-mob-btn" onclick="goPage('relatorios')" data-page="relatorios"><span class="nav-mob-icon">📊</span><span class="nav-mob-label">Mais</span></button>
+      <button class="nav-mob-btn" onclick="goPage('config')" data-page="config" id="mob-nav-config" style="display:none"><span class="nav-mob-icon">⚙️</span><span class="nav-mob-label">Config</span></button>
     </div>
   </nav>
 </div>
@@ -722,6 +729,9 @@ function aplicarRole(role) {
   document.getElementById('nav-cardapio').style.display  = rc.canCardapio  ? '' : 'none';
   document.getElementById('nav-relatorios').style.display= rc.canRelatorio ? '' : 'none';
   document.getElementById('nav-config').style.display    = rc.canConfig    ? '' : 'none';
+  // Nav mobile — Config (só gerente)
+  const mobConfig = document.getElementById('mob-nav-config');
+  if (mobConfig) mobConfig.style.display = rc.canConfig ? '' : 'none';
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -874,6 +884,39 @@ function setupRealtimeListeners() {
     }
   });
 
+  window.mostrarChaveAcesso = () => {
+  function gerarChavePeriodo() {
+    const base = new Date();
+    const bloco = Math.floor((base.getDate() - 1) / 10);
+    const semente = `${base.getFullYear()}-${base.getMonth()}-${bloco}`;
+    let h = 0;
+    for (let i = 0; i < semente.length; i++) {
+      h = Math.imul(31, h) + semente.charCodeAt(i) | 0;
+    }
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let chave = '';
+    let n = Math.abs(h);
+    for (let i = 0; i < 8; i++) {
+      chave += chars[n % chars.length];
+      n = Math.floor(n / chars.length) || (n * 7 + i + 1);
+    }
+    return chave.slice(0, 4) + '-' + chave.slice(4);
+  }
+
+  const display = document.getElementById('chave-acesso-display');
+  if (display.style.display !== 'none') { display.style.display = 'none'; return; }
+
+  const chave = gerarChavePeriodo();
+  const hoje = new Date();
+  const bloco = Math.floor((hoje.getDate() - 1) / 10);
+  const fimBloco = Math.min((bloco + 1) * 10, new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate());
+  const validade = `Válida até dia ${fimBloco}/${String(hoje.getMonth()+1).padStart(2,'0')}`;
+
+  document.getElementById('chave-acesso-valor').textContent = chave;
+  document.getElementById('chave-acesso-validade').textContent = validade;
+  display.style.display = 'block';
+};
+
   onSnapshot(collection(db,'pedido_itens'), snap => {
     snap.docChanges().forEach(ch => {
       if (ch.type==='removed') delete DB.pedido_itens[ch.doc.id];
@@ -970,7 +1013,7 @@ window.clickMesa = async (id) => {
   if (STATE.currentUser?.role==='caixa') { STATE.caixaMesa=parseInt(id)||id; goPage('caixa'); return; }
   if (m.status==='livre') {
     if (!rc.canOrder) { toast('Sem permissão para abrir mesas','error'); return; }
-    const upd = {status:'ocupada', inicio:Date.now()};
+    const upd = {status:'ocupada', inicio:Date.now(), total:0};
     await fsUpd('mesas', id, upd);
     DB.mesas[id] = {...m,...upd};
     sysLog(`Mesa ${id} aberta por ${STATE.currentUser?.nome}`);
@@ -1035,7 +1078,7 @@ function renderMesaSelector() {
 window.selMesa = async (id) => {
   const m = DB.mesas[id];
   if (m.status==='livre') {
-    const upd = {status:'ocupada',inicio:Date.now()};
+    const upd = {status:'ocupada',inicio:Date.now(),total:0};
     await fsUpd('mesas',id,upd);
     DB.mesas[id] = {...m,...upd};
     renderFloor();
@@ -1326,7 +1369,13 @@ window.toggleTaxa = () => { STATE.removerTaxa = !STATE.removerTaxa; renderCaixaD
 function renderCaixaDet() {
   const m       = DB.mesas[String(STATE.caixaMesa)];
   if (!m) return;
-  const todos   = Object.values(DB.pedidos).filter(p=>(p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa))&&p.status!=='cancelado');
+  // Filtra apenas pedidos da sessão atual (criados após abertura da mesa)
+  const sesInicio = m.inicio || 0;
+  const todos   = Object.values(DB.pedidos).filter(p=>
+    (p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa)) &&
+    p.status!=='cancelado' &&
+    (p.criado||0) >= sesInicio
+  );
   const todosItens = [];
   todos.forEach(p=>Object.values(DB.pedido_itens).filter(i=>i.pedido_id===p.id).forEach(i=>{
     const ex=todosItens.find(x=>x.nome===i.nome&&x.preco===i.preco);
@@ -1421,8 +1470,13 @@ window.fecharConta = async (sub,taxa,tot) => {
   const hoje = todayStr();
   const batch = writeBatch(db);
 
-  // Montar itens da conta para histórico
-  const pedidosDaMesa = Object.values(DB.pedidos).filter(p=>(p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa))&&p.status!=='cancelado');
+  // Montar itens da conta para histórico (só pedidos da sessão atual)
+  const sesInicio = DB.mesas[String(STATE.caixaMesa)]?.inicio || 0;
+  const pedidosDaMesa = Object.values(DB.pedidos).filter(p=>
+    (p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa)) &&
+    p.status!=='cancelado' &&
+    (p.criado||0) >= sesInicio
+  );
   const itensDaConta = [];
   for (const p of pedidosDaMesa) {
     Object.values(DB.pedido_itens).filter(i=>i.pedido_id===p.id).forEach(i=>{
@@ -1437,8 +1491,12 @@ window.fecharConta = async (sub,taxa,tot) => {
   if(fp){batch.update(ref('fat_pgto',pgtoKey),{valor:fp.valor+tot,qtd:fp.qtd+1});DB.fat_pgto[pgtoKey]={...fp,valor:fp.valor+tot,qtd:fp.qtd+1};}
   else{const nfp={data:hoje,forma:STATE.pgtoSel,valor:tot,qtd:1};batch.set(ref('fat_pgto',pgtoKey),nfp);DB.fat_pgto[pgtoKey]={id:pgtoKey,...nfp};}
 
-  // Pedidos abertos → entregues
-  const abertos = Object.values(DB.pedidos).filter(p=>(p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa))&&p.status!=='entregue'&&p.status!=='cancelado');
+  // Pedidos abertos → entregues (só da sessão atual)
+  const abertos = Object.values(DB.pedidos).filter(p=>
+    (p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa)) &&
+    p.status!=='entregue' && p.status!=='cancelado' &&
+    (p.criado||0) >= sesInicio
+  );
   let fatExtra=0,itExtra=0;
   for(const p of abertos){
     const its=Object.values(DB.pedido_itens).filter(i=>i.pedido_id===p.id);

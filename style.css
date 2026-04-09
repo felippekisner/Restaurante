@@ -420,6 +420,11 @@ input:checked+.toggle-slider:before{transform:translateX(16px);}
   position:fixed;inset:0;z-index:500;
   background:linear-gradient(135deg,#1a1209 0%,#2c1c08 40%,#3d2a0d 100%);
   display:flex;align-items:center;justify-content:center;padding:20px;
+  min-height: 100vh;
+  height: auto !important;
+  overflow-y: auto !important;
+  align-items: flex-start !important;
+  padding: 24px 16px !important;
 }
 #login-screen.hidden{display:none;}
 .login-box{

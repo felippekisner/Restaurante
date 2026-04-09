@@ -57,6 +57,12 @@
         </div>
       </div>
 
+      <!-- CHAVE DE ACESSO -->
+      <div class="login-field-wrap">
+        <label class="login-label">Chave de acesso</label>
+        <input class="login-field" id="register-chave" type="password" placeholder="Chave fornecida pelo gerente">
+      </div>
+
       <!-- ERRO / LOADING -->
       <div class="login-err" id="register-err"></div>
       <div class="login-loading" id="register-loading">Criando conta...</div>
@@ -112,19 +118,47 @@ window.selRole = (btn) => {
   loginRoleSel = btn.dataset.role;
 };
 
+// Gera a chave do período (muda a cada 10 dias, baseada na data)
+function gerarChavePeriodo() {
+  const base = new Date();
+  // Divide o mês em blocos de 10 dias: 1-10, 11-20, 21-31
+  const bloco = Math.floor((base.getDate() - 1) / 10);
+  const semente = `${base.getFullYear()}-${base.getMonth()}-${bloco}`;
+  // Hash simples e determinístico
+  let h = 0;
+  for (let i = 0; i < semente.length; i++) {
+    h = Math.imul(31, h) + semente.charCodeAt(i) | 0;
+  }
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let chave = '';
+  let n = Math.abs(h);
+  for (let i = 0; i < 8; i++) {
+    chave += chars[n % chars.length];
+    n = Math.floor(n / chars.length) || (n * 7 + i + 1);
+  }
+  return chave.slice(0, 4) + '-' + chave.slice(4);
+}
+
 window.doRegister = async () => {
   const nome  = document.getElementById('register-nome').value.trim();
   const email = document.getElementById('register-email').value.trim();
   const senha = document.getElementById('register-senha').value;
+  const chave = document.getElementById('register-chave').value.trim().toUpperCase().replace(/\s/g,'');
   const role  = loginRoleSel;
 
-  if (!nome || !email || !senha) {
+  if (!nome || !email || !senha || !chave) {
     showErr('Preencha todos os campos.');
     return;
   }
 
   if (senha.length < 6) {
     showErr('Senha precisa ter pelo menos 6 caracteres.');
+    return;
+  }
+
+  const chaveEsperada = gerarChavePeriodo();
+  if (chave !== chaveEsperada) {
+    showErr('Chave de acesso inválida ou expirada.');
     return;
   }
 
