@@ -261,6 +261,13 @@
             <div style="display:flex;flex-direction:column;gap:8px;">
               <button class="btn btn-sm" onclick="exportarDados()">📤 Exportar dados (JSON)</button>
               <button class="btn btn-sm" style="background:var(--brand,#7c3aed);color:#fff;border-color:var(--brand,#7c3aed);" onclick="exportarRelatorioPDF()">📄 Exportar Relatório (PDF)</button>
+             <button class="btn btn-sm" onclick="mostrarChaveAcesso()" id="btn-chave-acesso">🔑 Ver chave de acesso</button>
+<div id="chave-acesso-display" style="display:none;margin-top:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
+  <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">Chave do período (válida por ~10 dias)</div>
+  <div id="chave-acesso-valor" style="font-size:22px;font-weight:700;letter-spacing:3px;color:var(--text);font-family:monospace;"></div>
+  <div id="chave-acesso-validade" style="font-size:11px;color:var(--text3);margin-top:4px;"></div>
+</div>
+
               <button class="btn btn-sm" style="background:var(--blue-m);color:#fff;border-color:var(--blue);" onclick="goPage('relatorios-mensais')">📅 Relatórios mensais</button>
               <button class="btn btn-red btn-sm" onclick="resetarSistema()">🗑️ Resetar todos os dados</button>
             </div>
@@ -1890,11 +1897,37 @@ window.salvarConfig = async () => {
   toast('Configurações salvas!','success');
 };
 
-window.exportarDados = () => {
-  const data = {version:'2.0',exportedAt:new Date().toISOString(),mesas:Object.values(DB.mesas),cardapio:Object.values(DB.cardapio),pedidos:Object.values(DB.pedidos),pedido_itens:Object.values(DB.pedido_itens),estoque:Object.values(DB.estoque),relatorio_dia:Object.values(DB.relatorio_dia),ranking_itens:Object.values(DB.ranking_itens)};
-  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`restaurantOS_${todayStr()}.json`; a.click();
-  toast('Dados exportados!','success');
+window.mostrarChaveAcesso = () => {
+  function gerarChavePeriodo() {
+    const base = new Date();
+    const bloco = Math.floor((base.getDate() - 1) / 10);
+    const semente = `${base.getFullYear()}-${base.getMonth()}-${bloco}`;
+    let h = 0;
+    for (let i = 0; i < semente.length; i++) {
+      h = Math.imul(31, h) + semente.charCodeAt(i) | 0;
+    }
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let chave = '';
+    let n = Math.abs(h);
+    for (let i = 0; i < 8; i++) {
+      chave += chars[n % chars.length];
+      n = Math.floor(n / chars.length) || (n * 7 + i + 1);
+    }
+    return chave.slice(0, 4) + '-' + chave.slice(4);
+  }
+
+  const display = document.getElementById('chave-acesso-display');
+  if (display.style.display !== 'none') { display.style.display = 'none'; return; }
+
+  const chave = gerarChavePeriodo();
+  const hoje = new Date();
+  const bloco = Math.floor((hoje.getDate() - 1) / 10);
+  const fimBloco = Math.min((bloco + 1) * 10, new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate());
+  const validade = `Válida até dia ${fimBloco}/${String(hoje.getMonth()+1).padStart(2,'0')}`;
+
+  document.getElementById('chave-acesso-valor').textContent = chave;
+  document.getElementById('chave-acesso-validade').textContent = validade;
+  display.style.display = 'block';
 };
 
 window.resetarSistema = async () => {
