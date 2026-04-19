@@ -9,7 +9,6 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <!-- ═══════════════ LOGIN ═══════════════ -->
 <div id="login-screen">
   <div class="login-box">
@@ -18,7 +17,22 @@
       <h1>RestaurantOS</h1>
       <p>Sistema de Gestão Profissional</p>
     </div>
-
+    <!-- MODAL: RECUPERAR SENHA -->
+<div class="modal-overlay" id="modal-recuperar-senha">
+  <div class="modal">
+    <div class="modal-title">Recuperar senha</div>
+    <div class="modal-desc">Informe seu e-mail e enviaremos um link para redefinir sua senha.</div>
+    <div class="field"><label class="login-label" style="color:var(--text2);">E-mail</label><input class="input" id="reset-email" type="email" placeholder="seu@email.com"></div>
+    <div class="login-err" id="reset-err"></div>
+    <div class="login-loading" id="reset-loading">Enviando...</div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeModal('modal-recuperar-senha')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="enviarResetSenha()">Enviar link</button>
+    </div>
+  </div>
+</div>
+ 
+    <!-- Tab: Email/Senha -->
     <div id="login-form-wrap">
       <div class="login-field-wrap">
         <label class="login-label">E-mail</label>
@@ -32,7 +46,10 @@
       <div class="login-loading" id="login-loading">Autenticando...</div>
       <button class="login-btn" onclick="doEmailLogin()">Entrar</button>
 <br><br>
-      <button class="login-btn" style="background:rgba(255,255,255,.12);margin-top:0;" onclick="window.location.href='cadastro.html'"> Criar conta nova</button>
+      <button class="login-btn" style="background:rgba(255,255,255,.12);margin-top:0;" onclick="window.location.href='cadastro.html'"> Criar conta nova
+</button>    </div>
+    <div class="login-hint" style="margin-top:6px;">
+      <a href="#" onclick="abrirRecuperarSenha(event)" style="color:rgba(255,255,255,.45);text-decoration:underline;font-size:11px;">Esqueci minha senha</a>
     </div>
     <div class="login-hint">Seus dados são salvos no Firebase</div>
   </div>
@@ -1324,15 +1341,21 @@ function renderCaixa() {
     </button>`).join('');
   if (STATE.caixaMesa) renderCaixaDet();
 }
-
+ 
 window.selCaixaMesa = (id) => { STATE.caixaMesa=id; STATE.pgtoSel=null; STATE.removerTaxa=false; renderCaixa(); };
-
+ 
 window.toggleTaxa = () => { STATE.removerTaxa = !STATE.removerTaxa; renderCaixaDet(); };
-
+ 
 function renderCaixaDet() {
   const m       = DB.mesas[String(STATE.caixaMesa)];
   if (!m) return;
-  const todos   = Object.values(DB.pedidos).filter(p=>(p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa))&&p.status!=='cancelado');
+  // Filtra apenas pedidos da sessão atual (criados após abertura da mesa)
+  const sesInicio = m.inicio || 0;
+  const todos   = Object.values(DB.pedidos).filter(p=>
+    (p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa)) &&
+    p.status!=='cancelado' &&
+    (p.criado||0) >= sesInicio
+  );
   const todosItens = [];
   todos.forEach(p=>Object.values(DB.pedido_itens).filter(i=>i.pedido_id===p.id).forEach(i=>{
     const ex=todosItens.find(x=>x.nome===i.nome&&x.preco===i.preco);
@@ -1343,7 +1366,7 @@ function renderCaixaDet() {
   const taxa = taxaAplicada;
   const tot  = sub+taxa;
   const abertos = todos.filter(p=>p.status!=='entregue').length;
-
+ 
   document.getElementById('caixa-det').innerHTML = `
     <div class="flex justify-between items-center" style="margin-bottom:14px;">
       <div>
@@ -1361,6 +1384,8 @@ function renderCaixaDet() {
     </div>
     <div class="divider"></div>
     <div class="conta-total-row"><span class="text-muted">Subtotal</span><span>${fmtBRL(sub)}</span></div>
+    <div class="conta-total-row"><span class="text-muted">Taxa (${SYS.taxaServico}%)</span><span>${fmtBRL(taxa)}</span></div>
+    <div class="conta-total-row" style="border-top:1.5px solid var(--border-strong);padding-top:10px;margin-top:4px;">
     <div class="conta-total-row" style="align-items:center;">
       <span class="text-muted" style="display:flex;align-items:center;gap:8px;">
         Taxa (${SYS.taxaServico}%)
@@ -1374,7 +1399,6 @@ function renderCaixaDet() {
       </span>
       <span style="${STATE.removerTaxa?'text-decoration:line-through;color:var(--text3);':''}">${fmtBRL(sub*(SYS.taxaServico/100))}</span>
     </div>
-    <div class="conta-total-row" style="border-top:1.5px solid var(--border-strong);padding-top:10px;margin-top:4px;">
       <span class="conta-total-final">Total</span><span class="conta-total-final">${fmtBRL(tot)}</span>
     </div>
     <div class="divider"></div>
@@ -1391,8 +1415,9 @@ function renderCaixaDet() {
       <div id="troco-result" style="font-size:13px;color:var(--green);font-weight:700;margin-top:6px;"></div>
     </div>
     <button class="btn btn-gold w-full mt-3" onclick="fecharConta(${sub.toFixed(2)},${taxa.toFixed(2)},${tot.toFixed(2)})">✅ Fechar Conta</button>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-      <button class="btn btn-sm" onclick="dividirConta(${tot.toFixed(2)})">÷ Dividir conta</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;">
+      <button class="btn btn-sm" onclick="dividirConta(${tot.toFixed(2)})">÷ Dividir</button>
+      <button class="btn btn-sm" onclick="abrirHistoricoMesa(${STATE.caixaMesa})">📋 Histórico</button>
       <button class="btn btn-sm" onclick="toast('Conta impressa (simulado)','info')">🖨️ Imprimir</button>
     </div>
   `;
@@ -1403,7 +1428,7 @@ function renderCaixaDet() {
     if(tr) tr.textContent=rec>=(tot)?`Troco: ${fmtBRL(rec-tot)}`:'';
   });
 }
-
+ 
 window.selPgto = (p,tot) => {
   STATE.pgtoSel=p;
   const tw=document.getElementById('troco-wrap');
@@ -1412,7 +1437,7 @@ window.selPgto = (p,tot) => {
     b.classList.toggle('selected',['dinheiro','debito','credito','pix'][i]===p);
   });
 };
-
+ 
 window.fecharConta = async (sub,taxa,tot) => {
   if (!STATE.pgtoSel) { toast('Selecione a forma de pagamento!','error'); return; }
   const id  = String(STATE.caixaMesa);
@@ -1424,13 +1449,34 @@ window.fecharConta = async (sub,taxa,tot) => {
   }
   const hoje = todayStr();
   const batch = writeBatch(db);
-
+ 
+  // Montar itens da conta para histórico (só pedidos da sessão atual)
+  const sesInicio = DB.mesas[String(STATE.caixaMesa)]?.inicio || 0;
+  const pedidosDaMesa = Object.values(DB.pedidos).filter(p=>
+    (p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa)) &&
+    p.status!=='cancelado' &&
+    (p.criado||0) >= sesInicio
+  );
+  const itensDaConta = [];
+  for (const p of pedidosDaMesa) {
+    Object.values(DB.pedido_itens).filter(i=>i.pedido_id===p.id).forEach(i=>{
+      const ex=itensDaConta.find(x=>x.nome===i.nome&&x.preco===i.preco);
+      if(ex) ex.qty+=i.qty; else itensDaConta.push({...i});
+    });
+  }
+ 
+  // Registrar fat por pgto
   const pgtoKey=`${hoje}_${STATE.pgtoSel}`;
   const fp=DB.fat_pgto[pgtoKey];
   if(fp){batch.update(ref('fat_pgto',pgtoKey),{valor:fp.valor+tot,qtd:fp.qtd+1});DB.fat_pgto[pgtoKey]={...fp,valor:fp.valor+tot,qtd:fp.qtd+1};}
   else{const nfp={data:hoje,forma:STATE.pgtoSel,valor:tot,qtd:1};batch.set(ref('fat_pgto',pgtoKey),nfp);DB.fat_pgto[pgtoKey]={id:pgtoKey,...nfp};}
-
-  const abertos = Object.values(DB.pedidos).filter(p=>(p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa))&&p.status!=='entregue'&&p.status!=='cancelado');
+ 
+  // Pedidos abertos → entregues (só da sessão atual)
+  const abertos = Object.values(DB.pedidos).filter(p=>
+    (p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa)) &&
+    p.status!=='entregue' && p.status!=='cancelado' &&
+    (p.criado||0) >= sesInicio
+  );
   let fatExtra=0,itExtra=0;
   for(const p of abertos){
     const its=Object.values(DB.pedido_itens).filter(i=>i.pedido_id===p.id);
@@ -1445,10 +1491,28 @@ window.fecharConta = async (sub,taxa,tot) => {
     batch.update(ref('relatorio_dia',hoje),nrd);
     DB.relatorio_dia[hoje]={...(DB.relatorio_dia[hoje]||{}),...nrd,id:hoje,data:hoje};
   }
-
+ 
+  // Liberar mesa
   batch.update(ref('mesas',id),{status:'livre',inicio:null,total:0});
   await batch.commit();
   DB.mesas[id]={...DB.mesas[id],status:'livre',inicio:null,total:0};
+ 
+  // Salvar histórico de conta fechada
+  const contaId = uuid();
+  const contaData = {
+    mesa_id: id,
+    fechadoEm: Date.now(),
+    fechadoPor: STATE.currentUser?.nome||'Sistema',
+    subtotal: sub,
+    taxa,
+    total: tot,
+    forma_pagamento: STATE.pgtoSel,
+    troco,
+    itens: itensDaConta,
+  };
+  await fsSet('contas_fechadas', contaId, contaData);
+  DB.contas_fechadas[contaId] = {id:contaId, ...contaData};
+ 
   sysLog(`Conta fechada Mesa ${id} — ${fmtBRL(tot)} (${STATE.pgtoSel})`);
   const p=STATE.pgtoSel;
   STATE.caixaMesa=null; STATE.pgtoSel=null;
@@ -1457,7 +1521,7 @@ window.fecharConta = async (sub,taxa,tot) => {
   if(document.getElementById('page-relatorios').classList.contains('active')) renderRelatorios();
   toast(`Conta fechada! ${fmtBRL(tot)} — ${p}${troco>0?` — Troco: ${fmtBRL(troco)}`:''}`, 'success');
 };
-
+ 
 window.dividirConta = (tot) => {
   const n=prompt('Dividir entre quantas pessoas?','2');
   if(!n||isNaN(n)||parseInt(n)<1) return;
