@@ -18,22 +18,7 @@
       <h1>RestaurantOS</h1>
       <p>Sistema de Gestão Profissional</p>
     </div>
-    <!-- MODAL: RECUPERAR SENHA -->
-<div class="modal-overlay" id="modal-recuperar-senha">
-  <div class="modal">
-    <div class="modal-title">Recuperar senha</div>
-    <div class="modal-desc">Informe seu e-mail e enviaremos um link para redefinir sua senha.</div>
-    <div class="field"><label class="login-label" style="color:var(--text2);">E-mail</label><input class="input" id="reset-email" type="email" placeholder="seu@email.com"></div>
-    <div class="login-err" id="reset-err"></div>
-    <div class="login-loading" id="reset-loading">Enviando...</div>
-    <div class="modal-footer">
-      <button class="btn btn-sm" onclick="closeModal('modal-recuperar-senha')">Cancelar</button>
-      <button class="btn btn-primary btn-sm" onclick="enviarResetSenha()">Enviar link</button>
-    </div>
-  </div>
-</div>
 
-    <!-- Tab: Email/Senha -->
     <div id="login-form-wrap">
       <div class="login-field-wrap">
         <label class="login-label">E-mail</label>
@@ -47,10 +32,7 @@
       <div class="login-loading" id="login-loading">Autenticando...</div>
       <button class="login-btn" onclick="doEmailLogin()">Entrar</button>
 <br><br>
-      <button class="login-btn" style="background:rgba(255,255,255,.12);margin-top:0;" onclick="window.location.href='cadastro.html'"> Criar conta nova
-</button>    </div>
-    <div class="login-hint" style="margin-top:6px;">
-      <a href="#" onclick="abrirRecuperarSenha(event)" style="color:rgba(255,255,255,.45);text-decoration:underline;font-size:11px;">Esqueci minha senha</a>
+      <button class="login-btn" style="background:rgba(255,255,255,.12);margin-top:0;" onclick="window.location.href='cadastro.html'"> Criar conta nova</button>
     </div>
     <div class="login-hint">Seus dados são salvos no Firebase</div>
   </div>
@@ -73,6 +55,7 @@
         <button class="nav-btn" onclick="goPage('estoque')" data-page="estoque">📦 Estoque</button>
         <button class="nav-btn" onclick="goPage('cardapio')" data-page="cardapio" id="nav-cardapio" style="display:none">🍴 Cardápio</button>
         <button class="nav-btn" onclick="goPage('relatorios')" data-page="relatorios" id="nav-relatorios" style="display:none">📊 Relatórios</button>
+        <button class="nav-btn" onclick="goPage('relatorios-mensais')" data-page="relatorios-mensais" id="nav-relatorios-mensais" style="display:none">📅 Mensal</button>
         <button class="nav-btn" onclick="goPage('config')" data-page="config" id="nav-config" style="display:none">⚙️ Config</button>
       </nav>
     </div>
@@ -163,9 +146,6 @@
             <button class="kds-filter-btn" onclick="filtKDS('pronto',this)">Prontos</button>
             <button class="kds-filter-btn" onclick="filtKDS('entregue',this)">Entregues</button>
           </div>
-          <button class="kds-sound-indicator" id="btn-som-kds" onclick="toggleSomKDS()" title="Ativar/desativar alerta sonoro">
-            🔔 Som
-          </button>
         </div>
       </div>
       <div class="kds-grid" id="kds-grid"></div>
@@ -173,10 +153,7 @@
 
     <!-- CAIXA -->
     <div class="page" id="page-caixa">
-      <div class="page-header">
-        <div class="page-title">PDV — Caixa</div>
-        <button class="btn btn-sm" onclick="abrirHistoricoGeral()">📋 Histórico de contas</button>
-      </div>
+      <div class="page-header"><div class="page-title">PDV — Caixa</div></div>
       <div class="caixa-layout">
         <div>
           <div class="card-title" style="margin-bottom:8px;">Mesas abertas</div>
@@ -195,6 +172,7 @@
           <button class="btn btn-green btn-sm" onclick="reporTudo()">Repor tudo</button>
         </div>
       </div>
+      <div class="g4" id="est-resumo" style="margin-bottom:14px;"></div>
       <div class="g2">
         <div class="card">
           <div class="card-header">
@@ -254,6 +232,18 @@
       </div>
     </div>
 
+    <!-- RELATÓRIOS MENSAIS -->
+    <div class="page" id="page-relatorios-mensais">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📅 Relatórios Mensais</div>
+          <div class="page-sub" id="rm-sub">Histórico consolidado por mês</div>
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="fecharMesManual()">📦 Fechar mês atual</button>
+      </div>
+      <div id="rm-lista"></div>
+    </div>
+
     <!-- CONFIG -->
     <div class="page" id="page-config">
       <div class="page-title" style="margin-bottom:16px;">Configurações</div>
@@ -271,12 +261,8 @@
             <div style="display:flex;flex-direction:column;gap:8px;">
               <button class="btn btn-sm" onclick="exportarDados()">📤 Exportar dados (JSON)</button>
               <button class="btn btn-sm" style="background:var(--brand,#7c3aed);color:#fff;border-color:var(--brand,#7c3aed);" onclick="exportarRelatorioPDF()">📄 Exportar Relatório (PDF)</button>
-              <button class="btn btn-sm" onclick="mostrarChaveAcesso()" id="btn-chave-acesso">🔑 Ver chave de acesso</button>
-              <div id="chave-acesso-display" style="display:none;margin-top:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
-              <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">Chave do período (válida por ~10 dias)</div>
-              <div id="chave-acesso-valor" style="font-size:22px;font-weight:700;letter-spacing:3px;color:var(--text);font-family:monospace;"></div>
-              <div id="chave-acesso-validade" style="font-size:11px;color:var(--text3);margin-top:4px;"></div>
-              </div>
+              <button class="btn btn-sm" style="background:var(--blue-m);color:#fff;border-color:var(--blue);" onclick="goPage('relatorios-mensais')">📅 Relatórios mensais</button>
+              <button class="btn btn-red btn-sm" onclick="resetarSistema()">🗑️ Resetar todos os dados</button>
             </div>
           </div>
         </div>
@@ -300,22 +286,46 @@
       <button class="nav-mob-btn" onclick="goPage('caixa')" data-page="caixa"><span class="nav-mob-icon">💳</span><span class="nav-mob-label">Caixa</span></button>
       <button class="nav-mob-btn" onclick="goPage('estoque')" data-page="estoque"><span class="nav-mob-icon">📦</span><span class="nav-mob-label">Estoque</span></button>
       <button class="nav-mob-btn" onclick="goPage('relatorios')" data-page="relatorios"><span class="nav-mob-icon">📊</span><span class="nav-mob-label">Mais</span></button>
-      <button class="nav-mob-btn" onclick="goPage('config')" data-page="config" id="mob-nav-config" style="display:none"><span class="nav-mob-icon">⚙️</span><span class="nav-mob-label">Config</span></button>
     </div>
   </nav>
 </div>
 
-<!-- MODAL: RECUPERAR SENHA -->
-<div class="modal-overlay" id="modal-recuperar-senha">
-  <div class="modal">
-    <div class="modal-title">Recuperar senha</div>
-    <div class="modal-desc">Informe seu e-mail e enviaremos um link para redefinir sua senha.</div>
-    <div class="field"><label class="login-label" style="color:var(--text2);">E-mail</label><input class="input" id="reset-email" type="email" placeholder="seu@email.com"></div>
-    <div class="login-err" id="reset-err"></div>
-    <div class="login-loading" id="reset-loading">Enviando...</div>
+<!-- MODAL: HISTÓRICO DE MOVIMENTAÇÕES ESTOQUE -->
+<div class="modal-overlay" id="modal-movimentacoes">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-title" id="modal-mov-title">Histórico de movimentações</div>
+    <div style="max-height:360px;overflow-y:auto;" id="modal-mov-list"></div>
     <div class="modal-footer">
-      <button class="btn btn-sm" onclick="closeModal('modal-recuperar-senha')">Cancelar</button>
-      <button class="btn btn-primary btn-sm" onclick="enviarResetSenha()">Enviar link</button>
+      <button class="btn btn-sm" onclick="closeModal('modal-movimentacoes')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: AJUSTE DE ESTOQUE -->
+<div class="modal-overlay" id="modal-ajuste-estoque">
+  <div class="modal">
+    <div class="modal-title">Movimentar estoque</div>
+    <div id="ajuste-nome" style="font-size:13px;color:var(--text2);margin-bottom:12px;"></div>
+    <input type="hidden" id="ajuste-key">
+    <div class="field">
+      <label class="input-label">Tipo</label>
+      <select class="input" id="ajuste-tipo">
+        <option value="entrada">➕ Entrada (compra/reposição)</option>
+        <option value="saida">➖ Saída (descarte/perda)</option>
+        <option value="ajuste">🔧 Ajuste manual (definir quantidade exata)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="input-label">Quantidade</label>
+      <input class="input" id="ajuste-qty" type="number" min="0" step="0.1" placeholder="Ex: 5">
+    </div>
+    <div class="field">
+      <label class="input-label">Motivo (opcional)</label>
+      <input class="input" id="ajuste-motivo" type="text" placeholder="Ex: Compra fornecedor, Vencimento...">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeModal('modal-ajuste-estoque')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="confirmarAjuste()">Confirmar</button>
     </div>
   </div>
 </div>
@@ -460,7 +470,6 @@ import {
   getAuth, onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
   signOut
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
@@ -509,7 +518,7 @@ const ROLE_CONFIG = {
   garcom:     {label:'Garçom',     color:'#1e40af', bg:'#eff6ff', pages:['mesas','pedido','cozinha'],                                                    canOrder:true,  canKDS:true,  canCaixa:false, canRelatorio:false, canConfig:false, canCardapio:false},
   cozinheiro: {label:'Cozinheiro', color:'#92400e', bg:'#fff7ed', pages:['cozinha'],                                                                      canOrder:false, canKDS:true,  canCaixa:false, canRelatorio:false, canConfig:false, canCardapio:false},
   caixa:      {label:'Caixa',      color:'#065f46', bg:'#ecfdf5', pages:['mesas','caixa'],                                                               canOrder:false, canKDS:false, canCaixa:true,  canRelatorio:false, canConfig:false, canCardapio:false},
-  gerente:    {label:'Gerente',    color:'#4c1d95', bg:'#f5f3ff', pages:['mesas','pedido','cozinha','caixa','estoque','cardapio','relatorios','config'],  canOrder:true,  canKDS:true,  canCaixa:true,  canRelatorio:true,  canConfig:true,  canCardapio:true},
+  gerente:    {label:'Gerente',    color:'#4c1d95', bg:'#f5f3ff', pages:['mesas','pedido','cozinha','caixa','estoque','cardapio','relatorios','relatorios-mensais','config'],  canOrder:true,  canKDS:true,  canCaixa:true,  canRelatorio:true,  canConfig:true,  canCardapio:true},
 };
 
 // ── CARDÁPIO PADRÃO ────────────────────────────────────────────────────
@@ -551,7 +560,7 @@ const ESTOQUE_PADRAO = {
 
 // ── ESTADO GLOBAL ─────────────────────────────────────────────────────
 const STATE = {
-  currentUser: null,   // { uid, email, nome, role }
+  currentUser: null,
   dbReady: false,
   mesaSel: null,
   cartItems: [],
@@ -562,8 +571,8 @@ const STATE = {
   relPeriod: 'hoje',
   cardapioCatFiltro: 'Todos',
   adminCatFiltro: 'Todos',
+  mesMensalAberto: null,
   usuarioEditRole: 'garcom',
-  removerTaxa: false,
 };
 
 // ── CACHE LOCAL ───────────────────────────────────────────────────────
@@ -571,7 +580,7 @@ const DB = {
   mesas:{}, cardapio:{}, pedidos:{}, pedido_itens:{},
   estoque:{}, config:{}, relatorio_dia:{}, fat_hora:{},
   ranking_itens:{}, fat_pgto:{}, fat_cat:{}, usuarios:{},
-  contas_fechadas:{},
+  contas_fechadas:{}, relatorios_mensais:{},
 };
 
 // ── LOG ───────────────────────────────────────────────────────────────
@@ -610,9 +619,8 @@ function uuid() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// AUTENTICAÇÃO FIREBASE AUTH
+// AUTENTICAÇÃO
 // ═══════════════════════════════════════════════════════════════════
-
 let loginRoleSel = 'garcom';
 
 window.selRole = (btn) => {
@@ -634,7 +642,6 @@ function setLoginLoading(show) {
   el.classList.toggle('show', show);
 }
 
-// Login com email+senha
 window.doEmailLogin = async () => {
   const email = document.getElementById('login-email').value.trim();
   const senha  = document.getElementById('login-senha').value;
@@ -643,7 +650,6 @@ window.doEmailLogin = async () => {
   setLoginLoading(true);
   try {
     await signInWithEmailAndPassword(auth, email, senha);
-    // onAuthStateChanged vai capturar e continuar o fluxo
   } catch(e) {
     setLoginLoading(false);
     const msgs = {
@@ -657,8 +663,6 @@ window.doEmailLogin = async () => {
   }
 };
 
-
-// Logout
 window.doLogout = async () => {
   if (!confirm('Deseja sair do sistema?')) return;
   await signOut(auth);
@@ -669,39 +673,32 @@ window.doLogout = async () => {
   sysLog('Sessão encerrada');
 };
 
-// ── onAuthStateChanged: central de entrada pós-login ──────────────────
 onAuthStateChanged(auth, async (firebaseUser) => {
   setLoginLoading(false);
   if (!firebaseUser) {
-    // Não autenticado: mostrar login
     document.getElementById('app').style.display = 'none';
     document.getElementById('login-screen').classList.remove('hidden');
     STATE.dbReady = false;
     return;
   }
 
-  // Usuário autenticado — buscar perfil no Firestore
   try {
     let perfil = await fsGet('usuarios', firebaseUser.uid);
     if (!perfil) {
-      // Primeiro login via provider externo — criar perfil padrão
       const defaultNome = firebaseUser.displayName || firebaseUser.email.split('@')[0];
       perfil = { uid: firebaseUser.uid, nome: defaultNome, role: loginRoleSel || 'garcom', email: firebaseUser.email };
       await fsSet('usuarios', firebaseUser.uid, { nome: perfil.nome, role: perfil.role, email: perfil.email, criadoEm: new Date().toISOString() });
     }
     STATE.currentUser = { uid: firebaseUser.uid, email: firebaseUser.email, nome: perfil.nome, role: perfil.role };
 
-    // Esconder login, mostrar app
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('app').style.display = 'flex';
 
     aplicarRole(STATE.currentUser.role);
     sysLog(`Login: ${STATE.currentUser.nome} (${STATE.currentUser.role}) — ${STATE.currentUser.email}`, 'info');
 
-    // Inicializar banco
     await initDB();
 
-    // Se cozinheiro, ir direto para KDS
     if (STATE.currentUser.role === 'cozinheiro') goPage('cozinha');
 
   } catch(e) {
@@ -710,12 +707,10 @@ onAuthStateChanged(auth, async (firebaseUser) => {
   }
 });
 
-// ── Aplicar permissões de role na UI ──────────────────────────────────
 function aplicarRole(role) {
   const rc = ROLE_CONFIG[role] || ROLE_CONFIG.garcom;
   const u  = STATE.currentUser;
 
-  // Avatar e nome
   const av = document.getElementById('user-avatar');
   av.textContent = (u.nome||'?').charAt(0).toUpperCase();
   av.style.background = rc.color;
@@ -725,13 +720,10 @@ function aplicarRole(role) {
   rb.style.background = rc.bg;
   rb.style.color = rc.color;
 
-  // Nav items opcionais
   document.getElementById('nav-cardapio').style.display  = rc.canCardapio  ? '' : 'none';
   document.getElementById('nav-relatorios').style.display= rc.canRelatorio ? '' : 'none';
+  document.getElementById('nav-relatorios-mensais').style.display = rc.canRelatorio ? '' : 'none';
   document.getElementById('nav-config').style.display    = rc.canConfig    ? '' : 'none';
-  // Nav mobile — Config (só gerente)
-  const mobConfig = document.getElementById('mob-nav-config');
-  if (mobConfig) mobConfig.style.display = rc.canConfig ? '' : 'none';
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -740,13 +732,12 @@ function aplicarRole(role) {
 async function initDB() {
   sysLog('Conectando ao Firestore...', 'info');
   try {
-    // Carregar todas as coleções em paralelo
     const [mesasD, cardapioD, pedidosD, itensD, estoqueD, configD,
-           relD, fatHD, rankD, fatPD, fatCD, usersD, contasD] = await Promise.all([
+           relD, fatHD, rankD, fatPD, fatCD, usersD, contasD, relMensaisD] = await Promise.all([
       fsAll('mesas'), fsAll('cardapio'), fsAll('pedidos'), fsAll('pedido_itens'),
       fsAll('estoque'), fsAll('config'), fsAll('relatorio_dia'), fsAll('fat_hora'),
       fsAll('ranking_itens'), fsAll('fat_pgto'), fsAll('fat_cat'), fsAll('usuarios'),
-      fsAll('contas_fechadas'),
+      fsAll('contas_fechadas'), fsAll('relatorios_mensais'),
     ]);
 
     mesasD.forEach(d    => { DB.mesas[d.id]          = d; });
@@ -762,13 +753,12 @@ async function initDB() {
     fatCD.forEach(d     => { DB.fat_cat[d.id]         = d; });
     usersD.forEach(d    => { DB.usuarios[d.id]        = d; });
     contasD.forEach(d   => { DB.contas_fechadas[d.id] = d; });
+    relMensaisD.forEach(d => { DB.relatorios_mensais[d.id] = d; });
 
     sysLog(`Firestore: ${mesasD.length} mesas, ${cardapioD.length} itens, ${pedidosD.length} pedidos`, 'info');
 
     await ensureInitialData();
     loadConfig();
-
-    // Listeners em tempo real
     setupRealtimeListeners();
 
     STATE.dbReady = true;
@@ -785,7 +775,6 @@ async function initDB() {
 
 async function ensureInitialData() {
   const hoje = todayStr();
-  // Mesas
   if (!Object.keys(DB.mesas).length) {
     for (let i=1; i<=SYS.nMesas; i++) {
       const m = {status:'livre', capacidade:4, inicio:null, total:0};
@@ -794,7 +783,6 @@ async function ensureInitialData() {
     }
     sysLog(`${SYS.nMesas} mesas criadas`, 'info');
   }
-  // Cardápio
   if (!Object.keys(DB.cardapio).length) {
     for (const it of CARDAPIO_PADRAO) {
       await fsSet('cardapio', it.id, {nome:it.nome,cat:it.cat,preco:it.preco,tempo:it.tempo,icon:it.icon,ing:it.ing,ativo:it.ativo});
@@ -802,7 +790,6 @@ async function ensureInitialData() {
     }
     sysLog(`${CARDAPIO_PADRAO.length} itens de cardápio inseridos`, 'info');
   }
-  // Estoque
   if (!Object.keys(DB.estoque).length) {
     for (const [k,v] of Object.entries(ESTOQUE_PADRAO)) {
       await fsSet('estoque', k, v);
@@ -810,7 +797,6 @@ async function ensureInitialData() {
     }
     sysLog(`${Object.keys(ESTOQUE_PADRAO).length} ingredientes inseridos`, 'info');
   }
-  // Relatório do dia
   if (!DB.relatorio_dia[hoje]) {
     const rd = {pedidos_total:0, faturamento:0, itens_total:0};
     await fsSet('relatorio_dia', hoje, rd);
@@ -824,7 +810,6 @@ function loadConfig() {
   if (DB.config['n_mesas'])                   SYS.nMesas = parseInt(DB.config['n_mesas']);
 }
 
-// Listeners em tempo real para mesas, pedidos e pedido_itens
 function setupRealtimeListeners() {
   onSnapshot(collection(db,'mesas'), snap => {
     snap.docChanges().forEach(ch => {
@@ -836,11 +821,12 @@ function setupRealtimeListeners() {
       if (document.getElementById('page-caixa').classList.contains('active'))  renderCaixa();
     }
   });
+
   onSnapshot(collection(db, 'relatorio_dia'), snap => {
-  snap.docChanges().forEach(change => {
-    DB.relatorio_dia[change.doc.id] = {data: change.doc.id, ...change.doc.data()};
+    snap.docChanges().forEach(change => {
+      DB.relatorio_dia[change.doc.id] = {data: change.doc.id, ...change.doc.data()};
+    });
   });
-});
 
   onSnapshot(collection(db, 'fat_hora'), snap => {
     snap.docChanges().forEach(change => {
@@ -871,7 +857,6 @@ function setupRealtimeListeners() {
     snap.docChanges().forEach(ch => {
       if (ch.type==='removed') delete DB.pedidos[ch.doc.id];
       else {
-        const anterior = DB.pedidos[ch.doc.id];
         const novo = {id:ch.doc.id,...ch.doc.data()};
         if (ch.type==='added' && novo.status==='preparo') temNovo = true;
         DB.pedidos[ch.doc.id] = novo;
@@ -883,39 +868,6 @@ function setupRealtimeListeners() {
       if (document.getElementById('page-mesas').classList.contains('active'))  renderFloor();
     }
   });
-
-  window.mostrarChaveAcesso = () => {
-  function gerarChavePeriodo() {
-    const base = new Date();
-    const bloco = Math.floor((base.getDate() - 1) / 10);
-    const semente = `${base.getFullYear()}-${base.getMonth()}-${bloco}`;
-    let h = 0;
-    for (let i = 0; i < semente.length; i++) {
-      h = Math.imul(31, h) + semente.charCodeAt(i) | 0;
-    }
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let chave = '';
-    let n = Math.abs(h);
-    for (let i = 0; i < 8; i++) {
-      chave += chars[n % chars.length];
-      n = Math.floor(n / chars.length) || (n * 7 + i + 1);
-    }
-    return chave.slice(0, 4) + '-' + chave.slice(4);
-  }
-
-  const display = document.getElementById('chave-acesso-display');
-  if (display.style.display !== 'none') { display.style.display = 'none'; return; }
-
-  const chave = gerarChavePeriodo();
-  const hoje = new Date();
-  const bloco = Math.floor((hoje.getDate() - 1) / 10);
-  const fimBloco = Math.min((bloco + 1) * 10, new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate());
-  const validade = `Válida até dia ${fimBloco}/${String(hoje.getMonth()+1).padStart(2,'0')}`;
-
-  document.getElementById('chave-acesso-valor').textContent = chave;
-  document.getElementById('chave-acesso-validade').textContent = validade;
-  display.style.display = 'block';
-};
 
   onSnapshot(collection(db,'pedido_itens'), snap => {
     snap.docChanges().forEach(ch => {
@@ -930,6 +882,16 @@ function setupRealtimeListeners() {
       else DB.contas_fechadas[ch.doc.id] = {id:ch.doc.id,...ch.doc.data()};
     });
   });
+
+  onSnapshot(collection(db,'relatorios_mensais'), snap => {
+    snap.docChanges().forEach(ch => {
+      if (ch.type==='removed') delete DB.relatorios_mensais[ch.doc.id];
+      else DB.relatorios_mensais[ch.doc.id] = {id:ch.doc.id,...ch.doc.data()};
+    });
+    if (STATE.dbReady && document.getElementById('page-relatorios-mensais').classList.contains('active')) {
+      renderRelatoriosMensais();
+    }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -941,6 +903,7 @@ async function checkNightReset() {
   const hoje  = todayStr();
   const last  = DB.config['last_reset'] || '';
   if (now.getHours() >= 2 && last !== hoje) await doNightReset(hoje);
+  await checkFecharMesAnterior();
 }
 
 async function doNightReset(hoje) {
@@ -1013,7 +976,7 @@ window.clickMesa = async (id) => {
   if (STATE.currentUser?.role==='caixa') { STATE.caixaMesa=parseInt(id)||id; goPage('caixa'); return; }
   if (m.status==='livre') {
     if (!rc.canOrder) { toast('Sem permissão para abrir mesas','error'); return; }
-    const upd = {status:'ocupada', inicio:Date.now(), total:0};
+    const upd = {status:'ocupada', inicio:Date.now()};
     await fsUpd('mesas', id, upd);
     DB.mesas[id] = {...m,...upd};
     sysLog(`Mesa ${id} aberta por ${STATE.currentUser?.nome}`);
@@ -1078,7 +1041,7 @@ function renderMesaSelector() {
 window.selMesa = async (id) => {
   const m = DB.mesas[id];
   if (m.status==='livre') {
-    const upd = {status:'ocupada',inicio:Date.now(),total:0};
+    const upd = {status:'ocupada',inicio:Date.now()};
     await fsUpd('mesas',id,upd);
     DB.mesas[id] = {...m,...upd};
     renderFloor();
@@ -1168,7 +1131,6 @@ window.enviarPedido = async () => {
   const h      = new Date().getHours();
   const user   = STATE.currentUser?.nome||'Sistema';
 
-  // Inserir pedido
   const pedData = {mesa_id:STATE.mesaSel, usuario:user, obs, total:tot, status:'preparo', criado:now};
   await fsSet('pedidos', pedId, pedData);
   DB.pedidos[pedId] = {id:pedId,...pedData};
@@ -1177,12 +1139,10 @@ window.enviarPedido = async () => {
   const batch = writeBatch(db);
 
   for (const c of STATE.cartItems) {
-    // Inserir item
     const itemRef = doc(collection(db,'pedido_itens'));
     batch.set(itemRef, {pedido_id:pedId,item_id:c.id,nome:c.nome,preco:c.preco,qty:c.qty});
     DB.pedido_itens[itemRef.id] = {id:itemRef.id,pedido_id:pedId,item_id:c.id,nome:c.nome,preco:c.preco,qty:c.qty};
 
-    // Baixa de estoque
     Object.entries(c.ing||{}).forEach(([k,v])=>{
       if (DB.estoque[k]) {
         const nq = Math.max(0, DB.estoque[k].qty - v*c.qty);
@@ -1191,7 +1151,6 @@ window.enviarPedido = async () => {
       }
     });
 
-    // Ranking
     const rkKey = `${hoje}_${c.nome}`.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_\-]/g,'');
     const rk    = DB.ranking_itens[rkKey];
     if (rk) {
@@ -1203,7 +1162,6 @@ window.enviarPedido = async () => {
       DB.ranking_itens[rkKey]={id:rkKey,...nrk};
     }
 
-    // Fat por categoria
     const catKey = `${hoje}_${c.cat}`.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_\-]/g,'');
     const fc = DB.fat_cat[catKey];
     if (fc) {
@@ -1216,13 +1174,11 @@ window.enviarPedido = async () => {
     }
   }
 
-  // Total da mesa
   const mesa   = DB.mesas[String(STATE.mesaSel)];
   const nTotal = (mesa?.total||0)+tot;
   batch.update(ref('mesas',String(STATE.mesaSel)),{total:nTotal});
   DB.mesas[String(STATE.mesaSel)] = {...mesa,total:nTotal};
 
-  // Fat por hora
   const horaKey = `${hoje}_${h}`;
   const fh = DB.fat_hora[horaKey];
   if (fh) {
@@ -1369,13 +1325,7 @@ window.toggleTaxa = () => { STATE.removerTaxa = !STATE.removerTaxa; renderCaixaD
 function renderCaixaDet() {
   const m       = DB.mesas[String(STATE.caixaMesa)];
   if (!m) return;
-  // Filtra apenas pedidos da sessão atual (criados após abertura da mesa)
-  const sesInicio = m.inicio || 0;
-  const todos   = Object.values(DB.pedidos).filter(p=>
-    (p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa)) &&
-    p.status!=='cancelado' &&
-    (p.criado||0) >= sesInicio
-  );
+  const todos   = Object.values(DB.pedidos).filter(p=>(p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa))&&p.status!=='cancelado');
   const todosItens = [];
   todos.forEach(p=>Object.values(DB.pedido_itens).filter(i=>i.pedido_id===p.id).forEach(i=>{
     const ex=todosItens.find(x=>x.nome===i.nome&&x.preco===i.preco);
@@ -1404,8 +1354,6 @@ function renderCaixaDet() {
     </div>
     <div class="divider"></div>
     <div class="conta-total-row"><span class="text-muted">Subtotal</span><span>${fmtBRL(sub)}</span></div>
-    <div class="conta-total-row"><span class="text-muted">Taxa (${SYS.taxaServico}%)</span><span>${fmtBRL(taxa)}</span></div>
-    <div class="conta-total-row" style="border-top:1.5px solid var(--border-strong);padding-top:10px;margin-top:4px;">
     <div class="conta-total-row" style="align-items:center;">
       <span class="text-muted" style="display:flex;align-items:center;gap:8px;">
         Taxa (${SYS.taxaServico}%)
@@ -1419,6 +1367,7 @@ function renderCaixaDet() {
       </span>
       <span style="${STATE.removerTaxa?'text-decoration:line-through;color:var(--text3);':''}">${fmtBRL(sub*(SYS.taxaServico/100))}</span>
     </div>
+    <div class="conta-total-row" style="border-top:1.5px solid var(--border-strong);padding-top:10px;margin-top:4px;">
       <span class="conta-total-final">Total</span><span class="conta-total-final">${fmtBRL(tot)}</span>
     </div>
     <div class="divider"></div>
@@ -1435,9 +1384,8 @@ function renderCaixaDet() {
       <div id="troco-result" style="font-size:13px;color:var(--green);font-weight:700;margin-top:6px;"></div>
     </div>
     <button class="btn btn-gold w-full mt-3" onclick="fecharConta(${sub.toFixed(2)},${taxa.toFixed(2)},${tot.toFixed(2)})">✅ Fechar Conta</button>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;">
-      <button class="btn btn-sm" onclick="dividirConta(${tot.toFixed(2)})">÷ Dividir</button>
-      <button class="btn btn-sm" onclick="abrirHistoricoMesa(${STATE.caixaMesa})">📋 Histórico</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+      <button class="btn btn-sm" onclick="dividirConta(${tot.toFixed(2)})">÷ Dividir conta</button>
       <button class="btn btn-sm" onclick="toast('Conta impressa (simulado)','info')">🖨️ Imprimir</button>
     </div>
   `;
@@ -1470,33 +1418,12 @@ window.fecharConta = async (sub,taxa,tot) => {
   const hoje = todayStr();
   const batch = writeBatch(db);
 
-  // Montar itens da conta para histórico (só pedidos da sessão atual)
-  const sesInicio = DB.mesas[String(STATE.caixaMesa)]?.inicio || 0;
-  const pedidosDaMesa = Object.values(DB.pedidos).filter(p=>
-    (p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa)) &&
-    p.status!=='cancelado' &&
-    (p.criado||0) >= sesInicio
-  );
-  const itensDaConta = [];
-  for (const p of pedidosDaMesa) {
-    Object.values(DB.pedido_itens).filter(i=>i.pedido_id===p.id).forEach(i=>{
-      const ex=itensDaConta.find(x=>x.nome===i.nome&&x.preco===i.preco);
-      if(ex) ex.qty+=i.qty; else itensDaConta.push({...i});
-    });
-  }
-
-  // Registrar fat por pgto
   const pgtoKey=`${hoje}_${STATE.pgtoSel}`;
   const fp=DB.fat_pgto[pgtoKey];
   if(fp){batch.update(ref('fat_pgto',pgtoKey),{valor:fp.valor+tot,qtd:fp.qtd+1});DB.fat_pgto[pgtoKey]={...fp,valor:fp.valor+tot,qtd:fp.qtd+1};}
   else{const nfp={data:hoje,forma:STATE.pgtoSel,valor:tot,qtd:1};batch.set(ref('fat_pgto',pgtoKey),nfp);DB.fat_pgto[pgtoKey]={id:pgtoKey,...nfp};}
 
-  // Pedidos abertos → entregues (só da sessão atual)
-  const abertos = Object.values(DB.pedidos).filter(p=>
-    (p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa)) &&
-    p.status!=='entregue' && p.status!=='cancelado' &&
-    (p.criado||0) >= sesInicio
-  );
+  const abertos = Object.values(DB.pedidos).filter(p=>(p.mesa_id===STATE.caixaMesa||p.mesa_id===String(STATE.caixaMesa))&&p.status!=='entregue'&&p.status!=='cancelado');
   let fatExtra=0,itExtra=0;
   for(const p of abertos){
     const its=Object.values(DB.pedido_itens).filter(i=>i.pedido_id===p.id);
@@ -1512,27 +1439,9 @@ window.fecharConta = async (sub,taxa,tot) => {
     DB.relatorio_dia[hoje]={...(DB.relatorio_dia[hoje]||{}),...nrd,id:hoje,data:hoje};
   }
 
-  // Liberar mesa
   batch.update(ref('mesas',id),{status:'livre',inicio:null,total:0});
   await batch.commit();
   DB.mesas[id]={...DB.mesas[id],status:'livre',inicio:null,total:0};
-
-  // Salvar histórico de conta fechada
-  const contaId = uuid();
-  const contaData = {
-    mesa_id: id,
-    fechadoEm: Date.now(),
-    fechadoPor: STATE.currentUser?.nome||'Sistema',
-    subtotal: sub,
-    taxa,
-    total: tot,
-    forma_pagamento: STATE.pgtoSel,
-    troco,
-    itens: itensDaConta,
-  };
-  await fsSet('contas_fechadas', contaId, contaData);
-  DB.contas_fechadas[contaId] = {id:contaId, ...contaData};
-
   sysLog(`Conta fechada Mesa ${id} — ${fmtBRL(tot)} (${STATE.pgtoSel})`);
   const p=STATE.pgtoSel;
   STATE.caixaMesa=null; STATE.pgtoSel=null;
@@ -1549,105 +1458,274 @@ window.dividirConta = (tot) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// ESTOQUE
+// ESTOQUE — FUNÇÃO AUXILIAR: PREVISÃO DE ACABAMENTO
+// ═══════════════════════════════════════════════════════════════════
+function calcularPrevisaoAcabamento(item) {
+  const sete = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  let consumoTotal = 0;
+  Object.values(DB.pedidos)
+    .filter(p => p.status === 'entregue' && (p.criado || 0) >= sete)
+    .forEach(p => {
+      Object.values(DB.pedido_itens)
+        .filter(i => i.pedido_id === p.id)
+        .forEach(i => {
+          const card = DB.cardapio[i.item_id];
+          if (!card) return;
+          const ing = JSON.parse(card.ing || '{}');
+          if (ing[item.id] !== undefined) consumoTotal += (ing[item.id] || 0) * i.qty;
+        });
+    });
+  const mediaDiaria = consumoTotal / 7;
+  if (mediaDiaria <= 0) return null;
+  return Math.floor(item.qty / mediaDiaria);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ESTOQUE — RENDER PRINCIPAL (com resumo, previsão e botões extras)
 // ═══════════════════════════════════════════════════════════════════
 function renderEstoque() {
   if (!STATE.dbReady) return;
-  const busca = document.getElementById('est-search')?.value?.toLowerCase()||'';
-  let itens   = Object.values(DB.estoque).sort((a,b)=>a.nome.localeCompare(b.nome));
-  if(busca) itens=itens.filter(i=>i.nome.toLowerCase().includes(busca));
+  const busca = document.getElementById('est-search')?.value?.toLowerCase() || '';
+  let itens = Object.values(DB.estoque).sort((a, b) => a.nome.localeCompare(b.nome));
+  if (busca) itens = itens.filter(i => i.nome.toLowerCase().includes(busca));
 
-  document.getElementById('est-list').innerHTML = itens.map(v=>{
-    const id  = v.id||v.chave;
-    const pct = Math.min(1,v.qty/v.max_qty);
-    const cor = pct<0.2?'var(--red-m)':pct<0.4?'var(--amber-m)':'var(--green-m)';
+  // Cards de resumo
+  const criticos   = Object.values(DB.estoque).filter(v => v.qty < v.max_qty * 0.2).length;
+  const baixos     = Object.values(DB.estoque).filter(v => v.qty >= v.max_qty * 0.2 && v.qty < v.max_qty * SYS.alertaEstoque).length;
+  const totalItens = Object.keys(DB.estoque).length;
+  const totalMax   = Object.values(DB.estoque).reduce((s, v) => s + v.max_qty, 0);
+  const totalAtual = Object.values(DB.estoque).reduce((s, v) => s + v.qty, 0);
+  const pctGeral   = totalMax > 0 ? Math.round(totalAtual / totalMax * 100) : 0;
+
+  const resumoEl = document.getElementById('est-resumo');
+  if (resumoEl) resumoEl.innerHTML = `
+    <div class="metric-card text-center"><div class="metric-val" style="color:var(--green)">${pctGeral}%</div><div class="metric-label">Ocupação</div></div>
+    <div class="metric-card text-center"><div class="metric-val">${totalItens}</div><div class="metric-label">Ingredientes</div></div>
+    <div class="metric-card text-center"><div class="metric-val" style="color:var(--red)">${criticos}</div><div class="metric-label">Críticos</div></div>
+    <div class="metric-card text-center"><div class="metric-val" style="color:var(--amber)">${baixos}</div><div class="metric-label">Baixos</div></div>
+  `;
+
+  // Lista de ingredientes
+  document.getElementById('est-list').innerHTML = itens.map(v => {
+    const id  = v.id || v.chave;
+    const pct = Math.min(1, v.qty / v.max_qty);
+    const cor = pct < 0.2 ? 'var(--red-m)' : pct < 0.4 ? 'var(--amber-m)' : 'var(--green-m)';
+    const dias = calcularPrevisaoAcabamento(v);
+    const prevTxt = dias !== null ? (dias <= 2 ? `⚠️ Acaba em ${dias}d` : `~${dias} dias`) : '';
+    const prevCor = dias !== null && dias <= 2 ? 'var(--red)' : 'var(--text3)';
     return `<div class="est-item">
-      <div class="est-icon">${v.icon||'📦'}</div>
+      <div class="est-icon">${v.icon || '📦'}</div>
       <div class="est-info">
         <div class="est-name">${v.nome}</div>
-        <div class="est-qty-text">${Number(v.qty).toFixed(1)} / ${v.max_qty} ${v.unidade}</div>
-        <div class="est-bar-wrap"><div class="est-bar" style="width:${Math.round(pct*100)}%;background:${cor}"></div></div>
+        <div class="est-qty-text">${Number(v.qty).toFixed(1)} / ${v.max_qty} ${v.unidade}${prevTxt ? ` · <span style="color:${prevCor};font-size:10px;">${prevTxt}</span>` : ''}</div>
+        <div class="est-bar-wrap"><div class="est-bar" style="width:${Math.round(pct * 100)}%;background:${cor}"></div></div>
       </div>
-      <div class="est-pct" style="color:${cor}">${Math.round(pct*100)}%</div>
+      <div class="est-pct" style="color:${cor}">${Math.round(pct * 100)}%</div>
       <div class="est-actions">
         <button class="btn btn-xs" onclick="openReporModal('${id}')">Repor</button>
+        <button class="btn btn-xs" onclick="abrirAjusteManual('${id}')" title="Entrada/Saída/Ajuste">±</button>
+        <button class="btn btn-xs" onclick="abrirMovimentacoes('${id}')" title="Histórico">📋</button>
         <button class="btn btn-xs btn-red" onclick="removerIngrediente('${id}')">✕</button>
       </div>
     </div>`;
   }).join('');
 
-  const alertas = Object.values(DB.estoque).filter(v=>v.qty<v.max_qty*SYS.alertaEstoque).sort((a,b)=>a.qty/a.max_qty-b.qty/b.max_qty);
+  // Alertas
+  const alertas = Object.values(DB.estoque)
+    .filter(v => v.qty < v.max_qty * SYS.alertaEstoque)
+    .sort((a, b) => a.qty / a.max_qty - b.qty / b.max_qty);
   document.getElementById('alertas-list').innerHTML = alertas.length
-    ? alertas.map(v=>`<div class="alerta-item"><div><div class="alerta-name">${v.icon||'⚠️'} ${v.nome}</div><div class="alerta-qty">Resta ${Number(v.qty).toFixed(1)} ${v.unidade}</div></div><button class="btn btn-xs btn-green" onclick="reporItem('${v.id||v.chave}')">Repor</button></div>`).join('')
+    ? alertas.map(v => {
+        const dias = calcularPrevisaoAcabamento(v);
+        return `<div class="alerta-item">
+          <div>
+            <div class="alerta-name">${v.icon || '⚠️'} ${v.nome}</div>
+            <div class="alerta-qty">Resta ${Number(v.qty).toFixed(1)} ${v.unidade}${dias !== null ? ` · ~${dias}d` : ''}</div>
+          </div>
+          <button class="btn btn-xs btn-green" onclick="reporItem('${v.id || v.chave}')">Repor</button>
+        </div>`;
+      }).join('')
     : '<div class="text-muted text-sm text-center" style="padding:12px 0;">Sem alertas 🎉</div>';
 }
+// Expor para onclick no HTML
+window.renderEstoque = renderEstoque;
 
+// ═══════════════════════════════════════════════════════════════════
+// ESTOQUE — REPOR / ADICIONAR / REMOVER
+// ═══════════════════════════════════════════════════════════════════
 window.openReporModal = (chave) => {
-  const item=DB.estoque[chave];
-  document.getElementById('modal-repor-desc').textContent=`${item.nome}: ${Number(item.qty).toFixed(1)} ${item.unidade} (máx: ${item.max_qty}).`;
-  document.getElementById('repor-qty').value=(item.max_qty-item.qty).toFixed(1);
-  document.getElementById('repor-key').value=chave;
+  const item = DB.estoque[chave];
+  document.getElementById('modal-repor-desc').textContent = `${item.nome}: ${Number(item.qty).toFixed(1)} ${item.unidade} (máx: ${item.max_qty}).`;
+  document.getElementById('repor-qty').value = (item.max_qty - item.qty).toFixed(1);
+  document.getElementById('repor-key').value = chave;
   openModal('modal-repor');
 };
+
 window.confirmarRepor = async () => {
-  const chave=document.getElementById('repor-key').value;
-  const qty=parseFloat(document.getElementById('repor-qty').value)||0;
-  const item=DB.estoque[chave];
-  const nq=Math.min(item.max_qty,item.qty+qty);
-  await fsUpd('estoque',chave,{qty:nq});
-  DB.estoque[chave]={...item,qty:nq};
+  const chave = document.getElementById('repor-key').value;
+  const qty   = parseFloat(document.getElementById('repor-qty').value) || 0;
+  const item  = DB.estoque[chave];
+  const nq    = Math.min(item.max_qty, item.qty + qty);
+  await fsUpd('estoque', chave, {qty: nq});
+  DB.estoque[chave] = {...item, qty: nq};
   sysLog(`Reposto: ${item.nome} → ${nq.toFixed(1)} ${item.unidade}`);
-  closeModal('modal-repor'); renderEstoque();
-  toast(`${item.nome} reposto!`,'success');
+  closeModal('modal-repor');
+  renderEstoque();
+  toast(`${item.nome} reposto!`, 'success');
 };
+
 window.reporItem = async (chave) => {
-  const item=DB.estoque[chave];
-  await fsUpd('estoque',chave,{qty:item.max_qty});
-  DB.estoque[chave]={...item,qty:item.max_qty};
-  renderEstoque(); toast(`${item.nome} reposto!`,'success');
+  const item = DB.estoque[chave];
+  await fsUpd('estoque', chave, {qty: item.max_qty});
+  DB.estoque[chave] = {...item, qty: item.max_qty};
+  renderEstoque();
+  toast(`${item.nome} reposto!`, 'success');
 };
+
 window.reporTudo = async () => {
-  if(!confirm('Repor tudo ao máximo?')) return;
-  const batch=writeBatch(db);
-  Object.entries(DB.estoque).forEach(([k,v])=>{batch.update(ref('estoque',k),{qty:v.max_qty});DB.estoque[k]={...v,qty:v.max_qty};});
+  if (!confirm('Repor tudo ao máximo?')) return;
+  const batch = writeBatch(db);
+  Object.entries(DB.estoque).forEach(([k, v]) => {
+    batch.update(ref('estoque', k), {qty: v.max_qty});
+    DB.estoque[k] = {...v, qty: v.max_qty};
+  });
   await batch.commit();
-  renderEstoque(); toast('Estoque reposto!','success');
+  renderEstoque();
+  toast('Estoque reposto!', 'success');
 };
+
 window.addIngrediente = async () => {
-  const nome=document.getElementById('new-ing-nome').value.trim();
-  const qty=parseFloat(document.getElementById('new-ing-qty').value)||0;
-  const max=parseFloat(document.getElementById('new-ing-max').value)||10;
-  const un=document.getElementById('new-ing-un').value;
-  const icon=document.getElementById('new-ing-icon').value||'📦';
-  if(!nome){toast('Informe o nome','error');return;}
-  const chave=nome.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
-  if(DB.estoque[chave]){toast('Já existe','error');return;}
-  const d={nome,icon,qty,max_qty:max,unidade:un};
-  await fsSet('estoque',chave,d);
-  DB.estoque[chave]={id:chave,...d};
-  ['new-ing-nome','new-ing-qty','new-ing-max','new-ing-icon'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  closeModal('modal-add-ing'); renderEstoque();
-  toast(`${nome} adicionado!`,'success');
+  const nome = document.getElementById('new-ing-nome').value.trim();
+  const qty  = parseFloat(document.getElementById('new-ing-qty').value) || 0;
+  const max  = parseFloat(document.getElementById('new-ing-max').value) || 10;
+  const un   = document.getElementById('new-ing-un').value;
+  const icon = document.getElementById('new-ing-icon').value || '📦';
+  if (!nome) { toast('Informe o nome', 'error'); return; }
+  const chave = nome.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+  if (DB.estoque[chave]) { toast('Já existe', 'error'); return; }
+  const d = {nome, icon, qty, max_qty: max, unidade: un};
+  await fsSet('estoque', chave, d);
+  DB.estoque[chave] = {id: chave, ...d};
+  ['new-ing-nome','new-ing-qty','new-ing-max','new-ing-icon'].forEach(id => {
+    const e = document.getElementById(id); if (e) e.value = '';
+  });
+  closeModal('modal-add-ing');
+  renderEstoque();
+  toast(`${nome} adicionado!`, 'success');
 };
+
 window.removerIngrediente = async (chave) => {
-  const item=DB.estoque[chave];
-  if(!confirm(`Remover "${item?.nome}"?`)) return;
-  await fsDel('estoque',chave);
+  const item = DB.estoque[chave];
+  if (!confirm(`Remover "${item?.nome}"?`)) return;
+  await fsDel('estoque', chave);
   delete DB.estoque[chave];
-  renderEstoque(); toast('Ingrediente removido','info');
+  renderEstoque();
+  toast('Ingrediente removido', 'info');
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// ESTOQUE — AJUSTE MANUAL (Entrada / Saída / Ajuste exato)
+// ═══════════════════════════════════════════════════════════════════
+window.abrirAjusteManual = (chave) => {
+  const item = DB.estoque[chave];
+  if (!item) return;
+  document.getElementById('ajuste-key').value   = chave;
+  document.getElementById('ajuste-nome').textContent = `${item.icon || '📦'} ${item.nome} — atual: ${Number(item.qty).toFixed(1)} ${item.unidade}`;
+  document.getElementById('ajuste-tipo').value  = 'entrada';
+  document.getElementById('ajuste-qty').value   = '';
+  document.getElementById('ajuste-motivo').value = '';
+  openModal('modal-ajuste-estoque');
+};
+
+window.confirmarAjuste = async () => {
+  const chave  = document.getElementById('ajuste-key').value;
+  const tipo   = document.getElementById('ajuste-tipo').value;
+  const qty    = parseFloat(document.getElementById('ajuste-qty').value);
+  const motivo = document.getElementById('ajuste-motivo').value.trim();
+
+  if (!qty || qty <= 0) { toast('Quantidade inválida', 'error'); return; }
+
+  const item = DB.estoque[chave];
+  if (!item) { toast('Ingrediente não encontrado', 'error'); return; }
+
+  let novaQty;
+  if (tipo === 'entrada')     novaQty = Math.min(item.max_qty, item.qty + qty);
+  else if (tipo === 'saida')  novaQty = Math.max(0, item.qty - qty);
+  else                        novaQty = Math.min(item.max_qty, Math.max(0, qty)); // ajuste exato
+
+  // Salvar nova quantidade no Firestore
+  await fsUpd('estoque', chave, {qty: novaQty});
+  DB.estoque[chave] = {...item, qty: novaQty};
+
+  // Registrar movimentação no histórico
+  const mov = {
+    chave,
+    nome:    item.nome,
+    tipo,
+    qty,
+    motivo:  motivo || 'Ajuste manual',
+    data:    todayStr(),
+    hora:    new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}),
+    ts:      Date.now(),
+    usuario: STATE.currentUser?.nome || 'Sistema',
+  };
+  await fsAdd('movimentacoes_estoque', mov);
+
+  sysLog(`Estoque ${item.nome}: ${tipo} ${qty} ${item.unidade} → ${novaQty.toFixed(1)}`);
+  closeModal('modal-ajuste-estoque');
+  renderEstoque();
+  toast(`${item.nome} atualizado!`, 'success');
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// ESTOQUE — HISTÓRICO DE MOVIMENTAÇÕES
+// ═══════════════════════════════════════════════════════════════════
+window.abrirMovimentacoes = async (chave) => {
+  const item = DB.estoque[chave];
+  if (!item) return;
+  document.getElementById('modal-mov-title').textContent = `Histórico — ${item.nome}`;
+  document.getElementById('modal-mov-list').innerHTML = '<div class="text-muted text-sm text-center" style="padding:12px;">Carregando...</div>';
+  openModal('modal-movimentacoes');
+  try {
+    const snap = await getDocs(collection(db, 'movimentacoes_estoque'));
+    const movs = snap.docs
+      .map(d => ({id: d.id, ...d.data()}))
+      .filter(m => m.chave === chave)
+      .sort((a, b) => b.ts - a.ts)
+      .slice(0, 40);
+
+    document.getElementById('modal-mov-list').innerHTML = movs.length
+      ? movs.map(m => {
+          const cor   = m.tipo === 'entrada' ? 'var(--green)' : m.tipo === 'saida' ? 'var(--red)' : 'var(--blue-m)';
+          const sinal = m.tipo === 'entrada' ? '+' : m.tipo === 'saida' ? '-' : '±';
+          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border);">
+            <div style="width:32px;height:32px;border-radius:50%;background:${cor}20;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:${cor};flex-shrink:0;">${sinal}</div>
+            <div style="flex:1;">
+              <div style="font-size:12px;font-weight:600;">${m.tipo.charAt(0).toUpperCase() + m.tipo.slice(1)} — ${m.qty} ${item.unidade}</div>
+              <div style="font-size:11px;color:var(--text3);">${m.motivo || '—'} · ${m.data || ''} ${m.hora || ''} · ${m.usuario || ''}</div>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:${cor};">${sinal}${m.qty}</div>
+          </div>`;
+        }).join('')
+      : '<div class="text-center text-muted" style="padding:20px;">Nenhuma movimentação registrada</div>';
+  } catch(e) {
+    document.getElementById('modal-mov-list').innerHTML = '<div class="text-muted text-sm text-center" style="padding:12px;">Erro ao carregar</div>';
+    console.error('Erro ao carregar movimentações:', e);
+  }
 };
 
 // ═══════════════════════════════════════════════════════════════════
 // CARDÁPIO ADMIN
 // ═══════════════════════════════════════════════════════════════════
-let adminCatFiltro='Todos';
+let adminCatFiltro = 'Todos';
 function renderCardapioAdmin() {
-  if(!STATE.dbReady) return;
-  const itens=Object.values(DB.cardapio).sort((a,b)=>(a.cat+a.nome).localeCompare(b.cat+b.nome));
-  const cats=['Todos',...new Set(itens.map(i=>i.cat))];
-  document.getElementById('cardapio-cat-bar').innerHTML=cats.map(c=>`<button class="cat-chip ${c===adminCatFiltro?'active':''}" onclick="filtAdminCat('${c}')">${c}</button>`).join('');
-  const filtered=adminCatFiltro==='Todos'?itens:itens.filter(i=>i.cat===adminCatFiltro);
-  document.getElementById('cardapio-admin-grid').innerHTML=filtered.map(i=>`
+  if (!STATE.dbReady) return;
+  const itens = Object.values(DB.cardapio).sort((a,b)=>(a.cat+a.nome).localeCompare(b.cat+b.nome));
+  const cats  = ['Todos',...new Set(itens.map(i=>i.cat))];
+  document.getElementById('cardapio-cat-bar').innerHTML = cats.map(c=>
+    `<button class="cat-chip ${c===adminCatFiltro?'active':''}" onclick="filtAdminCat('${c}')">${c}</button>`).join('');
+  const filtered = adminCatFiltro==='Todos' ? itens : itens.filter(i=>i.cat===adminCatFiltro);
+  document.getElementById('cardapio-admin-grid').innerHTML = filtered.map(i=>`
     <div class="cardapio-admin-card ${!i.ativo?'unavailable':''}">
       <div class="cardapio-admin-top">
         <div><div style="font-size:22px;">${i.icon||'🍽️'}</div><div class="cardapio-admin-name">${i.nome}</div><div class="cardapio-admin-cat">${i.cat}</div></div>
@@ -1661,128 +1739,138 @@ function renderCardapioAdmin() {
       </div>
     </div>`).join('');
 }
-window.filtAdminCat=(cat)=>{adminCatFiltro=cat;renderCardapioAdmin();};
-window.openAddItemModal=()=>{
-  document.getElementById('modal-item-title').textContent='Novo item';
-  document.getElementById('item-edit-id').value='';
-  ['item-nome','item-preco','item-icon','item-tempo'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+window.filtAdminCat = (cat) => { adminCatFiltro=cat; renderCardapioAdmin(); };
+window.openAddItemModal = () => {
+  document.getElementById('modal-item-title').textContent = 'Novo item';
+  document.getElementById('item-edit-id').value = '';
+  ['item-nome','item-preco','item-icon','item-tempo'].forEach(id => { const e=document.getElementById(id); if(e) e.value=''; });
   openModal('modal-item-cardapio');
 };
-window.openEditItemModal=(id)=>{
-  const item=DB.cardapio[String(id)];
-  if(!item) return;
-  document.getElementById('modal-item-title').textContent='Editar item';
-  document.getElementById('item-edit-id').value=id;
-  document.getElementById('item-nome').value=item.nome;
-  document.getElementById('item-preco').value=item.preco;
-  document.getElementById('item-cat').value=item.cat;
-  document.getElementById('item-tempo').value=item.tempo||15;
-  document.getElementById('item-icon').value=item.icon||'';
+window.openEditItemModal = (id) => {
+  const item = DB.cardapio[String(id)];
+  if (!item) return;
+  document.getElementById('modal-item-title').textContent = 'Editar item';
+  document.getElementById('item-edit-id').value = id;
+  document.getElementById('item-nome').value  = item.nome;
+  document.getElementById('item-preco').value = item.preco;
+  document.getElementById('item-cat').value   = item.cat;
+  document.getElementById('item-tempo').value = item.tempo||15;
+  document.getElementById('item-icon').value  = item.icon||'';
   openModal('modal-item-cardapio');
 };
-window.salvarItem=async()=>{
-  const id=document.getElementById('item-edit-id').value;
-  const nome=document.getElementById('item-nome').value.trim();
-  const preco=parseFloat(document.getElementById('item-preco').value);
-  const cat=document.getElementById('item-cat').value;
-  const tempo=parseInt(document.getElementById('item-tempo').value)||15;
-  const icon=document.getElementById('item-icon').value||'🍽️';
-  if(!nome){toast('Informe o nome','error');return;}
-  if(!preco||preco<=0){toast('Preço inválido','error');return;}
-  if(id){
+window.salvarItem = async () => {
+  const id    = document.getElementById('item-edit-id').value;
+  const nome  = document.getElementById('item-nome').value.trim();
+  const preco = parseFloat(document.getElementById('item-preco').value);
+  const cat   = document.getElementById('item-cat').value;
+  const tempo = parseInt(document.getElementById('item-tempo').value)||15;
+  const icon  = document.getElementById('item-icon').value||'🍽️';
+  if (!nome) { toast('Informe o nome','error'); return; }
+  if (!preco||preco<=0) { toast('Preço inválido','error'); return; }
+  if (id) {
     await fsUpd('cardapio',String(id),{nome,preco,cat,tempo,icon});
-    DB.cardapio[String(id)]={...DB.cardapio[String(id)],nome,preco,cat,tempo,icon};
+    DB.cardapio[String(id)] = {...DB.cardapio[String(id)],nome,preco,cat,tempo,icon};
     toast('Item atualizado!','success');
   } else {
-    const nid=await fsAdd('cardapio',{nome,cat,preco,tempo,icon,ing:'{}',ativo:1});
-    DB.cardapio[nid]={id:nid,nome,cat,preco,tempo,icon,ing:'{}',ativo:1};
+    const nid = await fsAdd('cardapio',{nome,cat,preco,tempo,icon,ing:'{}',ativo:1});
+    DB.cardapio[nid] = {id:nid,nome,cat,preco,tempo,icon,ing:'{}',ativo:1};
     toast('Item adicionado!','success');
   }
   closeModal('modal-item-cardapio');
   renderCardapioAdmin(); renderCardapio();
 };
-window.toggleItem=async(id,ativo)=>{
+window.toggleItem = async (id, ativo) => {
   await fsUpd('cardapio',String(id),{ativo:ativo?1:0});
-  DB.cardapio[String(id)]={...DB.cardapio[String(id)],ativo:ativo?1:0};
+  DB.cardapio[String(id)] = {...DB.cardapio[String(id)],ativo:ativo?1:0};
   renderCardapioAdmin(); renderCardapio();
 };
 
 // ═══════════════════════════════════════════════════════════════════
 // RELATÓRIOS
 // ═══════════════════════════════════════════════════════════════════
-let relPeriod='hoje';
-window.setRelPeriod=(p,btn)=>{
-  relPeriod=p;
+let relPeriod = 'hoje';
+window.setRelPeriod = (p, btn) => {
+  relPeriod = p;
   document.querySelectorAll('.rel-period-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   renderRelatorios();
 };
-function getRelDatas(){
-  const hoje=todayStr();
-  if(relPeriod==='hoje') return [hoje];
-  const count=relPeriod==='semana'?7:30;
-  const datas=[];
-  for(let i=count-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);datas.push(`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`);}
+
+function getRelDatas() {
+  const hoje = todayStr();
+  if (relPeriod==='hoje') return [hoje];
+  const count = relPeriod==='semana' ? 7 : 30;
+  const datas = [];
+  for (let i=count-1; i>=0; i--) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    datas.push(`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`);
+  }
   return datas;
 }
-function renderRelatorios(){
-  if(!STATE.dbReady) return;
-  const datas=new Set(getRelDatas());
-  const rels=Object.values(DB.relatorio_dia).filter(r=>datas.has(r.id||r.data));
-  const fat=rels.reduce((s,r)=>s+(r.faturamento||0),0);
-  const ped=rels.reduce((s,r)=>s+(r.pedidos_total||0),0);
-  const itens=rels.reduce((s,r)=>s+(r.itens_total||0),0);
-  const ticket=ped>0?fat/ped:0;
+
+function renderRelatorios() {
+  if (!STATE.dbReady) return;
+  const datas = new Set(getRelDatas());
+  const rels  = Object.values(DB.relatorio_dia).filter(r=>datas.has(r.id||r.data));
+  const fat   = rels.reduce((s,r)=>s+(r.faturamento||0),0);
+  const ped   = rels.reduce((s,r)=>s+(r.pedidos_total||0),0);
+  const itens = rels.reduce((s,r)=>s+(r.itens_total||0),0);
+  const ticket= ped>0?fat/ped:0;
   document.getElementById('rel-metrics').innerHTML=`
     <div class="metric-card text-center"><div class="metric-val">${fmtBRL(fat)}</div><div class="metric-label">Faturamento</div></div>
     <div class="metric-card text-center"><div class="metric-val">${ped}</div><div class="metric-label">Pedidos</div></div>
     <div class="metric-card text-center"><div class="metric-val">${fmtBRL(ticket)}</div><div class="metric-label">Ticket médio</div></div>
     <div class="metric-card text-center"><div class="metric-val">${itens}</div><div class="metric-label">Itens vendidos</div></div>
   `;
-  // Gráfico
-  if(relPeriod==='hoje'){
-    const horas=Object.values(DB.fat_hora).filter(h=>datas.has(h.data)).sort((a,b)=>a.hora-b.hora);
-    const maxH=Math.max(...horas.map(h=>h.valor),1);
-    document.getElementById('chart-horas').innerHTML=horas.length?horas.map(h=>`<div class="chart-bar-col"><div class="chart-bar-val">${h.valor>=1000?(h.valor/1000).toFixed(1)+'k':Math.round(h.valor)}</div><div class="chart-bar-rect" style="height:${Math.max(4,Math.round(h.valor/maxH*100))}px"></div></div>`).join(''):'<div class="text-center text-muted" style="padding:20px;width:100%">Sem dados</div>';
-    document.getElementById('chart-horas-labels').innerHTML=horas.map(h=>`<span class="chart-bar-label">${h.hora}h</span>`).join('');
+  if (relPeriod==='hoje') {
+    const horas = Object.values(DB.fat_hora).filter(h=>datas.has(h.data)).sort((a,b)=>a.hora-b.hora);
+    const maxH  = Math.max(...horas.map(h=>h.valor),1);
+    document.getElementById('chart-horas').innerHTML = horas.length
+      ? horas.map(h=>`<div class="chart-bar-col"><div class="chart-bar-val">${h.valor>=1000?(h.valor/1000).toFixed(1)+'k':Math.round(h.valor)}</div><div class="chart-bar-rect" style="height:${Math.max(4,Math.round(h.valor/maxH*100))}px"></div></div>`).join('')
+      : '<div class="text-center text-muted" style="padding:20px;width:100%">Sem dados</div>';
+    document.getElementById('chart-horas-labels').innerHTML = horas.map(h=>`<span class="chart-bar-label">${h.hora}h</span>`).join('');
   } else {
-    const datasArr=[...datas].sort();
-    const fatD=datasArr.map(d=>({d,f:(DB.relatorio_dia[d]?.faturamento||0)}));
-    const maxD=Math.max(...fatD.map(x=>x.f),1);
-    document.getElementById('chart-horas').innerHTML=fatD.map(x=>`<div class="chart-bar-col"><div class="chart-bar-val">${x.f>=1000?(x.f/1000).toFixed(1)+'k':Math.round(x.f)}</div><div class="chart-bar-rect" style="height:${Math.max(4,Math.round(x.f/maxD*100))}px"></div></div>`).join('');
-    document.getElementById('chart-horas-labels').innerHTML=fatD.map(x=>{const p=x.d.split('-');return`<span class="chart-bar-label">${p[2]}/${p[1]}</span>`;}).join('');
+    const datasArr = [...datas].sort();
+    const fatD = datasArr.map(d=>({d,f:(DB.relatorio_dia[d]?.faturamento||0)}));
+    const maxD = Math.max(...fatD.map(x=>x.f),1);
+    document.getElementById('chart-horas').innerHTML = fatD.map(x=>`<div class="chart-bar-col"><div class="chart-bar-val">${x.f>=1000?(x.f/1000).toFixed(1)+'k':Math.round(x.f)}</div><div class="chart-bar-rect" style="height:${Math.max(4,Math.round(x.f/maxD*100))}px"></div></div>`).join('');
+    document.getElementById('chart-horas-labels').innerHTML = fatD.map(x=>{const p=x.d.split('-');return`<span class="chart-bar-label">${p[2]}/${p[1]}</span>`;}).join('');
   }
-  // Ranking
-  const rankMap={};
+  const rankMap = {};
   Object.values(DB.ranking_itens).filter(r=>datas.has(r.data)).forEach(r=>{
-    if(!rankMap[r.nome]) rankMap[r.nome]={nome:r.nome,qty:0,fat:0};
+    if (!rankMap[r.nome]) rankMap[r.nome]={nome:r.nome,qty:0,fat:0};
     rankMap[r.nome].qty+=r.qty||0; rankMap[r.nome].fat+=r.faturamento||0;
   });
-  const rank=Object.values(rankMap).sort((a,b)=>b.qty-a.qty).slice(0,8);
-  const maxR=rank.length?rank[0].qty:1;
-  document.getElementById('ranking-list').innerHTML=rank.length?rank.map((r,i)=>`<div class="rank-item"><div class="rank-pos">${i+1}</div><div class="rank-name">${r.nome}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(r.qty/maxR*100)}%"></div></div><div class="rank-qty">${r.qty}</div></div>`).join(''):'<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
-  // Por categoria
-  const catMap={};
+  const rank = Object.values(rankMap).sort((a,b)=>b.qty-a.qty).slice(0,8);
+  const maxR = rank.length?rank[0].qty:1;
+  document.getElementById('ranking-list').innerHTML = rank.length
+    ? rank.map((r,i)=>`<div class="rank-item"><div class="rank-pos">${i+1}</div><div class="rank-name">${r.nome}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(r.qty/maxR*100)}%"></div></div><div class="rank-qty">${r.qty}</div></div>`).join('')
+    : '<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
+  const catMap = {};
   Object.values(DB.fat_cat).filter(r=>datas.has(r.data)).forEach(r=>{catMap[r.cat]=(catMap[r.cat]||0)+(r.valor||0);});
-  const fatCat=Object.entries(catMap).map(([c,v])=>({c,v})).sort((a,b)=>b.v-a.v);
-  const maxC=fatCat.length?fatCat[0].v:1;
-  document.getElementById('cat-fat-list').innerHTML=fatCat.length?fatCat.map(x=>`<div class="rank-item"><div class="rank-name">${x.c}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(x.v/maxC*100)}%;background:var(--brand-m)"></div></div><div class="rank-qty">${fmtBRL(x.v)}</div></div>`).join(''):'<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
-  // Por pgto
-  const pgtoMap={};
-  Object.values(DB.fat_pgto).filter(r=>datas.has(r.data)).forEach(r=>{if(!pgtoMap[r.forma])pgtoMap[r.forma]={f:r.forma,v:0,q:0};pgtoMap[r.forma].v+=r.valor||0;pgtoMap[r.forma].q+=r.qtd||0;});
-  const icons={dinheiro:'💵',debito:'💳',credito:'💳',pix:'📱'};
-  document.getElementById('pgto-fat-list').innerHTML=Object.values(pgtoMap).sort((a,b)=>b.v-a.v).length
-    ?Object.values(pgtoMap).sort((a,b)=>b.v-a.v).map(p=>`<div class="conta-total-row" style="padding:8px 0;"><span>${icons[p.f]||'💳'} ${p.f} (${p.q}×)</span><span style="font-weight:700;">${fmtBRL(p.v)}</span></div>`).join('')
-    :'<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
+  const fatCat = Object.entries(catMap).map(([c,v])=>({c,v})).sort((a,b)=>b.v-a.v);
+  const maxC   = fatCat.length?fatCat[0].v:1;
+  document.getElementById('cat-fat-list').innerHTML = fatCat.length
+    ? fatCat.map(x=>`<div class="rank-item"><div class="rank-name">${x.c}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(x.v/maxC*100)}%;background:var(--brand-m)"></div></div><div class="rank-qty">${fmtBRL(x.v)}</div></div>`).join('')
+    : '<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
+  const pgtoMap = {};
+  Object.values(DB.fat_pgto).filter(r=>datas.has(r.data)).forEach(r=>{
+    if (!pgtoMap[r.forma]) pgtoMap[r.forma]={f:r.forma,v:0,q:0};
+    pgtoMap[r.forma].v+=r.valor||0; pgtoMap[r.forma].q+=r.qtd||0;
+  });
+  const icons = {dinheiro:'💵',debito:'💳',credito:'💳',pix:'📱'};
+  document.getElementById('pgto-fat-list').innerHTML = Object.values(pgtoMap).sort((a,b)=>b.v-a.v).length
+    ? Object.values(pgtoMap).sort((a,b)=>b.v-a.v).map(p=>`<div class="conta-total-row" style="padding:8px 0;"><span>${icons[p.f]||'💳'} ${p.f} (${p.q}×)</span><span style="font-weight:700;">${fmtBRL(p.v)}</span></div>`).join('')
+    : '<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════════════
 window.salvarConfig = async () => {
-  const nome=document.getElementById('cfg-nome').value.trim()||SYS.nomeRestaurante;
-  const taxa=parseFloat(document.getElementById('cfg-taxa').value)||SYS.taxaServico;
-  const nm=parseInt(document.getElementById('cfg-mesas').value)||SYS.nMesas;
+  const nome = document.getElementById('cfg-nome').value.trim()||SYS.nomeRestaurante;
+  const taxa = parseFloat(document.getElementById('cfg-taxa').value)||SYS.taxaServico;
+  const nm   = parseInt(document.getElementById('cfg-mesas').value)||SYS.nMesas;
   await Promise.all([
     fsSet('config','nome_restaurante',{valor:nome}),
     fsSet('config','taxa_servico',{valor:String(taxa)}),
@@ -1790,93 +1878,110 @@ window.salvarConfig = async () => {
   ]);
   DB.config['nome_restaurante']=nome; DB.config['taxa_servico']=String(taxa); DB.config['n_mesas']=String(nm);
   SYS.nomeRestaurante=nome; SYS.taxaServico=taxa;
-  const atualCount=Object.keys(DB.mesas).length;
-  if(nm>atualCount){
-    for(let i=atualCount+1;i<=nm;i++){
-      const m={status:'livre',capacidade:4,inicio:null,total:0};
+  const atualCount = Object.keys(DB.mesas).length;
+  if (nm > atualCount) {
+    for (let i=atualCount+1; i<=nm; i++) {
+      const m = {status:'livre',capacidade:4,inicio:null,total:0};
       await fsSet('mesas',String(i),m);
-      DB.mesas[String(i)]={id:String(i),...m};
+      DB.mesas[String(i)] = {id:String(i),...m};
     }
   }
-  renderFloor(); toast('Configurações salvas!','success');
+  renderFloor();
+  toast('Configurações salvas!','success');
 };
 
 window.exportarDados = () => {
-  const data={version:'2.0',exportedAt:new Date().toISOString(),mesas:Object.values(DB.mesas),cardapio:Object.values(DB.cardapio),pedidos:Object.values(DB.pedidos),pedido_itens:Object.values(DB.pedido_itens),estoque:Object.values(DB.estoque),relatorio_dia:Object.values(DB.relatorio_dia),ranking_itens:Object.values(DB.ranking_itens)};
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`restaurantOS_${todayStr()}.json`;a.click();
+  const data = {version:'2.0',exportedAt:new Date().toISOString(),mesas:Object.values(DB.mesas),cardapio:Object.values(DB.cardapio),pedidos:Object.values(DB.pedidos),pedido_itens:Object.values(DB.pedido_itens),estoque:Object.values(DB.estoque),relatorio_dia:Object.values(DB.relatorio_dia),ranking_itens:Object.values(DB.ranking_itens)};
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`restaurantOS_${todayStr()}.json`; a.click();
   toast('Dados exportados!','success');
 };
 
+window.resetarSistema = async () => {
+  if (!confirm('APAGAR TODOS OS DADOS?')) return;
+  if (!confirm('Tem certeza?')) return;
+  const cols = ['mesas','cardapio','pedidos','pedido_itens','estoque','config','relatorio_dia','fat_hora','ranking_itens','fat_pgto','fat_cat','contas_fechadas','relatorios_mensais'];
+  for (const c of cols) {
+    const snaps = await getDocs(collection(db,c));
+    for (const d of snaps.docs) await fsDel(c,d.id);
+  }
+  Object.keys(DB).forEach(k => { DB[k] = {}; });
+  toast('Dados apagados. Recarregando...','info');
+  setTimeout(() => location.reload(), 1500);
+};
 
-function renderConfigPage(){
-  document.getElementById('cfg-nome').value=SYS.nomeRestaurante;
-  document.getElementById('cfg-taxa').value=SYS.taxaServico;
-  document.getElementById('cfg-mesas').value=Object.keys(DB.mesas).length||SYS.nMesas;
-  document.getElementById('usuarios-list').innerHTML=Object.values(DB.usuarios).map(u=>{
-    const rc=ROLE_CONFIG[u.role]||ROLE_CONFIG.garcom;
-    const isMe=STATE.currentUser?.uid===u.uid||STATE.currentUser?.uid===(u.id||u.uid);
-    return `<div class="usuario-card${u.ativo===false?' inativo':''}">
+function renderConfigPage() {
+  document.getElementById('cfg-nome').value  = SYS.nomeRestaurante;
+  document.getElementById('cfg-taxa').value  = SYS.taxaServico;
+  document.getElementById('cfg-mesas').value = Object.keys(DB.mesas).length || SYS.nMesas;
+  document.getElementById('usuarios-list').innerHTML = Object.values(DB.usuarios).map(u => {
+    const rc   = ROLE_CONFIG[u.role] || ROLE_CONFIG.garcom;
+    const isMe = STATE.currentUser?.uid === u.uid || STATE.currentUser?.uid === (u.id || u.uid);
+    return `<div class="usuario-card">
       <div class="usuario-avatar" style="background:${rc.color}">${(u.nome||'?').charAt(0).toUpperCase()}</div>
       <div class="usuario-info">
         <div class="usuario-name">${u.nome||u.email}${isMe?' (você)':''}</div>
         <div class="usuario-role">${u.email||''}</div>
       </div>
       <span class="badge" style="background:${rc.bg};color:${rc.color};">${rc.label}</span>
-      ${!isMe&&STATE.currentUser?.role==='gerente'?`<button class="btn btn-xs" style="margin-left:6px;" onclick="abrirGerenciarUsuario('${u.id||u.uid}')">✏️</button>`:''}
     </div>`;
-  }).join('')||'<div class="text-muted text-sm" style="padding:12px 0;">Nenhum usuário encontrado</div>';
+  }).join('') || '<div class="text-muted text-sm" style="padding:12px 0;">Nenhum usuário encontrado</div>';
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // NAVEGAÇÃO
 // ═══════════════════════════════════════════════════════════════════
 function goPage(name) {
-  const rc=ROLE_CONFIG[STATE.currentUser?.role]||ROLE_CONFIG.garcom;
-  if(!rc.pages.includes(name)){ toast('Sem permissão','error'); return; }
+  const rc = ROLE_CONFIG[STATE.currentUser?.role] || ROLE_CONFIG.garcom;
+  if (!rc.pages.includes(name)) { toast('Sem permissão','error'); return; }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn,.nav-mob-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll(`[data-page="${name}"]`).forEach(b=>b.classList.add('active'));
-  const renders={
-    mesas:renderFloor,
-    pedido:()=>{renderMesaSelector();renderCardapio();renderCart();},
-    cozinha:renderKDS, caixa:renderCaixa,
-    estoque:renderEstoque, cardapio:renderCardapioAdmin,
-    relatorios:renderRelatorios, config:renderConfigPage,
+  const renders = {
+    mesas:              renderFloor,
+    pedido:             () => { renderMesaSelector(); renderCardapio(); renderCart(); },
+    cozinha:            renderKDS,
+    caixa:              renderCaixa,
+    estoque:            renderEstoque,
+    cardapio:           renderCardapioAdmin,
+    relatorios:         renderRelatorios,
+    'relatorios-mensais': renderRelatoriosMensais,
+    config:             renderConfigPage,
   };
   renders[name]?.();
 }
 window.goPage = goPage;
 
-function renderAll(){ renderFloor(); renderKDS(); }
+function renderAll() { renderFloor(); renderKDS(); }
 
 // ═══════════════════════════════════════════════════════════════════
 // MODAIS
 // ═══════════════════════════════════════════════════════════════════
 window.openModal  = (id) => document.getElementById(id).classList.add('open');
 window.closeModal = (id) => document.getElementById(id).classList.remove('open');
-document.querySelectorAll('.modal-overlay').forEach(o=>{
-  o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target===o) o.classList.remove('open'); });
 });
 
 // ═══════════════════════════════════════════════════════════════════
 // TOAST
 // ═══════════════════════════════════════════════════════════════════
-let toastTimer=null;
-function toast(msg,type='success'){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.className=`toast ${type} show`;
+let toastTimer = null;
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast ${type} show`;
   clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
 }
-window.toast=toast;
+window.toast = toast;
 
-
+// ═══════════════════════════════════════════════════════════════════
+// EXPORTAR PDF GERAL
+// ═══════════════════════════════════════════════════════════════════
 window.exportarRelatorioPDF = async () => {
   toast('Gerando relatório PDF...', 'info');
   try {
-    // Carregar jsPDF dinamicamente
     if (!window.jspdf) {
       await new Promise((res, rej) => {
         const s = document.createElement('script');
@@ -1889,13 +1994,12 @@ window.exportarRelatorioPDF = async () => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const W = 210, M = 16;
     let y = 0;
- 
+
     const cor = { roxo: [124,58,237], roxoClaro: [237,233,254], cinza: [100,100,100], cinzaClaro: [245,245,245], branco: [255,255,255], preto: [30,30,30], verde: [22,163,74], vermelho: [220,38,38], linha: [220,220,220] };
     const fmtN = (v) => 'R$ ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
     const addPage = () => { doc.addPage(); y = 20; };
     const checkY = (need=20) => { if (y + need > 280) addPage(); };
- 
-    // ── CABEÇALHO ──
+
     doc.setFillColor(...cor.roxo);
     doc.rect(0, 0, W, 38, 'F');
     doc.setFillColor(...cor.roxoClaro);
@@ -1907,18 +2011,14 @@ window.exportarRelatorioPDF = async () => {
     doc.text('Relatório Gerencial Completo', M, 24);
     doc.setFontSize(9);
     doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}   |   ${SYS.nomeRestaurante}`, M, 32);
-    // Ícone decorativo direita
-    doc.setFontSize(26);
-    doc.text('', W - 28, 22);
     y = 50;
- 
-    // ── RESUMO GERAL ──
+
     const datas = Object.keys(DB.relatorio_dia).sort();
-    const totFat = Object.values(DB.relatorio_dia).reduce((s,r)=>s+(r.faturamento||0),0);
-    const totPed = Object.values(DB.relatorio_dia).reduce((s,r)=>s+(r.pedidos_total||0),0);
+    const totFat  = Object.values(DB.relatorio_dia).reduce((s,r)=>s+(r.faturamento||0),0);
+    const totPed  = Object.values(DB.relatorio_dia).reduce((s,r)=>s+(r.pedidos_total||0),0);
     const totIten = Object.values(DB.relatorio_dia).reduce((s,r)=>s+(r.itens_total||0),0);
     const ticketMedio = totPed > 0 ? totFat / totPed : 0;
- 
+
     const drawSecTitle = (titulo) => {
       checkY(14);
       doc.setFillColor(...cor.roxo);
@@ -1928,7 +2028,7 @@ window.exportarRelatorioPDF = async () => {
       doc.text(titulo, M+4, y+6.2);
       y += 13;
     };
- 
+
     const drawMetricCard = (label, value, x, w, destaque=false) => {
       doc.setFillColor(...(destaque ? cor.roxoClaro : cor.cinzaClaro));
       doc.roundedRect(x, y, w, 18, 2, 2, 'F');
@@ -1941,7 +2041,7 @@ window.exportarRelatorioPDF = async () => {
       doc.setFontSize(11); doc.setFont('helvetica','bold');
       doc.text(value, x+4, y+14);
     };
- 
+
     drawSecTitle(' Resumo Geral');
     const cw = (W - M*2 - 9) / 4;
     drawMetricCard('Faturamento Total', fmtN(totFat), M, cw, true);
@@ -1949,11 +2049,9 @@ window.exportarRelatorioPDF = async () => {
     drawMetricCard('Itens Vendidos', String(totIten), M+cw*2+6, cw);
     drawMetricCard('Ticket Médio', fmtN(ticketMedio), M+cw*3+9, cw);
     y += 24;
- 
-    // ── FATURAMENTO POR DIA ──
+
     if (datas.length) {
       drawSecTitle('Faturamento por Dia');
-      // Cabeçalho tabela
       doc.setFillColor(...cor.roxoClaro);
       doc.rect(M, y, W-M*2, 7, 'F');
       doc.setTextColor(...cor.roxo);
@@ -1977,12 +2075,10 @@ window.exportarRelatorioPDF = async () => {
         doc.text(String(r.itens_total||0), M+85, y+5);
         doc.setFont('helvetica','bold');
         doc.text(fmtN(r.faturamento||0), M+115, y+5);
-        // linha divisória
         doc.setDrawColor(...cor.linha);
         doc.line(M, y+7, W-M, y+7);
         y += 7; alt = !alt;
       }
-      // Linha total
       checkY(8);
       doc.setFillColor(...cor.roxo);
       doc.rect(M, y, W-M*2, 8, 'F');
@@ -1994,12 +2090,11 @@ window.exportarRelatorioPDF = async () => {
       doc.text(fmtN(totFat), M+115, y+5.5);
       y += 14;
     }
- 
-    // ── RANKING DE ITENS ──
+
     const rankMap = {};
     Object.values(DB.ranking_itens).forEach(r=>{
-      if(!rankMap[r.nome]) rankMap[r.nome]={nome:r.nome,qty:0,fat:0};
-      rankMap[r.nome].qty += r.qty||0; rankMap[r.nome].fat += r.faturamento||0;
+      if (!rankMap[r.nome]) rankMap[r.nome]={nome:r.nome,qty:0,fat:0};
+      rankMap[r.nome].qty+=r.qty||0; rankMap[r.nome].fat+=r.faturamento||0;
     });
     const rank = Object.values(rankMap).sort((a,b)=>b.qty-a.qty).slice(0,10);
     if (rank.length) {
@@ -2031,12 +2126,11 @@ window.exportarRelatorioPDF = async () => {
       });
       y += 6;
     }
- 
-    // ── POR FORMA DE PAGAMENTO ──
+
     const pgtoMap = {};
     Object.values(DB.fat_pgto).forEach(r=>{
-      if(!pgtoMap[r.forma]) pgtoMap[r.forma]={f:r.forma,v:0,q:0};
-      pgtoMap[r.forma].v += r.valor||0; pgtoMap[r.forma].q += r.qtd||0;
+      if (!pgtoMap[r.forma]) pgtoMap[r.forma]={f:r.forma,v:0,q:0};
+      pgtoMap[r.forma].v+=r.valor||0; pgtoMap[r.forma].q+=r.qtd||0;
     });
     const pgtos = Object.values(pgtoMap).sort((a,b)=>b.v-a.v);
     if (pgtos.length) {
@@ -2056,8 +2150,8 @@ window.exportarRelatorioPDF = async () => {
         doc.rect(M, y, W-M*2, 7, 'F');
         doc.setTextColor(...cor.preto);
         doc.setFontSize(8); doc.setFont('helvetica','normal');
-        const icons={dinheiro:'Dinheiro',debito:'Cartão Débito',credito:'Cartão Crédito',pix:'Pix'};
-        doc.text(icons[p.f]||p.f, M+3, y+5);
+        const icons2={dinheiro:'Dinheiro',debito:'Cartão Débito',credito:'Cartão Crédito',pix:'Pix'};
+        doc.text(icons2[p.f]||p.f, M+3, y+5);
         doc.text(String(p.q), M+70, y+5);
         doc.setFont('helvetica','bold');
         doc.text(fmtN(p.v), M+130, y+5);
@@ -2067,8 +2161,7 @@ window.exportarRelatorioPDF = async () => {
       });
       y += 6;
     }
- 
-    // ── ESTOQUE ATUAL ──
+
     const estItens = Object.values(DB.estoque).sort((a,b)=>a.qty/a.max_qty - b.qty/b.max_qty);
     if (estItens.length) {
       checkY(60);
@@ -2085,9 +2178,9 @@ window.exportarRelatorioPDF = async () => {
       y += 7;
       estItens.forEach((v,i)=>{
         checkY(7);
-        const pct = Math.min(1, v.qty/v.max_qty);
-        const status = pct<0.2?'Crítico':pct<0.4?'Baixo':'OK';
-        const cor2 = pct<0.2?cor.vermelho:pct<0.4?[217,119,6]:cor.verde;
+        const pct2   = Math.min(1, v.qty/v.max_qty);
+        const status = pct2<0.2?'Crítico':pct2<0.4?'Baixo':'OK';
+        const cor2   = pct2<0.2?cor.vermelho:pct2<0.4?[217,119,6]:cor.verde;
         doc.setFillColor(...(i%2===0 ? cor.branco : [250,248,255]));
         doc.rect(M, y, W-M*2, 7, 'F');
         doc.setTextColor(...cor.preto);
@@ -2095,7 +2188,7 @@ window.exportarRelatorioPDF = async () => {
         doc.text(v.nome, M+3, y+5);
         doc.text(`${Number(v.qty).toFixed(1)} ${v.unidade}`, M+80, y+5);
         doc.text(`${v.max_qty} ${v.unidade}`, M+110, y+5);
-        doc.text(`${Math.round(pct*100)}%`, M+138, y+5);
+        doc.text(`${Math.round(pct2*100)}%`, M+138, y+5);
         doc.setTextColor(...cor2);
         doc.setFont('helvetica','bold');
         doc.text(status, M+152, y+5);
@@ -2105,8 +2198,7 @@ window.exportarRelatorioPDF = async () => {
       });
       y += 6;
     }
- 
-    // ── RODAPÉ EM TODAS AS PÁGINAS ──
+
     const total_pages = doc.getNumberOfPages();
     for (let p = 1; p <= total_pages; p++) {
       doc.setPage(p);
@@ -2117,7 +2209,7 @@ window.exportarRelatorioPDF = async () => {
       doc.text(`RestaurantOS — Relatório Gerencial   |   ${new Date().toLocaleDateString('pt-BR')}`, M, 294);
       doc.text(`Página ${p} de ${total_pages}`, W-M-20, 294);
     }
- 
+
     const nome = `relatorio_${SYS.nomeRestaurante.replace(/\s+/g,'_')}_${todayStr()}.pdf`;
     doc.save(nome);
     toast('Relatório PDF exportado!', 'success');
@@ -2127,211 +2219,328 @@ window.exportarRelatorioPDF = async () => {
   }
 };
 
-let _somKDSMuted = false;
-window.toggleSomKDS = () => {
-  _somKDSMuted = !_somKDSMuted;
-  const btn = document.getElementById('btn-som-kds');
-  if (btn) {
-    btn.textContent = _somKDSMuted ? '🔕 Mudo' : '🔔 Som';
-    btn.classList.toggle('muted', _somKDSMuted);
-  }
-  toast(_somKDSMuted ? 'Alerta sonoro desativado' : 'Alerta sonoro ativado', 'info');
-};
-
 // ═══════════════════════════════════════════════════════════════════
-// RECUPERAÇÃO DE SENHA
+// RELATÓRIOS MENSAIS
 // ═══════════════════════════════════════════════════════════════════
-window.abrirRecuperarSenha = (e) => {
-  e.preventDefault();
-  document.getElementById('reset-err').style.display = 'none';
-  document.getElementById('reset-err').textContent = '';
-  document.getElementById('reset-loading').style.display = 'none';
-  document.getElementById('reset-email').value = document.getElementById('login-email')?.value || '';
-  openModal('modal-recuperar-senha');
+const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function mesKey(ano, mes) { return `${ano}-${String(mes+1).padStart(2,'0')}`; }
+
+async function checkFecharMesAnterior() {
+  const now = new Date();
+  if (now.getDate() !== 1) return;
+  const mesAnt = new Date(now.getFullYear(), now.getMonth()-1, 1);
+  const key    = mesKey(mesAnt.getFullYear(), mesAnt.getMonth());
+  if (DB.relatorios_mensais[key]) return;
+  await fecharMes(mesAnt.getFullYear(), mesAnt.getMonth());
+}
+
+async function fecharMes(ano, mes) {
+  const key = mesKey(ano, mes);
+  if (DB.relatorios_mensais[key]) { toast(`${MESES_PT[mes]}/${ano} já foi fechado.`,'info'); return; }
+  const prefixo1 = `${ano}-${String(mes+1).padStart(2,'0')}-`;
+  const prefixo2 = `${ano}-${mes+1}-`;
+  const pertence = d => d.startsWith(prefixo1) || d.startsWith(prefixo2);
+
+  const diasDoMes = Object.values(DB.relatorio_dia).filter(r=>pertence(r.id||r.data||''));
+  const fat   = diasDoMes.reduce((s,r)=>s+(r.faturamento||0),0);
+  const ped   = diasDoMes.reduce((s,r)=>s+(r.pedidos_total||0),0);
+  const itens = diasDoMes.reduce((s,r)=>s+(r.itens_total||0),0);
+
+  const rankMap = {};
+  Object.values(DB.ranking_itens).forEach(r=>{
+    if (!pertence(r.data||'')) return;
+    if (!rankMap[r.nome]) rankMap[r.nome]={nome:r.nome,cat:r.cat,qty:0,fat:0};
+    rankMap[r.nome].qty+=r.qty||0; rankMap[r.nome].fat+=r.faturamento||0;
+  });
+  const pgtoMap = {};
+  Object.values(DB.fat_pgto).forEach(r=>{
+    if (!pertence(r.data||'')) return;
+    if (!pgtoMap[r.forma]) pgtoMap[r.forma]={forma:r.forma,valor:0,qtd:0};
+    pgtoMap[r.forma].valor+=r.valor||0; pgtoMap[r.forma].qtd+=r.qtd||0;
+  });
+  const catMap = {};
+  Object.values(DB.fat_cat).forEach(r=>{
+    if (!pertence(r.data||'')) return;
+    catMap[r.cat] = (catMap[r.cat]||0) + (r.valor||0);
+  });
+
+  const dados = {
+    ano, mes, key, nome:`${MESES_PT[mes]} ${ano}`, fechadoEm:Date.now(),
+    faturamento:fat, pedidos_total:ped, itens_total:itens, ticket_medio:ped>0?fat/ped:0,
+    dias:    diasDoMes.map(d=>({data:d.id||d.data,faturamento:d.faturamento||0,pedidos:d.pedidos_total||0,itens:d.itens_total||0})).sort((a,b)=>a.data.localeCompare(b.data)),
+    ranking: Object.values(rankMap).sort((a,b)=>b.qty-a.qty).slice(0,10),
+    pgto:    Object.values(pgtoMap),
+    categorias: Object.entries(catMap).map(([c,v])=>({cat:c,valor:v})).sort((a,b)=>b.valor-a.valor),
+  };
+  await fsSet('relatorios_mensais', key, dados);
+  DB.relatorios_mensais[key] = {id:key,...dados};
+  sysLog(`Relatório mensal ${MESES_PT[mes]}/${ano} gerado.`,'info');
+  toast(`Relatório de ${MESES_PT[mes]}/${ano} salvo!`,'success');
+}
+
+window.fecharMesManual = async () => {
+  const now = new Date();
+  if (!confirm(`Fechar e salvar o relatório de ${MESES_PT[now.getMonth()]} ${now.getFullYear()}?`)) return;
+  await fecharMes(now.getFullYear(), now.getMonth());
+  renderRelatoriosMensais();
 };
 
-window.enviarResetSenha = async () => {
-  const email = document.getElementById('reset-email').value.trim();
-  const errEl = document.getElementById('reset-err');
-  const loadEl = document.getElementById('reset-loading');
-  errEl.style.display = 'none';
-  if (!email) { errEl.textContent = 'Informe o e-mail.'; errEl.style.display = 'block'; return; }
-  loadEl.style.display = 'block';
-  try {
-    await sendPasswordResetEmail(auth, email);
-    loadEl.style.display = 'none';
-    closeModal('modal-recuperar-senha');
-    toast('Link enviado! Verifique seu e-mail.', 'success');
-  } catch(e) {
-    loadEl.style.display = 'none';
-    const msgs = {
-      'auth/user-not-found': 'Nenhuma conta com esse e-mail.',
-      'auth/invalid-email':  'E-mail inválido.',
-    };
-    errEl.textContent = msgs[e.code] || 'Erro ao enviar. Tente novamente.';
-    errEl.style.display = 'block';
-  }
-};
-
-// ═══════════════════════════════════════════════════════════════════
-// HISTÓRICO DE CONTAS FECHADAS
-// ═══════════════════════════════════════════════════════════════════
-window.abrirHistoricoGeral = () => {
-  const contas = Object.values(DB.contas_fechadas).sort((a,b) => b.fechadoEm - a.fechadoEm);
-  document.getElementById('modal-historico-sub').textContent =
-    `${contas.length} conta(s) fechada(s) no sistema`;
-  renderHistoricoLista(contas);
-  openModal('modal-historico');
-};
-
-window.abrirHistoricoMesa = (mesaId) => {
-  const contas = Object.values(DB.contas_fechadas)
-    .filter(c => String(c.mesa_id) === String(mesaId))
-    .sort((a,b) => b.fechadoEm - a.fechadoEm);
-  document.getElementById('modal-historico-sub').textContent =
-    `Mesa ${mesaId} — ${contas.length} conta(s) fechada(s)`;
-  renderHistoricoLista(contas);
-  openModal('modal-historico');
-};
-
-function renderHistoricoLista(contas) {
-  const pgtoIcone = {dinheiro:'💵',debito:'💳',credito:'💳',pix:'📱'};
-  const pgtoNome  = {dinheiro:'Dinheiro',debito:'Débito',credito:'Crédito',pix:'Pix'};
-  if (!contas.length) {
-    document.getElementById('modal-historico-list').innerHTML =
-      '<div class="text-center text-muted" style="padding:24px 0;">Nenhuma conta encontrada</div>';
+function renderRelatoriosMensais() {
+  if (!STATE.dbReady) return;
+  const meses = Object.values(DB.relatorios_mensais).sort((a,b)=>b.key.localeCompare(a.key));
+  const sub   = document.getElementById('rm-sub');
+  const lista = document.getElementById('rm-lista');
+  if (!lista) return;
+  if (!meses.length) {
+    if (sub) sub.textContent = 'Nenhum relatório gerado ainda.';
+    lista.innerHTML = `<div class="card" style="text-align:center;padding:40px;color:var(--text3);">📅 Os relatórios são gerados automaticamente no início de cada mês.<br><br>Você pode fechar o mês atual pelo botão acima.</div>`;
     return;
   }
-  document.getElementById('modal-historico-list').innerHTML = contas.map(c => {
-    const d = new Date(c.fechadoEm);
-    const dataStr = d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    const itensStr = (c.itens||[]).map(i=>`${i.qty}× ${i.nome}`).join(', ') || '—';
-    return `<div style="border-bottom:0.5px solid var(--border);padding:10px 0;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-        <div style="font-size:13px;font-weight:700;">Mesa ${c.mesa_id} <span style="font-size:11px;font-weight:400;color:var(--text2);">por ${c.fechadoPor||'—'}</span></div>
-        <span style="font-size:13px;font-weight:700;color:var(--green);">${fmtBRL(c.total)}</span>
+  if (sub) sub.textContent = `${meses.length} relatório(s) disponível(is)`;
+  const aberto     = STATE.mesMensalAberto;
+  const pgtoIcone  = {dinheiro:'💵',debito:'💳',credito:'💳',pix:'📱'};
+
+  lista.innerHTML = meses.map(m => {
+    const isAberto = aberto === m.key;
+    const ticket   = m.pedidos_total>0 ? m.faturamento/m.pedidos_total : 0;
+    const maxFat   = Math.max(...(m.dias||[]).map(d=>d.faturamento),1);
+    return `<div class="card mt-3">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:4px 0;" onclick="toggleMesMensal('${m.key}')">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="font-size:28px;">📅</div>
+          <div>
+            <div style="font-size:16px;font-weight:700;">${m.nome}</div>
+            <div style="font-size:12px;color:var(--text3);">Fechado em ${new Date(m.fechadoEm).toLocaleDateString('pt-BR')}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="text-align:right;">
+            <div style="font-size:17px;font-weight:700;color:var(--green)">${fmtBRL(m.faturamento)}</div>
+            <div style="font-size:11px;color:var(--text3)">${m.pedidos_total} pedidos · ${m.itens_total} itens</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button class="btn btn-xs" onclick="event.stopPropagation();exportarMensalPDF('${m.key}')">📄 PDF</button>
+            <span style="font-size:18px;color:var(--text3);transform:rotate(${isAberto?'180':'0'}deg);display:inline-block;transition:transform .2s;">▾</span>
+          </div>
+        </div>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">${dataStr}</div>
-      <div style="font-size:11px;color:var(--text2);">
-        ${pgtoIcone[c.forma_pagamento]||'💰'} ${pgtoNome[c.forma_pagamento]||c.forma_pagamento}
-        ${c.troco>0?` · Troco: ${fmtBRL(c.troco)}`:''}
-        ${c.taxa>0?` · Taxa: ${fmtBRL(c.taxa)}`:''}
+      ${isAberto ? `
+      <div class="divider"></div>
+      <div class="g4" style="margin-bottom:16px;">
+        <div class="metric-card text-center"><div class="metric-val">${fmtBRL(m.faturamento)}</div><div class="metric-label">Faturamento</div></div>
+        <div class="metric-card text-center"><div class="metric-val">${m.pedidos_total}</div><div class="metric-label">Pedidos</div></div>
+        <div class="metric-card text-center"><div class="metric-val">${fmtBRL(ticket)}</div><div class="metric-label">Ticket médio</div></div>
+        <div class="metric-card text-center"><div class="metric-val">${m.itens_total}</div><div class="metric-label">Itens vendidos</div></div>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${itensStr}</div>
+      <div class="card-title" style="margin-bottom:10px;">Faturamento por dia</div>
+      <div class="chart-bar-container" style="height:90px;">
+        ${(m.dias||[]).map(d=>{const pct=Math.max(4,Math.round(d.faturamento/maxFat*100));const v=d.faturamento>=1000?(d.faturamento/1000).toFixed(1)+'k':Math.round(d.faturamento);return`<div class="chart-bar-col"><div class="chart-bar-val">${v}</div><div class="chart-bar-rect" style="height:${pct}px"></div></div>`;}).join('')}
+      </div>
+      <div class="chart-bar-labels">${(m.dias||[]).map(d=>{const p=d.data.split('-');return`<span class="chart-bar-label">${p[2]||d.data}</span>`;}).join('')}</div>
+      <div class="g2 mt-3">
+        <div>
+          <div class="card-title" style="margin-bottom:10px;">Top itens</div>
+          ${(m.ranking||[]).slice(0,8).map((r,i)=>{const mx=m.ranking[0]?.qty||1;return`<div class="rank-item"><div class="rank-pos">${i+1}</div><div class="rank-name">${r.nome}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(r.qty/mx*100)}%"></div></div><div class="rank-qty">${r.qty}</div></div>`;}).join('')||'<div class="text-muted text-sm">Sem dados</div>'}
+        </div>
+        <div>
+          <div class="card-title" style="margin-bottom:10px;">Por pagamento</div>
+          ${(m.pgto||[]).sort((a,b)=>b.valor-a.valor).map(p=>`<div class="conta-total-row" style="padding:6px 0;"><span>${pgtoIcone[p.forma]||'💳'} ${p.forma} (${p.qtd}×)</span><span style="font-weight:700;">${fmtBRL(p.valor)}</span></div>`).join('')||'<div class="text-muted text-sm">Sem dados</div>'}
+          <div class="card-title" style="margin-top:14px;margin-bottom:10px;">Por categoria</div>
+          ${(m.categorias||[]).map(c=>{const mx=m.categorias[0]?.valor||1;return`<div class="rank-item"><div class="rank-name">${c.cat}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(c.valor/mx*100)}%;background:var(--brand-m)"></div></div><div class="rank-qty">${fmtBRL(c.valor)}</div></div>`;}).join('')||'<div class="text-muted text-sm">Sem dados</div>'}
+        </div>
+      </div>` : ''}
     </div>`;
   }).join('');
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// ALERTA SONORO — COZINHA KDS
-// ═══════════════════════════════════════════════════════════════════
-let _kdsPrevCount = 0;
-let _audioCtx = null;
+window.toggleMesMensal = (key) => {
+  STATE.mesMensalAberto = STATE.mesMensalAberto === key ? null : key;
+  renderRelatoriosMensais();
+};
 
+window.exportarMensalPDF = async (key) => {
+  const m = DB.relatorios_mensais[key]; if (!m) return;
+  toast('Gerando PDF...','info');
+  try {
+    if (!window.jspdf) {
+      await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+    }
+    const{jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const W=210,M=16; let y=0;
+    const cor={roxo:[124,58,237],roxoClaro:[237,233,254],cinza:[100,100,100],cinzaClaro:[245,245,245],branco:[255,255,255],preto:[30,30,30],verde:[22,163,74],linha:[220,220,220]};
+    const fmtN=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const addPage=()=>{doc.addPage();y=20;};
+    const checkY=(n=20)=>{if(y+n>280)addPage();};
+    const secTitle=t=>{checkY(14);doc.setFillColor(...cor.roxo);doc.roundedRect(M,y,W-M*2,9,2,2,'F');doc.setTextColor(...cor.branco);doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text(t,M+4,y+6.2);y+=13;};
+    doc.setFillColor(...cor.roxo);doc.rect(0,0,W,38,'F');
+    doc.setFillColor(...cor.roxoClaro);doc.rect(0,38,W,2,'F');
+    doc.setTextColor(...cor.branco);
+    doc.setFontSize(20);doc.setFont('helvetica','bold');doc.text('RestaurantOS',M,15);
+    doc.setFontSize(13);doc.setFont('helvetica','normal');doc.text(`Relatório Mensal — ${m.nome}`,M,25);
+    doc.setFontSize(9);doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}   |   ${SYS.nomeRestaurante}`,M,33);
+    y=50;
+    secTitle('Resumo do Mês');
+    const ticket=m.pedidos_total>0?m.faturamento/m.pedidos_total:0;
+    const cw=(W-M*2-9)/4;
+    const drawCard=(label,val,x,w,dest=false)=>{
+      doc.setFillColor(...(dest?cor.roxoClaro:cor.cinzaClaro));doc.roundedRect(x,y,w,18,2,2,'F');
+      doc.setDrawColor(...cor.linha);doc.roundedRect(x,y,w,18,2,2,'S');
+      doc.setTextColor(...cor.cinza);doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.text(label,x+4,y+6);
+      doc.setTextColor(...(dest?cor.roxo:cor.preto));doc.setFontSize(11);doc.setFont('helvetica','bold');doc.text(val,x+4,y+14);
+    };
+    drawCard('Faturamento Total',fmtN(m.faturamento),M,cw,true);
+    drawCard('Pedidos',String(m.pedidos_total),M+cw+3,cw);
+    drawCard('Itens Vendidos',String(m.itens_total),M+cw*2+6,cw);
+    drawCard('Ticket Médio',fmtN(ticket),M+cw*3+9,cw);
+    y+=24;
+    if((m.dias||[]).length){
+      secTitle('Faturamento por Dia');
+      doc.setFillColor(...cor.roxoClaro);doc.rect(M,y,W-M*2,7,'F');
+      doc.setTextColor(...cor.roxo);doc.setFontSize(8);doc.setFont('helvetica','bold');
+      doc.text('Data',M+3,y+5);doc.text('Pedidos',M+60,y+5);doc.text('Itens',M+90,y+5);doc.text('Faturamento',M+120,y+5);y+=7;
+      m.dias.forEach((d,i)=>{
+        checkY(7);const parts=d.data.split('-');
+        doc.setFillColor(...(i%2===0?cor.branco:[250,248,255]));doc.rect(M,y,W-M*2,7,'F');
+        doc.setTextColor(...cor.preto);doc.setFontSize(8);doc.setFont('helvetica','normal');
+        doc.text(`${parts[2]||''}/${parts[1]||''}/${parts[0]||''}`,M+3,y+5);
+        doc.text(String(d.pedidos||0),M+60,y+5);doc.text(String(d.itens||0),M+90,y+5);
+        doc.setFont('helvetica','bold');doc.text(fmtN(d.faturamento),M+120,y+5);
+        doc.setDrawColor(...cor.linha);doc.line(M,y+7,W-M,y+7);y+=7;
+      });y+=8;
+    }
+    if((m.ranking||[]).length){
+      secTitle('Top Itens Vendidos');
+      doc.setFillColor(...cor.roxoClaro);doc.rect(M,y,W-M*2,7,'F');
+      doc.setTextColor(...cor.roxo);doc.setFontSize(8);doc.setFont('helvetica','bold');
+      doc.text('#',M+3,y+5);doc.text('Item',M+12,y+5);doc.text('Qtd',M+115,y+5);doc.text('Faturamento',M+135,y+5);y+=7;
+      m.ranking.forEach((r,i)=>{
+        checkY(7);
+        doc.setFillColor(...(i%2===0?cor.branco:[250,248,255]));doc.rect(M,y,W-M*2,7,'F');
+        doc.setTextColor(...(i<3?cor.roxo:cor.preto));doc.setFontSize(8);doc.setFont('helvetica',i<3?'bold':'normal');
+        doc.text(String(i+1),M+3,y+5);doc.text(r.nome.length>38?r.nome.slice(0,36)+'…':r.nome,M+12,y+5);
+        doc.text(String(r.qty),M+115,y+5);doc.setFont('helvetica','bold');doc.text(fmtN(r.fat),M+135,y+5);
+        doc.setDrawColor(...cor.linha);doc.line(M,y+7,W-M,y+7);y+=7;
+      });y+=8;
+    }
+    if((m.pgto||[]).length){
+      secTitle('Receita por Pagamento');
+      const pgtoNomes={dinheiro:'Dinheiro',debito:'Cartão Débito',credito:'Cartão Crédito',pix:'Pix'};
+      doc.setFillColor(...cor.roxoClaro);doc.rect(M,y,W-M*2,7,'F');
+      doc.setTextColor(...cor.roxo);doc.setFontSize(8);doc.setFont('helvetica','bold');
+      doc.text('Forma',M+3,y+5);doc.text('Qtd',M+80,y+5);doc.text('Total',M+120,y+5);y+=7;
+      m.pgto.sort((a,b)=>b.valor-a.valor).forEach((p,i)=>{
+        checkY(7);doc.setFillColor(...(i%2===0?cor.branco:[250,248,255]));doc.rect(M,y,W-M*2,7,'F');
+        doc.setTextColor(...cor.preto);doc.setFontSize(8);doc.setFont('helvetica','normal');
+        doc.text(pgtoNomes[p.forma]||p.forma,M+3,y+5);doc.text(String(p.qtd||0),M+80,y+5);
+        doc.setFont('helvetica','bold');doc.text(fmtN(p.valor),M+120,y+5);
+        doc.setDrawColor(...cor.linha);doc.line(M,y+7,W-M,y+7);y+=7;
+      });
+    }
+    const tp=doc.getNumberOfPages();
+    for(let p=1;p<=tp;p++){doc.setPage(p);doc.setFillColor(...cor.cinzaClaro);doc.rect(0,289,W,8,'F');doc.setTextColor(...cor.cinza);doc.setFontSize(7);doc.setFont('helvetica','normal');doc.text(`RestaurantOS — ${m.nome}   |   ${new Date().toLocaleDateString('pt-BR')}`,M,294);doc.text(`Página ${p} de ${tp}`,W-M-20,294);}
+    doc.save(`relatorio_${m.nome.replace(/\s+/g,'_')}.pdf`);
+    toast('PDF exportado!','success');
+  } catch(e) { console.error(e); toast('Erro ao gerar PDF','error'); }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// GESTÃO DE USUÁRIOS
+// ═══════════════════════════════════════════════════════════════════
+let _usuarioEditStatus = true;
+window.abrirGerenciarUsuario = (uid) => {
+  const u = DB.usuarios[uid]; if (!u) return;
+  document.getElementById('usuario-edit-uid').value = uid;
+  document.getElementById('modal-usuario-title').textContent = `Gerenciar: ${u.nome||u.email}`;
+  STATE.usuarioEditRole = u.role || 'garcom';
+  _usuarioEditStatus = u.ativo !== false;
+  document.querySelectorAll('#modal-gerenciar-usuario .login-role-btn').forEach(b=>b.classList.toggle('sel',b.dataset.role===STATE.usuarioEditRole));
+  atualizarBotoesStatus();
+  openModal('modal-gerenciar-usuario');
+};
+window.selRoleUsuario = (btn) => {
+  document.querySelectorAll('#modal-gerenciar-usuario .login-role-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  STATE.usuarioEditRole = btn.dataset.role;
+};
+window.setStatusUsuario = (ativo) => { _usuarioEditStatus = ativo; atualizarBotoesStatus(); };
+function atualizarBotoesStatus() {
+  const a = document.getElementById('btn-ativar-usuario');
+  const d = document.getElementById('btn-desativar-usuario');
+  if (!a||!d) return;
+  a.style.opacity = _usuarioEditStatus ? '1' : '0.45';
+  d.style.opacity = _usuarioEditStatus ? '0.45' : '1';
+}
+window.salvarUsuario = async () => {
+  const uid = document.getElementById('usuario-edit-uid').value; if (!uid) return;
+  const upd = {role: STATE.usuarioEditRole, ativo: _usuarioEditStatus};
+  await fsUpd('usuarios', uid, upd);
+  DB.usuarios[uid] = {...DB.usuarios[uid], ...upd};
+  closeModal('modal-gerenciar-usuario');
+  renderConfigPage();
+  toast('Usuário atualizado!','success');
+  sysLog(`Usuário ${DB.usuarios[uid]?.nome||uid} → ${STATE.usuarioEditRole}, ativo:${_usuarioEditStatus}`);
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// ALERTAS SONOROS KDS
+// ═══════════════════════════════════════════════════════════════════
+let _somKDSMuted = false;
+window.toggleSomKDS = () => {
+  _somKDSMuted = !_somKDSMuted;
+  const btn = document.getElementById('btn-som-kds');
+  if (btn) { btn.textContent = _somKDSMuted ? '🔕 Mudo' : '🔔 Som'; btn.classList.toggle('muted', _somKDSMuted); }
+  toast(_somKDSMuted ? 'Alerta sonoro desativado' : 'Alerta sonoro ativado', 'info');
+};
+
+let _kdsPrevCount = 0, _audioCtx = null;
 function tocarAlertaKDS() {
   if (_somKDSMuted) return;
   try {
     if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const ctx = _audioCtx;
     const play = (freq, start, dur) => {
-      const osc = ctx.createOscillator();
+      const osc  = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
-      osc.frequency.value = freq;
-      osc.type = 'sine';
-      gain.gain.setValueAtTime(0.4, ctx.currentTime + start);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-      osc.start(ctx.currentTime + start);
-      osc.stop(ctx.currentTime + start + dur + 0.05);
+      osc.frequency.value = freq; osc.type = 'sine';
+      gain.gain.setValueAtTime(0.4, ctx.currentTime+start);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+start+dur);
+      osc.start(ctx.currentTime+start); osc.stop(ctx.currentTime+start+dur+0.05);
     };
-    play(880, 0,    0.12);
-    play(1100, 0.15, 0.12);
-    play(880, 0.30, 0.18);
-  } catch(e) { /* silently fail */ }
+    play(880,0,0.12); play(1100,0.15,0.12); play(880,0.30,0.18);
+  } catch(e) {}
 }
 
 function verificarNovosPedidosKDS() {
-  const count = Object.values(DB.pedidos).filter(p => p.status === 'preparo').length;
-  if (STATE.dbReady && count > _kdsPrevCount) {
-    tocarAlertaKDS();
-  }
+  const count = Object.values(DB.pedidos).filter(p=>p.status==='preparo').length;
+  if (STATE.dbReady && count > _kdsPrevCount) tocarAlertaKDS();
   _kdsPrevCount = count;
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// GESTÃO DE USUÁRIOS (GERENTE)
-// ═══════════════════════════════════════════════════════════════════
-let _usuarioEditStatus = true;
-
-window.abrirGerenciarUsuario = (uid) => {
-  const u = DB.usuarios[uid];
-  if (!u) return;
-  document.getElementById('usuario-edit-uid').value = uid;
-  document.getElementById('modal-usuario-title').textContent = `Gerenciar: ${u.nome||u.email}`;
-  STATE.usuarioEditRole = u.role || 'garcom';
-  _usuarioEditStatus = u.ativo !== false; // default ativo
-  // Marcar role
-  document.querySelectorAll('#modal-gerenciar-usuario .login-role-btn').forEach(b => {
-    b.classList.toggle('sel', b.dataset.role === STATE.usuarioEditRole);
-  });
-  // Marcar status
-  atualizarBotoesStatus();
-  openModal('modal-gerenciar-usuario');
-};
-
-window.selRoleUsuario = (btn) => {
-  document.querySelectorAll('#modal-gerenciar-usuario .login-role-btn').forEach(b => b.classList.remove('sel'));
-  btn.classList.add('sel');
-  STATE.usuarioEditRole = btn.dataset.role;
-};
-
-window.setStatusUsuario = (ativo) => {
-  _usuarioEditStatus = ativo;
-  atualizarBotoesStatus();
-};
-
-function atualizarBotoesStatus() {
-  const btnAt = document.getElementById('btn-ativar-usuario');
-  const btnDes = document.getElementById('btn-desativar-usuario');
-  if (!btnAt || !btnDes) return;
-  btnAt.style.opacity  = _usuarioEditStatus ? '1' : '0.45';
-  btnDes.style.opacity = _usuarioEditStatus ? '0.45' : '1';
-}
-
-window.salvarUsuario = async () => {
-  const uid = document.getElementById('usuario-edit-uid').value;
-  if (!uid) return;
-  const upd = { role: STATE.usuarioEditRole, ativo: _usuarioEditStatus };
-  await fsUpd('usuarios', uid, upd);
-  DB.usuarios[uid] = { ...DB.usuarios[uid], ...upd };
-  closeModal('modal-gerenciar-usuario');
-  renderConfigPage();
-  toast('Usuário atualizado!', 'success');
-  sysLog(`Usuário ${DB.usuarios[uid]?.nome||uid} → perfil: ${STATE.usuarioEditRole}, ativo: ${_usuarioEditStatus}`);
-};
-
-// ═══════════════════════════════════════════════════════════════════
 // CLOCK + AUTO-REFRESH
 // ═══════════════════════════════════════════════════════════════════
-function updateClock(){
-  const n=new Date();
-  document.getElementById('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+function updateClock() {
+  const n = new Date();
+  document.getElementById('clock').textContent = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
 }
-// Desbloquear áudio no primeiro clique
+
 document.addEventListener('click', () => {
   if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   if (_audioCtx.state === 'suspended') _audioCtx.resume();
-}, { once: false });
+}, {once: false});
+
 updateClock();
-setInterval(updateClock,30000);
-setInterval(()=>{
-  if(!STATE.dbReady) return;
+setInterval(updateClock, 30000);
+setInterval(() => {
+  if (!STATE.dbReady) return;
   checkNightReset();
   verificarNovosPedidosKDS();
-  const ap=document.querySelector('.page.active')?.id;
-  if(ap==='page-mesas')     renderFloor();
-  if(ap==='page-cozinha')   renderKDS();
-  if(ap==='page-caixa')     renderCaixa();
+  const ap = document.querySelector('.page.active')?.id;
+  if (ap === 'page-mesas')   renderFloor();
+  if (ap === 'page-cozinha') renderKDS();
+  if (ap === 'page-caixa')   renderCaixa();
 }, SYS.autoRefreshMs);
 
 </script>
