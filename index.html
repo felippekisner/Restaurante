@@ -1957,6 +1957,7 @@ function renderConfigPage() {
         <div class="usuario-role">${u.email||''}</div>
       </div>
       <span class="badge" style="background:${rc.bg};color:${rc.color};">${rc.label}</span>
+      ${!isMe ? `<button class="btn btn-xs" style="margin-left:auto;" onclick="abrirGerenciarUsuario('${u.id||u.uid}')">✏️ Editar</button>` : ''}
     </div>`;
   }).join('') || '<div class="text-muted text-sm" style="padding:12px 0;">Nenhum usuário encontrado</div>';
 }
