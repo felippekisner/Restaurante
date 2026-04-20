@@ -1,4 +1,3 @@
-
 import { initializeApp }                            from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {
   getAuth, onAuthStateChanged,
@@ -14,7 +13,7 @@ import {
   writeBatch, serverTimestamp,
   enableIndexedDbPersistence
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-
+ 
 // ── CONFIG FIREBASE ───────────────────────────────────────────────
 const firebaseConfig = {
   apiKey:            'AIzaSyCR-_gi_2InOeiv_2lnZByD2QwZg3Wmgo4',
@@ -27,13 +26,13 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const auth  = getAuth(fbApp);
 const db    = getFirestore(fbApp);
-
+ 
 // ── OFFLINE PERSISTENCE (dados disponíveis mesmo sem internet) ────
 enableIndexedDbPersistence(db).catch(e=>{
   if(e.code==='failed-precondition') console.warn('Offline: múltiplas abas abertas');
   else if(e.code==='unimplemented')  console.warn('Offline: browser não suportado');
 });
-
+ 
 // ── HELPERS FIRESTORE ─────────────────────────────────────────────
 const col  = (c)    => collection(db, c);
 const ref  = (c,id) => doc(db, c, id);
@@ -43,10 +42,10 @@ async function fsDel(c,id)      { await deleteDoc(ref(c,id)); }
 async function fsAdd(c,data)    { const r=await addDoc(col(c),data); return r.id; }
 async function fsGet(c,id)      { const s=await getDoc(ref(c,id)); return s.exists()?{id:s.id,...s.data()}:null; }
 async function fsAll(c)         { const s=await getDocs(col(c)); return s.docs.map(d=>({id:d.id,...d.data()})); }
-
+ 
 // ── CONFIG SISTEMA ────────────────────────────────────────────────
 const SYS = { taxaServico:10, nMesas:15, nomeRestaurante:'RestaurantOS', alertaEstoque:0.25, autoRefreshMs:8000 };
-
+ 
 // ── ROLE CONFIG ───────────────────────────────────────────────────
 const ROLE_CONFIG = {
   garcom:     {label:'Garçom',     color:'#1e40af',bg:'#eff6ff', pages:['mesas','pedido','cozinha'],                                                                    canOrder:true,  canKDS:true,  canCaixa:false,canRelatorio:false,canConfig:false,canCardapio:false},
@@ -54,7 +53,7 @@ const ROLE_CONFIG = {
   caixa:      {label:'Caixa',      color:'#065f46',bg:'#ecfdf5', pages:['mesas','caixa'],                                                                               canOrder:false, canKDS:false, canCaixa:true, canRelatorio:false,canConfig:false,canCardapio:false},
   gerente:    {label:'Gerente',    color:'#4c1d95',bg:'#f5f3ff', pages:['mesas','pedido','cozinha','caixa','estoque','cardapio','relatorios','relatorios-mensais','config'], canOrder:true,  canKDS:true,  canCaixa:true, canRelatorio:true, canConfig:true, canCardapio:true},
 };
-
+ 
 // ── CARDÁPIO PADRÃO ───────────────────────────────────────────────
 const CARDAPIO_PADRAO = [
   {id:'1',nome:'Filé ao molho madeira',cat:'Pratos',preco:54.90,tempo:20,icon:'🥩',ing:'{"carne":1,"molho":0.5}',ativo:1},
@@ -78,7 +77,7 @@ const CARDAPIO_PADRAO = [
   {id:'19',nome:'Petit gateau',cat:'Sobremesas',preco:26.90,tempo:8,icon:'🍫',ing:'{"ovos":0.3}',ativo:1},
   {id:'20',nome:'Sorvete 3 bolas',cat:'Sobremesas',preco:18.90,tempo:3,icon:'🍨',ing:'{}',ativo:1},
 ];
-
+ 
 const ESTOQUE_PADRAO = {
   carne:   {nome:'Carne bovina',icon:'🥩',qty:12,max_qty:25,unidade:'kg'},
   frango:  {nome:'Frango',icon:'🍗',qty:8,max_qty:18,unidade:'kg'},
@@ -91,7 +90,7 @@ const ESTOQUE_PADRAO = {
   azeite:  {nome:'Azeite',icon:'🫒',qty:5,max_qty:12,unidade:'L'},
   pao:     {nome:'Pão',icon:'🍞',qty:20,max_qty:40,unidade:'un'},
 };
-
+ 
 // ── ESTADO GLOBAL ─────────────────────────────────────────────────
 const STATE = {
   currentUser:null, dbReady:false, mesaSel:null, cartItems:[],
@@ -100,7 +99,7 @@ const STATE = {
   cardapioCatFiltro:'Todos', adminCatFiltro:'Todos',
   mesMensalAberto:null, usuarioEditRole:'garcom',
 };
-
+ 
 // ── CACHE LOCAL ───────────────────────────────────────────────────
 const DB = {
   mesas:{}, cardapio:{}, pedidos:{}, pedido_itens:{},
@@ -108,7 +107,7 @@ const DB = {
   ranking_itens:{}, fat_pgto:{}, fat_cat:{}, usuarios:{},
   contas_fechadas:{}, relatorios_mensais:{},
 };
-
+ 
 // ── LOG ───────────────────────────────────────────────────────────
 function sysLog(msg, type='msg') {
   const panel = document.getElementById('log-panel');
@@ -124,22 +123,22 @@ function sysLog(msg, type='msg') {
   while(panel.children.length>60) panel.removeChild(panel.firstChild);
 }
 window.clearLog = () => { document.getElementById('log-panel').innerHTML = ''; };
-
+ 
 // ── UTILITÁRIOS ───────────────────────────────────────────────────
 function todayStr() { const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
 function tStr(ms)   { const m=Math.floor(ms/60000); return m<60?`${m}min`:`${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}`; }
 function fmtBRL(v)  { return 'R$ '+Number(v||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
 function uuid()     { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&0x3|0x8)).toString(16);}); }
-
+ 
 // ════════════════════════════════════════════════
 // AUTENTICAÇÃO
 // ════════════════════════════════════════════════
 function showLoginErr(msg)    { const e=document.getElementById('login-err'); e.textContent=msg; e.classList.add('show'); }
 function hideLoginErr()       { document.getElementById('login-err').classList.remove('show'); }
 function setLoginLoading(b)   { document.getElementById('login-loading').classList.toggle('show',b); }
-
+ 
 window.abrirCadastro = () => openModal('modal-cadastro');
-
+ 
 // FIX: Cadastro agora abre modal inline em vez de redirecionar para cadastro.html
 window.doCadastro = async () => {
   const nome  = document.getElementById('cad-nome').value.trim();
@@ -165,7 +164,7 @@ window.doCadastro = async () => {
     err.classList.add('show');
   }
 };
-
+ 
 // FIX: Recuperação de senha agora usa Firebase sendPasswordResetEmail
 window.abrirRecuperarSenha = (e) => { e.preventDefault(); openModal('modal-recuperar-senha'); };
 window.enviarResetSenha = async () => {
@@ -187,7 +186,7 @@ window.enviarResetSenha = async () => {
     err.classList.add('show');
   }
 };
-
+ 
 window.doEmailLogin = async () => {
   const email = document.getElementById('login-email').value.trim();
   const senha = document.getElementById('login-senha').value;
@@ -201,7 +200,7 @@ window.doEmailLogin = async () => {
     showLoginErr(msgs[e.code]||`Erro: ${e.message}`);
   }
 };
-
+ 
 window.doLogout = async () => {
   if (!confirm('Deseja sair do sistema?')) return;
   await signOut(auth);
@@ -210,7 +209,7 @@ window.doLogout = async () => {
   STATE.currentUser=null; STATE.dbReady=false;
   sysLog('Sessão encerrada');
 };
-
+ 
 onAuthStateChanged(auth, async (firebaseUser) => {
   setLoginLoading(false);
   if (!firebaseUser) {
@@ -237,7 +236,7 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     await signOut(auth);
   }
 });
-
+ 
 function aplicarRole(role) {
   const rc = ROLE_CONFIG[role]||ROLE_CONFIG.garcom;
   const u  = STATE.currentUser;
@@ -255,7 +254,7 @@ function aplicarRole(role) {
   const mobCfg = document.getElementById('nav-mob-config');
   if (mobCfg) mobCfg.style.display = rc.canConfig ? '' : 'none';
 }
-
+ 
 // ════════════════════════════════════════════════
 // BANCO DE DADOS — INICIALIZAÇÃO
 // ════════════════════════════════════════════════
@@ -296,7 +295,7 @@ async function initDB() {
     toast('Erro ao conectar ao Firestore','error');
   }
 }
-
+ 
 async function ensureInitialData() {
   const hoje = todayStr();
   if (!Object.keys(DB.mesas).length) {
@@ -326,13 +325,13 @@ async function ensureInitialData() {
     DB.relatorio_dia[hoje]={id:hoje,data:hoje,...rd};
   }
 }
-
+ 
 function loadConfig() {
   if (DB.config['taxa_servico']!==undefined) SYS.taxaServico=parseFloat(DB.config['taxa_servico']);
   if (DB.config['nome_restaurante'])          SYS.nomeRestaurante=DB.config['nome_restaurante'];
   if (DB.config['n_mesas'])                  SYS.nMesas=parseInt(DB.config['n_mesas']);
 }
-
+ 
 function setupRealtimeListeners() {
   onSnapshot(col('mesas'), snap => {
     snap.docChanges().forEach(ch => {
@@ -386,7 +385,7 @@ function setupRealtimeListeners() {
     if(STATE.dbReady&&document.getElementById('page-relatorios-mensais').classList.contains('active')) renderRelatoriosMensais();
   });
 }
-
+ 
 // ════════════════════════════════════════════════
 // RESET NOTURNO
 // ════════════════════════════════════════════════
@@ -396,7 +395,7 @@ async function checkNightReset() {
   if(now.getHours()>=2&&last!==hoje) await doNightReset(hoje);
   await checkFecharMesAnterior();
 }
-
+ 
 async function doNightReset(hoje) {
   sysLog('Executando reset noturno...','info');
   const batch=writeBatch(db);
@@ -414,7 +413,7 @@ async function doNightReset(hoje) {
   const b=document.getElementById('night-banner');
   b.style.display='flex'; setTimeout(()=>b.style.display='none',9000);
 }
-
+ 
 // ════════════════════════════════════════════════
 // MESAS
 // ════════════════════════════════════════════════
@@ -446,7 +445,7 @@ function renderFloor() {
     <div class="metric-card"><div class="metric-val" style="font-size:18px;">${fmtBRL(rel.faturamento||0)}</div><div class="metric-label">Faturamento</div></div>
   `;
 }
-
+ 
 window.clickMesa = async (id) => {
   const m=DB.mesas[id], rc=ROLE_CONFIG[STATE.currentUser?.role]||{};
   if(STATE.currentUser?.role==='caixa'){STATE.caixaMesa=id; goPage('caixa'); return;}
@@ -461,7 +460,7 @@ window.clickMesa = async (id) => {
   STATE.mesaSel=id;
   goPage(rc.canOrder?'pedido':'cozinha');
 };
-
+ 
 window.pedirDeselect = (id) => {
   STATE.deselectMesaId=id;
   const m=DB.mesas[id];
@@ -469,7 +468,7 @@ window.pedirDeselect = (id) => {
   document.getElementById('modal-deselect-body').textContent=`Mesa ${id} (${m?.status})${pend>0?` — ${pend} pedido(s) em aberto.`:'.'} Pedidos pendentes serão cancelados. Continuar?`;
   openModal('modal-deselect');
 };
-
+ 
 window.confirmarDeselect = async () => {
   const id=STATE.deselectMesaId; if(!id) return;
   const batch=writeBatch(db);
@@ -488,7 +487,7 @@ window.confirmarDeselect = async () => {
   renderFloor(); renderKDS(); renderCaixa();
   toast(`Mesa ${id} liberada`,'success');
 };
-
+ 
 window.confirmarAddMesa = async () => {
   const num=parseInt(document.getElementById('new-mesa-num').value);
   const cap=parseInt(document.getElementById('new-mesa-cap').value)||4;
@@ -501,7 +500,7 @@ window.confirmarAddMesa = async () => {
   renderFloor();
   toast(`Mesa ${num} adicionada!`,'success');
 };
-
+ 
 // ════════════════════════════════════════════════
 // PEDIDO
 // ════════════════════════════════════════════════
@@ -510,7 +509,7 @@ function renderMesaSelector() {
   document.getElementById('mesa-sel-grid').innerHTML=mesas.map(m=>`
     <button class="mesa-sel-btn ${m.status} ${STATE.mesaSel===m.id||STATE.mesaSel===String(m.id)?'sel':''}" onclick="selMesa('${m.id}')">${m.id}</button>`).join('');
 }
-
+ 
 window.selMesa = async (id) => {
   const m=DB.mesas[id];
   if(m.status==='livre'){
@@ -523,7 +522,7 @@ window.selMesa = async (id) => {
   document.getElementById('ped-mesa-lbl').textContent=`Mesa ${id} selecionada`;
   renderMesaSelector();
 };
-
+ 
 function renderCardapio() {
   const cat=STATE.cardapioCatFiltro;
   const itens=Object.values(DB.cardapio).sort((a,b)=>(a.cat+a.nome).localeCompare(b.cat+b.nome));
@@ -546,9 +545,9 @@ function renderCardapio() {
     </button>`;
   }).join('');
 }
-
+ 
 window.filtCardapio = (cat) => { STATE.cardapioCatFiltro=cat; renderCardapio(); };
-
+ 
 window.addItem = (id) => {
   const item=DB.cardapio[String(id)]; if(!item) return;
   const ing=JSON.parse(item.ing||'{}');
@@ -557,19 +556,40 @@ window.addItem = (id) => {
   else STATE.cartItems.push({id:String(id),nome:item.nome,preco:item.preco,cat:item.cat,ing,qty:1});
   renderCart();
 };
-
+ 
 window.removeItem = (id) => {
   const ex=STATE.cartItems.find(c=>c.id===String(id)); if(!ex) return;
   if(ex.qty>1) ex.qty--;
   else STATE.cartItems=STATE.cartItems.filter(c=>c.id!==String(id));
   renderCart();
 };
-
+ 
+// ── COMANDA MOBILE: toggle expandir/colapsar ──────────────────────
+window.toggleComanda = () => {
+  const p = document.getElementById('comanda-panel');
+  if(p) p.classList.toggle('expandida');
+};
+function syncComandaHandle() {
+  const total = STATE.cartItems.reduce((s,c)=>s+c.preco*c.qty, 0);
+  const count = STATE.cartItems.reduce((s,c)=>s+c.qty, 0);
+  const hTotal = document.getElementById('comanda-handle-total');
+  const hCount = document.getElementById('comanda-count');
+  if(hTotal) hTotal.textContent = fmtBRL(total);
+  if(hCount) hCount.textContent = String(count);
+  // Se adicionou item, abre a comanda automaticamente
+  if(count > 0) {
+    const p = document.getElementById('comanda-panel');
+    if(p && window.innerWidth < 900) p.classList.add('expandida');
+  }
+}
+ 
 function renderCart() {
   const el=document.getElementById('cart-items');
   if(!STATE.cartItems.length){
     el.innerHTML='<div class="text-center text-muted" style="padding:20px 0;font-size:13px;">Nenhum item</div>';
-    document.getElementById('cart-total').textContent='R$ 0,00'; return;
+    document.getElementById('cart-total').textContent='R$ 0,00';
+    syncComandaHandle();
+    return;
   }
   el.innerHTML=STATE.cartItems.map(c=>`
     <div class="cart-item">
@@ -585,10 +605,16 @@ function renderCart() {
     </div>`).join('');
   const tot=STATE.cartItems.reduce((s,c)=>s+c.preco*c.qty,0);
   document.getElementById('cart-total').textContent=fmtBRL(tot);
+  syncComandaHandle();
 }
-
-window.limparCart = () => { STATE.cartItems=[]; renderCart(); };
-
+ 
+window.limparCart = () => {
+  STATE.cartItems=[];
+  renderCart();
+  const p=document.getElementById('comanda-panel');
+  if(p) p.classList.remove('expandida');
+};
+ 
 window.enviarPedido = async () => {
   if(!STATE.mesaSel){toast('Selecione uma mesa!','error');return;}
   if(!STATE.cartItems.length){toast('Adicione itens!','error');return;}
@@ -596,7 +622,7 @@ window.enviarPedido = async () => {
   const tot=STATE.cartItems.reduce((s,c)=>s+c.preco*c.qty,0);
   const now=Date.now(), pedId=uuid(), hoje=todayStr(), h=new Date().getHours();
   const user=STATE.currentUser?.nome||'Sistema';
-
+ 
   // FIX: garantir que a mesa está aberta com inicio definido
   const mesaAtual=DB.mesas[String(STATE.mesaSel)];
   if(!mesaAtual){toast('Mesa inválida','error');return;}
@@ -605,12 +631,12 @@ window.enviarPedido = async () => {
     await fsUpd('mesas',String(STATE.mesaSel),upd);
     DB.mesas[String(STATE.mesaSel)]={...mesaAtual,...upd};
   }
-
+ 
   const pedData={mesa_id:String(STATE.mesaSel),usuario:user,obs,total:tot,status:'preparo',criado:now};
   await fsSet('pedidos',pedId,pedData);
   DB.pedidos[pedId]={id:pedId,...pedData};
   sysLog(`Pedido #${pedId.substring(0,8)} — Mesa ${STATE.mesaSel} — ${fmtBRL(tot)}`);
-
+ 
   const batch=writeBatch(db);
   for(const c of STATE.cartItems){
     const itemRef=doc(col('pedido_itens'));
@@ -632,19 +658,21 @@ window.enviarPedido = async () => {
   const nTotal=(mesa?.total||0)+tot;
   batch.update(ref('mesas',String(STATE.mesaSel)),{total:nTotal});
   DB.mesas[String(STATE.mesaSel)]={...mesa,total:nTotal};
-
+ 
   const horaKey=`${hoje}_${h}`;
   const fh=DB.fat_hora[horaKey];
   if(fh){batch.update(ref('fat_hora',horaKey),{valor:fh.valor+tot});DB.fat_hora[horaKey]={...fh,valor:fh.valor+tot};}
   else{const nfh={data:hoje,hora:h,valor:tot};batch.set(ref('fat_hora',horaKey),nfh);DB.fat_hora[horaKey]={id:horaKey,...nfh};}
-
+ 
   await batch.commit();
   STATE.cartItems=[];
   document.getElementById('obs-inp').value='';
+  const p=document.getElementById('comanda-panel');
+  if(p) p.classList.remove('expandida');
   renderCart(); renderKDS(); renderFloor();
   toast(`Pedido enviado! ${fmtBRL(tot)}`,'success');
 };
-
+ 
 // ════════════════════════════════════════════════
 // COZINHA / KDS
 // ════════════════════════════════════════════════
@@ -655,7 +683,7 @@ window.filtKDS=(f,btn)=>{
   btn.classList.add('active');
   renderKDS();
 };
-
+ 
 function renderKDS() {
   if(!STATE.dbReady) return;
   const pedidos=Object.values(DB.pedidos).filter(p=>p.status!=='cancelado').sort((a,b)=>a.criado-b.criado);
@@ -697,7 +725,7 @@ function renderKDS() {
     </div>`;
   }).join('');
 }
-
+ 
 window.avancarPedido = async (id) => {
   const p=DB.pedidos[id]; if(!p) return;
   const now=Date.now();
@@ -720,7 +748,7 @@ window.avancarPedido = async (id) => {
   renderKDS(); renderFloor(); renderCaixa();
   if(document.getElementById('page-relatorios').classList.contains('active')) renderRelatorios();
 };
-
+ 
 window.cancelarPedido = async (id) => {
   if(!confirm('Cancelar este pedido?')) return;
   const p=DB.pedidos[id];
@@ -730,7 +758,7 @@ window.cancelarPedido = async (id) => {
   renderKDS(); renderFloor();
   toast('Pedido cancelado','info');
 };
-
+ 
 // ════════════════════════════════════════════════
 // CAIXA — FIX PRINCIPAL: pedidos agora aparecem corretamente
 // ════════════════════════════════════════════════
@@ -930,20 +958,86 @@ window.fecharConta = async (sub,taxa,tot) => {
   toast(`Conta fechada! ${fmtBRL(tot)} — ${p}${troco>0?` — Troco: ${fmtBRL(troco)}`:''}`, 'success');
 };
  
-window.abrirDividirConta = (tot) => {
-  document.getElementById('dividir-total-val').textContent = fmtBRL(tot);
-  document.getElementById('dividir-n').value = '2';
-  calcDividir(tot);
-  openModal('modal-dividir-conta');
+window.abrirHistoricoMesa = (mesaId) => {
+  const id = String(mesaId);
+  const contas = Object.values(DB.contas_fechadas)
+    .filter(c => String(c.mesa_id) === id)
+    .sort((a,b) => b.fechadoEm - a.fechadoEm)
+    .slice(0, 20);
+ 
+  const pgtoLabel = {dinheiro:'💵 Dinheiro', debito:'💳 Débito', credito:'💳 Crédito', pix:'📱 Pix'};
+ 
+  document.getElementById('modal-historico-sub').textContent =
+    `Mesa ${id} — ${contas.length} conta(s) fechada(s)`;
+ 
+  document.getElementById('modal-historico-list').innerHTML = contas.length
+    ? contas.map(c => {
+        const dt = new Date(c.fechadoEm).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+        const itensHtml = (c.itens||[]).map(i =>
+          `<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);padding:1px 0;">
+            <span>${i.qty}× ${i.nome}</span><span>${fmtBRL(i.preco*i.qty)}</span>
+          </div>`).join('');
+        return `<div style="padding:12px 0;border-bottom:1px solid var(--border);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text);">${fmtBRL(c.total)}</div>
+              <div style="font-size:11px;color:var(--text3);">${dt} · ${pgtoLabel[c.forma_pagamento]||c.forma_pagamento}</div>
+              <div style="font-size:11px;color:var(--text3);">Fechado por: ${c.fechadoPor||'—'}</div>
+            </div>
+            ${c.troco>0?`<span class="badge b-green">Troco ${fmtBRL(c.troco)}</span>`:''}
+          </div>
+          ${itensHtml}
+        </div>`;
+      }).join('')
+    : '<div class="text-center text-muted" style="padding:24px;">Nenhuma conta fechada para esta mesa</div>';
+ 
+  openModal('modal-historico');
+  
 };
-window.calcDividir = (tot) => {
-  const n = parseInt(document.getElementById('dividir-n').value)||1;
-  const por = tot/n;
-  document.getElementById('dividir-result').innerHTML = n >= 1
-    ? `<div style="font-size:22px;font-weight:700;color:var(--brand-m);text-align:center;margin-top:8px;">${fmtBRL(por)}<span style="font-size:13px;font-weight:400;color:var(--text3);"> / pessoa</span></div>`
-    : '';
+  
+// No seu main.js, garanta que estas funções sejam globais:
+
+window.abrirDividirConta = (total) => {
+  // Se você já tiver a lógica da função, coloque-a aqui ou chame-a
+  console.log("Abrindo modal para dividir:", total);
+  
+  // Exemplo de lógica para abrir o seu modal (ajuste o ID conforme seu HTML)
+  const modal = document.getElementById('modal-dividir-conta'); 
+if(modal) modal.classList.add('open');  
+  // Chama a função de cálculo
+  window.calcDividir(total);
 };
 
+window.calcDividir = (tot) => {
+  const nInput = document.getElementById('dividir-n');
+  const n = nInput ? (parseInt(nInput.value) || 1) : 1;
+  const por = tot / n;
+
+  const resEl = document.getElementById('dividir-result');
+  if (resEl) {
+    resEl.innerHTML = n >= 1 
+      ? `<div style="font-size:22px;font-weight:700;color:var(--brand-m);text-align:center;margin-top:8px;">
+           ${fmtBRL(por)}
+           <span style="font-size:13px;font-weight:400;color:var(--text3);"> / pessoa</span>
+         </div>`
+      : '';
+  }
+
+  const totValEl = document.getElementById('dividir-total-val');
+  if (totValEl) totValEl.textContent = fmtBRL(tot);
+};
+
+// Certifique-se que a fmtBRL também seja global se for usada em outros lugares
+window.fmtBRL = (val) => {
+  return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+};
+
+window.fecharDividirConta = () => {
+  const modal = document.getElementById('modal-dividir-conta');
+  if(modal) {
+    modal.style.display = 'none';
+  }
+};
 window.imprimirConta = (mesaId) => {
   const m = DB.mesas[String(mesaId)]; if(!m) return;
   const sesInicio = m.inicio||0;
@@ -976,7 +1070,7 @@ window.imprimirConta = (mesaId) => {
   `;
   setTimeout(()=>window.print(), 80);
 };
-
+ 
 // ════════════════════════════════════════════════
 // ESTOQUE
 // ════════════════════════════════════════════════
@@ -994,7 +1088,7 @@ function calcularPrevisaoAcabamento(item) {
   if(media<=0) return null;
   return Math.floor(item.qty/media);
 }
-
+ 
 function renderEstoque() {
   if(!STATE.dbReady) return;
   const busca=document.getElementById('est-search')?.value?.toLowerCase()||'';
@@ -1042,7 +1136,7 @@ function renderEstoque() {
     :'<div class="text-muted text-sm text-center" style="padding:12px 0;">Sem alertas 🎉</div>';
 }
 window.renderEstoque=renderEstoque;
-
+ 
 window.openReporModal=(chave)=>{
   const item=DB.estoque[chave];
   document.getElementById('modal-repor-desc').textContent=`${item.nome}: ${Number(item.qty).toFixed(1)} ${item.unidade} (máx: ${item.max_qty}).`;
@@ -1138,7 +1232,7 @@ window.abrirMovimentacoes=async(chave)=>{
       :'<div class="text-center text-muted" style="padding:20px;">Nenhuma movimentação registrada</div>';
   }catch(e){document.getElementById('modal-mov-list').innerHTML='<div class="text-muted text-sm text-center" style="padding:12px;">Erro ao carregar</div>';}
 };
-
+ 
 // ════════════════════════════════════════════════
 // CARDÁPIO ADMIN
 // ════════════════════════════════════════════════
@@ -1206,13 +1300,13 @@ window.toggleItem=async(id,ativo)=>{
   DB.cardapio[String(id)]={...DB.cardapio[String(id)],ativo:ativo?1:0};
   renderCardapioAdmin(); renderCardapio();
 };
-
+ 
 // ════════════════════════════════════════════════
 // RELATÓRIOS
 // ════════════════════════════════════════════════
 let relPeriod='hoje';
 window.setRelPeriod=(p,btn)=>{relPeriod=p;document.querySelectorAll('.rel-period-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderRelatorios();};
-
+ 
 function getRelDatas() {
   const hoje=todayStr();
   if(relPeriod==='hoje') return [hoje];
@@ -1220,7 +1314,7 @@ function getRelDatas() {
   for(let i=count-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);datas.push(`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`);}
   return datas;
 }
-
+ 
 function renderRelatorios() {
   if(!STATE.dbReady) return;
   const datas=new Set(getRelDatas());
@@ -1262,7 +1356,7 @@ function renderRelatorios() {
   const icons={dinheiro:'💵',debito:'💳',credito:'💳',pix:'📱'};
   document.getElementById('pgto-fat-list').innerHTML=Object.values(pgtoMap).sort((a,b)=>b.v-a.v).length?Object.values(pgtoMap).sort((a,b)=>b.v-a.v).map(p=>`<div class="conta-total-row" style="padding:8px 0;"><span>${icons[p.f]||'💳'} ${p.f} (${p.q}×)</span><span style="font-weight:700;">${fmtBRL(p.v)}</span></div>`).join(''):'<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
 }
-
+ 
 // ════════════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════════════
@@ -1277,7 +1371,7 @@ window.salvarConfig=async()=>{
   if(nm>atualCount){for(let i=atualCount+1;i<=nm;i++){const m={status:'livre',capacidade:4,inicio:null,total:0};await fsSet('mesas',String(i),m);DB.mesas[String(i)]={id:String(i),...m};}}
   renderFloor(); toast('Configurações salvas!','success');
 };
-
+ 
 // FIX: Exportar dados agora funciona corretamente
 window.exportarDados=()=>{
   const dados={mesas:DB.mesas,cardapio:DB.cardapio,pedidos:DB.pedidos,estoque:DB.estoque,relatorio_dia:DB.relatorio_dia,contas_fechadas:DB.contas_fechadas,exportadoEm:new Date().toISOString()};
@@ -1288,7 +1382,7 @@ window.exportarDados=()=>{
   a.click();
   toast('Dados exportados!','success');
 };
-
+ 
 window.mostrarChaveAcesso=()=>{
   function gerarChavePeriodo(){
     const base=new Date();
@@ -1312,7 +1406,7 @@ window.mostrarChaveAcesso=()=>{
   document.getElementById('chave-acesso-validade').textContent=validade;
   display.style.display='block';
 };
-
+ 
 window.resetarSistema=async()=>{
   if(!confirm('APAGAR TODOS OS DADOS?')) return;
   if(!confirm('Tem certeza? Esta ação não pode ser desfeita.')) return;
@@ -1322,7 +1416,7 @@ window.resetarSistema=async()=>{
   toast('Dados apagados. Recarregando...','info');
   setTimeout(()=>location.reload(),1500);
 };
-
+ 
 function renderConfigPage() {
   document.getElementById('cfg-nome').value=SYS.nomeRestaurante;
   document.getElementById('cfg-taxa').value=SYS.taxaServico;
@@ -1338,7 +1432,7 @@ function renderConfigPage() {
     </div>`;
   }).join('')||'<div class="text-muted text-sm" style="padding:12px 0;">Nenhum usuário encontrado</div>';
 }
-
+ 
 // ════════════════════════════════════════════════
 // NAVEGAÇÃO
 // ════════════════════════════════════════════════
@@ -1363,9 +1457,9 @@ function goPage(name) {
   renders[name]?.();
 }
 window.goPage=goPage;
-
+ 
 function renderAll(){renderFloor();renderKDS();}
-
+ 
 // ════════════════════════════════════════════════
 // MODAIS
 // ════════════════════════════════════════════════
@@ -1374,7 +1468,7 @@ window.closeModal =(id)=>document.getElementById(id).classList.remove('open');
 document.querySelectorAll('.modal-overlay').forEach(o=>{
   o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});
 });
-
+ 
 // ════════════════════════════════════════════════
 // TOAST
 // ════════════════════════════════════════════════
@@ -1386,7 +1480,7 @@ function toast(msg,type='success'){
   toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
 }
 window.toast=toast;
-
+ 
 // ════════════════════════════════════════════════
 // EXPORTAR PDF
 // ════════════════════════════════════════════════
@@ -1476,13 +1570,13 @@ window.exportarRelatorioPDF=async()=>{
     toast('Relatório PDF exportado!','success');
   }catch(e){console.error(e);toast('Erro ao gerar PDF','error');}
 };
-
+ 
 // ════════════════════════════════════════════════
 // RELATÓRIOS MENSAIS
 // ════════════════════════════════════════════════
 const MESES_PT=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 function mesKey(ano,mes){return `${ano}-${String(mes+1).padStart(2,'0')}`;}
-
+ 
 async function checkFecharMesAnterior(){
   const now=new Date();
   if(now.getDate()!==1) return;
@@ -1491,7 +1585,7 @@ async function checkFecharMesAnterior(){
   if(DB.relatorios_mensais[key]) return;
   await fecharMes(mesAnt.getFullYear(),mesAnt.getMonth());
 }
-
+ 
 async function fecharMes(ano,mes){
   const key=mesKey(ano,mes);
   if(DB.relatorios_mensais[key]){toast(`${MESES_PT[mes]}/${ano} já foi fechado.`,'info');return;}
@@ -1511,14 +1605,14 @@ async function fecharMes(ano,mes){
   sysLog(`Relatório mensal ${MESES_PT[mes]}/${ano} gerado.`,'info');
   toast(`Relatório de ${MESES_PT[mes]}/${ano} salvo!`,'success');
 }
-
+ 
 window.fecharMesManual=async()=>{
   const now=new Date();
   if(!confirm(`Fechar e salvar o relatório de ${MESES_PT[now.getMonth()]} ${now.getFullYear()}?`)) return;
   await fecharMes(now.getFullYear(),now.getMonth());
   renderRelatoriosMensais();
 };
-
+ 
 function renderRelatoriosMensais(){
   if(!STATE.dbReady) return;
   const meses=Object.values(DB.relatorios_mensais).sort((a,b)=>b.key.localeCompare(a.key));
@@ -1572,9 +1666,9 @@ function renderRelatoriosMensais(){
     </div>`;
   }).join('');
 }
-
+ 
 window.toggleMesMensal=(key)=>{STATE.mesMensalAberto=STATE.mesMensalAberto===key?null:key;renderRelatoriosMensais();};
-
+ 
 window.exportarMensalPDF=async(key)=>{
   const m=DB.relatorios_mensais[key];if(!m)return;
   toast('Gerando PDF...','info');
@@ -1606,7 +1700,7 @@ window.exportarMensalPDF=async(key)=>{
     toast('PDF exportado!','success');
   }catch(e){console.error(e);toast('Erro ao gerar PDF','error');}
 };
-
+ 
 // ════════════════════════════════════════════════
 // GESTÃO DE USUÁRIOS
 // ════════════════════════════════════════════════
@@ -1639,13 +1733,13 @@ window.salvarUsuario=async()=>{
   toast('Usuário atualizado!','success');
   sysLog(`Usuário ${DB.usuarios[uid]?.nome||uid} → ${STATE.usuarioEditRole}, ativo:${_usuarioEditStatus}`);
 };
-
+ 
 // ════════════════════════════════════════════════
 // ALERTAS SONOROS KDS — FIX: contexto de áudio inicializado corretamente
 // ════════════════════════════════════════════════
 let _somKDSMuted=false;
 let _audioCtx=null;
-
+ 
 // FIX: inicializa AudioContext com interação do usuário
 function ensureAudioCtx(){
   if(!_audioCtx) _audioCtx=new(window.AudioContext||window.webkitAudioContext)();
@@ -1653,14 +1747,14 @@ function ensureAudioCtx(){
 }
 document.addEventListener('click',()=>ensureAudioCtx(),{once:false});
 document.addEventListener('touchstart',()=>ensureAudioCtx(),{once:false});
-
+ 
 window.toggleSomKDS=()=>{
   _somKDSMuted=!_somKDSMuted;
   const btn=document.getElementById('btn-som-kds');
   if(btn){btn.textContent=_somKDSMuted?'🔕 Mudo':'🔔 Som';}
   toast(_somKDSMuted?'Alerta sonoro desativado':'Alerta sonoro ativado','info');
 };
-
+ 
 function tocarAlertaKDS(){
   if(_somKDSMuted) return;
   try{
@@ -1679,7 +1773,7 @@ function tocarAlertaKDS(){
     play(660,0,0.1);play(880,0.12,0.1);play(1100,0.24,0.18);
   }catch(e){console.warn('AudioContext error:',e);}
 }
-
+ 
 // ════════════════════════════════════════════════
 // TEMA CLARO / ESCURO
 // ════════════════════════════════════════════════
@@ -1700,7 +1794,7 @@ window.toggleTema = () => {
 };
 // Aplica tema salvo ao carregar
 (()=>{ try{ const t=localStorage.getItem('restaurantOS_tema'); if(t==='claro') aplicarTema(true); }catch(e){} })();
-
+ 
 // ════════════════════════════════════════════════
 // CLOCK + AUTO-REFRESH
 // ════════════════════════════════════════════════
@@ -1708,7 +1802,7 @@ function updateClock(){
   const n=new Date();
   document.getElementById('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
 }
-
+ 
 updateClock();
 setInterval(updateClock,30000);
 setInterval(()=>{
@@ -1719,4 +1813,3 @@ setInterval(()=>{
   if(ap==='page-cozinha') renderKDS();
   if(ap==='page-caixa')   renderCaixa();
 },SYS.autoRefreshMs);
-

@@ -179,16 +179,76 @@ select.input{cursor:pointer;}
   .item-card .item-price{font-size:14px;}
   .item-card .item-add-btn{width:32px;height:32px;border-radius:8px;background:var(--brand-bg);color:var(--brand-m);border:1px solid var(--brand-bg);font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;font-weight:700;}
 }
+/* ── COMANDA DESKTOP ── */
 .comanda{position:sticky;top:0;}
 .comanda-items{max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+.comanda-total{font-size:18px;font-weight:700;color:var(--gold-m);}
+.comanda-handle{display:none;}/* só aparece no mobile */
+.comanda-inner{/* transparente no desktop */}
+
+/* ── COMANDA MOBILE: painel deslizante fixo no rodapé ── */
+@media(max-width:899px){
+  /* Cardápio tem padding no fundo pra comanda não cobrir o último item */
+  .pedido-layout > div:first-child{padding-bottom:80px;}
+
+  .comanda{
+    position:fixed;
+    bottom:calc(64px + env(safe-area-inset-bottom));
+    left:0;right:0;
+    z-index:40;
+    background:var(--surface);
+    border-radius:16px 16px 0 0;
+    border:1px solid var(--border);
+    border-bottom:none;
+    box-shadow:0 -6px 28px rgba(0,0,0,.4);
+    /* colapsada: mostra só a barra de handle */
+    max-height:60px;
+    overflow:hidden;
+    transition:max-height .32s cubic-bezier(.4,0,.2,1);
+  }
+  .comanda.expandida{
+    max-height:72vh;
+    overflow-y:auto;
+  }
+  /* Barra de toque no topo */
+  .comanda-handle{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 16px;
+    height:60px;
+    cursor:pointer;
+    flex-shrink:0;
+    background:var(--surface);
+    border-bottom:1px solid transparent;
+    position:sticky;top:0;z-index:2;
+    transition:border-color .2s;
+  }
+  .comanda.expandida .comanda-handle{border-bottom-color:var(--border);}
+  .comanda-handle-left{display:flex;align-items:center;gap:8px;}
+  .comanda-handle-title{font-size:14px;font-weight:700;color:var(--text);}
+  .comanda-handle-count{background:var(--brand-bg);color:var(--brand-m);border-radius:99px;padding:2px 8px;font-size:11px;font-weight:700;min-width:20px;text-align:center;}
+  .comanda-handle-right{display:flex;align-items:center;gap:10px;}
+  .comanda-handle-total{font-size:15px;font-weight:700;color:var(--gold-m);}
+  .comanda-chevron{font-size:16px;color:var(--text3);transition:transform .3s;line-height:1;}
+  .comanda.expandida .comanda-chevron{transform:rotate(180deg);}
+
+  /* Conteúdo interno com padding */
+  .comanda-inner{padding:12px 16px 16px;}
+  /* Esconde título original — usamos o handle */
+  .comanda-title-orig{display:none;}
+  /* Items sem altura máxima (o pai já tem max-height) */
+  .comanda-items{max-height:none;}
+}
+
+/* ── CART ITEMS (todos os tamanhos) ── */
 .cart-item{display:flex;align-items:center;gap:8px;}
 .cart-item-info{flex:1;min-width:0;}
 .cart-item-name{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .cart-item-price{font-size:11px;color:var(--text3);}
 .cart-item-ctrl{display:flex;align-items:center;gap:4px;flex-shrink:0;}
-.qty-btn{width:22px;height:22px;border-radius:4px;border:1px solid var(--border);background:var(--surface3);color:var(--text);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.qty-num{font-size:12px;font-weight:700;min-width:18px;text-align:center;}
-.comanda-total{font-size:18px;font-weight:700;color:var(--gold-m);}
+.qty-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface3);color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.qty-num{font-size:13px;font-weight:700;min-width:20px;text-align:center;}
 .mesa-sel-grid{display:flex;gap:6px;flex-wrap:wrap;}
 .mesa-sel-btn{width:40px;height:40px;border-radius:8px;border:2px solid var(--border);background:var(--surface2);color:var(--text);font-weight:700;font-size:13px;cursor:pointer;transition:border-color .15s;font-family:inherit;}
 .mesa-sel-btn.ocupada{border-color:var(--amber);background:var(--amber-bg);}
