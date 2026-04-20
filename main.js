@@ -1454,11 +1454,11 @@ function goPage(name) {
     'relatorios-mensais':renderRelatoriosMensais,
     config:renderConfigPage,
   };
-  renders[name]?.();
-const comanda = document.getElementById('comanda-panel');
+  const comanda = document.getElementById('comanda-panel');
   if (comanda) {
     comanda.style.display = name === 'pedido' ? 'block' : 'none';
   }
+  renders[name]?.();
 }
   
 window.goPage=goPage;
