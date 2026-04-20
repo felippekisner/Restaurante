@@ -139,41 +139,71 @@
       </div>
     </div>
 
-    <!-- PEDIDO -->
-    <div class="page" id="page-pedido">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Novo Pedido</div>
-          <div class="page-sub" id="ped-mesa-lbl">Selecione uma mesa abaixo</div>
-        </div>
-      </div>
-      <div class="card mt-2" style="margin-bottom:12px;">
-        <div class="card-title" style="margin-bottom:10px;">Mesa</div>
-        <div class="mesa-sel-grid" id="mesa-sel-grid"></div>
-      </div>
-      <div class="pedido-layout">
-        <div>
-          <div class="cat-bar" id="cat-bar"></div>
-          <div class="cardapio-grid" id="cardapio-grid"></div>
-        </div>
-        <div class="card comanda">
-          <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">Comanda</div>
-          <div class="comanda-items" id="cart-items">
-            <div class="text-center text-muted" style="padding:20px 0;font-size:13px;">Nenhum item</div>
-          </div>
-          <div class="divider"></div>
-          <label class="input-label">Observações</label>
-          <textarea class="obs-area mt-2" id="obs-inp" rows="2" placeholder="sem cebola, mal passado..."></textarea>
-          <div class="divider"></div>
-          <div class="flex justify-between items-center">
-            <span class="text-muted text-sm">Total</span>
-            <span class="comanda-total" id="cart-total">R$ 0,00</span>
-          </div>
-          <button class="btn btn-gold w-full mt-3" onclick="enviarPedido()">🚀 Enviar para Cozinha</button>
-          <button class="btn btn-sm w-full mt-2" onclick="limparCart()">Limpar comanda</button>
-        </div>
-      </div>
+  <!-- PEDIDO -->
+<div class="page" id="page-pedido">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Novo Pedido</div>
+      <div class="page-sub" id="ped-mesa-lbl">Selecione uma mesa abaixo</div>
     </div>
+  </div>
+  <div class="card mt-2" style="margin-bottom:12px;">
+    <div class="card-title" style="margin-bottom:10px;">Mesa</div>
+    <div class="mesa-sel-grid" id="mesa-sel-grid"></div>
+  </div>
+  <div class="pedido-layout">
+    <div id="cardapio-wrap">
+      <div class="cat-bar" id="cat-bar"></div>
+      <div class="cardapio-grid" id="cardapio-grid"></div>
+    </div>
+    <!-- COMANDA DESKTOP (some no mobile) -->
+    <div class="card comanda comanda-desktop">
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">Comanda</div>
+      <div class="comanda-items" id="cart-items-desktop">
+        <div class="text-center text-muted" style="padding:20px 0;font-size:13px;">Nenhum item</div>
+      </div>
+      <div class="divider"></div>
+      <label class="input-label">Observações</label>
+      <textarea class="obs-area mt-2" id="obs-inp" rows="2" placeholder="sem cebola, mal passado..."></textarea>
+      <div class="divider"></div>
+      <div class="flex justify-between items-center">
+        <span class="text-muted text-sm">Total</span>
+        <span class="comanda-total" id="cart-total-desktop">R$ 0,00</span>
+      </div>
+      <button class="btn btn-gold w-full mt-3" onclick="enviarPedido()">🚀 Enviar para Cozinha</button>
+      <button class="btn btn-sm w-full mt-2" onclick="limparCart()">Limpar comanda</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMANDA MOBILE — fora do .page para position:fixed funcionar -->
+<div class="comanda-mobile" id="comanda-panel">
+  <div class="comanda-handle" onclick="toggleComanda()">
+    <div class="comanda-handle-left">
+      <span class="comanda-handle-title">🧾 Comanda</span>
+      <span class="comanda-handle-count" id="comanda-count">0</span>
+    </div>
+    <div class="comanda-handle-right">
+      <span class="comanda-handle-total" id="comanda-handle-total">R$ 0,00</span>
+      <span class="comanda-chevron" id="comanda-chevron">▲</span>
+    </div>
+  </div>
+  <div class="comanda-inner">
+    <div class="comanda-items" id="cart-items">
+      <div class="text-center text-muted" style="padding:20px 0;font-size:13px;">Nenhum item</div>
+    </div>
+    <div class="divider"></div>
+    <label class="input-label">Observações</label>
+    <textarea class="obs-area mt-2" id="obs-inp-mobile" rows="2" placeholder="sem cebola, mal passado..."></textarea>
+    <div class="divider"></div>
+    <div class="flex justify-between items-center">
+      <span class="text-muted text-sm">Total</span>
+      <span class="comanda-total" id="cart-total">R$ 0,00</span>
+    </div>
+    <button class="btn btn-gold w-full mt-3" onclick="enviarPedido()">🚀 Enviar para Cozinha</button>
+    <button class="btn btn-sm w-full mt-2" onclick="limparCart()">Limpar comanda</button>
+  </div>
+</div>
 
     <!-- COZINHA -->
     <div class="page" id="page-cozinha">

@@ -566,8 +566,7 @@ window.removeItem = (id) => {
  
 // ── COMANDA MOBILE: toggle expandir/colapsar ──────────────────────
 window.toggleComanda = () => {
-  const p = document.getElementById('comanda-panel');
-  if(p) p.classList.toggle('expandida');
+  document.getElementById('comanda-panel')?.classList.toggle('expandida');
 };
 function syncComandaHandle() {
   const total = STATE.cartItems.reduce((s,c)=>s+c.preco*c.qty, 0);
