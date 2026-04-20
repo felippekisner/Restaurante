@@ -1442,6 +1442,9 @@ function goPage(name) {
   document.querySelectorAll('.nav-btn,.nav-mob-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll(`[data-page="${name}"]`).forEach(b=>b.classList.add('active'));
+  const comanda = document.getElementById('comanda-panel');
+  if (comanda) {
+    comanda.style.display = name === 'pedido' ? 'block' : 'none';
   const renders={
     mesas:renderFloor,
     pedido:()=>{renderMesaSelector();renderCardapio();renderCart();},
