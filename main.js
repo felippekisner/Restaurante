@@ -583,14 +583,18 @@ function syncComandaHandle() {
 }
  
 function renderCart() {
-  const el=document.getElementById('cart-items');
+  const elMobile=document.getElementById('cart-items');
+  const elDesktop=document.getElementById('cart-items-desktop');
   if(!STATE.cartItems.length){
-    el.innerHTML='<div class="text-center text-muted" style="padding:20px 0;font-size:13px;">Nenhum item</div>';
-    document.getElementById('cart-total').textContent='R$ 0,00';
+    const emptyHtml='<div class="text-center text-muted" style="padding:20px 0;font-size:13px;">Nenhum item</div>';
+    if(elMobile)  elMobile.innerHTML=emptyHtml;
+    if(elDesktop) elDesktop.innerHTML=emptyHtml;
+    const t=document.getElementById('cart-total'); if(t) t.textContent='R$ 0,00';
+    const td=document.getElementById('cart-total-desktop'); if(td) td.textContent='R$ 0,00';
     syncComandaHandle();
     return;
   }
-  el.innerHTML=STATE.cartItems.map(c=>`
+  const itemsHtml=STATE.cartItems.map(c=>`
     <div class="cart-item">
       <div class="cart-item-info">
         <div class="cart-item-name">${c.nome}</div>
@@ -602,8 +606,11 @@ function renderCart() {
         <button class="qty-btn" onclick="addItem(${c.id})">+</button>
       </div>
     </div>`).join('');
+  if(elMobile)  elMobile.innerHTML=itemsHtml;
+  if(elDesktop) elDesktop.innerHTML=itemsHtml;
   const tot=STATE.cartItems.reduce((s,c)=>s+c.preco*c.qty,0);
-  document.getElementById('cart-total').textContent=fmtBRL(tot);
+  const t=document.getElementById('cart-total'); if(t) t.textContent=fmtBRL(tot);
+  const td=document.getElementById('cart-total-desktop'); if(td) td.textContent=fmtBRL(tot);
   syncComandaHandle();
 }
  
@@ -617,7 +624,9 @@ window.limparCart = () => {
 window.enviarPedido = async () => {
   if(!STATE.mesaSel){toast('Selecione uma mesa!','error');return;}
   if(!STATE.cartItems.length){toast('Adicione itens!','error');return;}
-  const obs=document.getElementById('obs-inp').value.trim();
+  const obsDesktop=document.getElementById('obs-inp')?.value.trim()||'';
+  const obsMobile=document.getElementById('obs-inp-mobile')?.value.trim()||'';
+  const obs=obsDesktop||obsMobile;
   const tot=STATE.cartItems.reduce((s,c)=>s+c.preco*c.qty,0);
   const now=Date.now(), pedId=uuid(), hoje=todayStr(), h=new Date().getHours();
   const user=STATE.currentUser?.nome||'Sistema';
@@ -665,7 +674,8 @@ window.enviarPedido = async () => {
  
   await batch.commit();
   STATE.cartItems=[];
-  document.getElementById('obs-inp').value='';
+  const obsInp=document.getElementById('obs-inp'); if(obsInp) obsInp.value='';
+  const obsInpM=document.getElementById('obs-inp-mobile'); if(obsInpM) obsInpM.value='';
   const p=document.getElementById('comanda-panel');
   if(p) p.classList.remove('expandida');
   renderCart(); renderKDS(); renderFloor();
@@ -1442,7 +1452,6 @@ function goPage(name) {
   document.querySelectorAll('.nav-btn,.nav-mob-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll(`[data-page="${name}"]`).forEach(b=>b.classList.add('active'));
-  
   const renders={
     mesas:renderFloor,
     pedido:()=>{renderMesaSelector();renderCardapio();renderCart();},
@@ -1454,13 +1463,8 @@ function goPage(name) {
     'relatorios-mensais':renderRelatoriosMensais,
     config:renderConfigPage,
   };
-  const comanda = document.getElementById('comanda-panel');
-  if (comanda) {
-    comanda.style.display = name === 'pedido' ? 'block' : 'none';
-  }
   renders[name]?.();
 }
-  
 window.goPage=goPage;
  
 function renderAll(){renderFloor();renderKDS();}
