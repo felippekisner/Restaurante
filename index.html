@@ -114,6 +114,35 @@
     </div>
   </div>
 
+  <!-- COMANDA MOBILE — position:fixed, dentro do #app -->
+  <div class="comanda-mobile" id="comanda-panel">
+    <div class="comanda-handle" onclick="toggleComanda()">
+      <div class="comanda-handle-left">
+        <span class="comanda-handle-title">🧾 Comanda</span>
+        <span class="comanda-handle-count" id="comanda-count">0</span>
+      </div>
+      <div class="comanda-handle-right">
+        <span class="comanda-handle-total" id="comanda-handle-total">R$ 0,00</span>
+        <span class="comanda-chevron" id="comanda-chevron">▲</span>
+      </div>
+    </div>
+    <div class="comanda-inner">
+      <div class="comanda-items" id="cart-items">
+        <div class="text-center text-muted" style="padding:20px 0;font-size:13px;">Nenhum item</div>
+      </div>
+      <div class="divider"></div>
+      <label class="input-label">Observações</label>
+      <textarea class="obs-area mt-2" id="obs-inp-mobile" rows="2" placeholder="sem cebola, mal passado..."></textarea>
+      <div class="divider"></div>
+      <div class="flex justify-between items-center">
+        <span class="text-muted text-sm">Total</span>
+        <span class="comanda-total" id="cart-total">R$ 0,00</span>
+      </div>
+      <button class="btn btn-gold w-full mt-3" onclick="enviarPedido()">🚀 Enviar para Cozinha</button>
+      <button class="btn btn-sm w-full mt-2" onclick="limparCart()">Limpar comanda</button>
+    </div>
+  </div>
+
   <div class="content">
     <div class="night-banner" id="night-banner">🌙 Reset noturno realizado — boa operação!</div>
 
@@ -173,35 +202,6 @@
       <button class="btn btn-gold w-full mt-3" onclick="enviarPedido()">🚀 Enviar para Cozinha</button>
       <button class="btn btn-sm w-full mt-2" onclick="limparCart()">Limpar comanda</button>
     </div>
-  </div>
-</div>
-
-<!-- COMANDA MOBILE — fora do .page para position:fixed funcionar -->
-<div class="comanda-mobile" id="comanda-panel">
-  <div class="comanda-handle" onclick="toggleComanda()">
-    <div class="comanda-handle-left">
-      <span class="comanda-handle-title">🧾 Comanda</span>
-      <span class="comanda-handle-count" id="comanda-count">0</span>
-    </div>
-    <div class="comanda-handle-right">
-      <span class="comanda-handle-total" id="comanda-handle-total">R$ 0,00</span>
-      <span class="comanda-chevron" id="comanda-chevron">▲</span>
-    </div>
-  </div>
-  <div class="comanda-inner">
-    <div class="comanda-items" id="cart-items">
-      <div class="text-center text-muted" style="padding:20px 0;font-size:13px;">Nenhum item</div>
-    </div>
-    <div class="divider"></div>
-    <label class="input-label">Observações</label>
-    <textarea class="obs-area mt-2" id="obs-inp-mobile" rows="2" placeholder="sem cebola, mal passado..."></textarea>
-    <div class="divider"></div>
-    <div class="flex justify-between items-center">
-      <span class="text-muted text-sm">Total</span>
-      <span class="comanda-total" id="cart-total">R$ 0,00</span>
-    </div>
-    <button class="btn btn-gold w-full mt-3" onclick="enviarPedido()">🚀 Enviar para Cozinha</button>
-    <button class="btn btn-sm w-full mt-2" onclick="limparCart()">Limpar comanda</button>
   </div>
 </div>
 
@@ -287,7 +287,7 @@
       <div class="g4" id="rel-metrics" style="margin-bottom:14px;"></div>
       <div class="g2">
         <div class="card">
-          <div class="card-title" style="margin-bottom:12px;">Faturamento por hora</div>
+          <div class="card-title" id="chart-horas-title" style="margin-bottom:12px;">Faturamento por hora</div>
           <div class="chart-bar-container" id="chart-horas"></div>
           <div class="chart-bar-labels" id="chart-horas-labels"></div>
         </div>

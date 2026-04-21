@@ -179,17 +179,7 @@ select.input{cursor:pointer;}
   .item-card .item-price{font-size:14px;}
   .item-card .item-add-btn{width:32px;height:32px;border-radius:8px;background:var(--brand-bg);color:var(--brand-m);border:1px solid var(--brand-bg);font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;font-weight:700;}
 }
-/* ── COMANDA DESKTOP ── */
-.comanda{position:sticky;top:0;}
-.comanda-items{max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
-.comanda-total{font-size:18px;font-weight:700;color:var(--gold-m);}
-.comanda-handle{display:none;}
-.comanda-inner{/* transparente no desktop */}
 
-@media(max-width:899px){
-  .pedido-layout > div:first-child{padding-bottom:80px;}
-  .comanda-items{max-height:none;}
-}
 
 /* ── CART ITEMS (todos os tamanhos) ── */
 .cart-item{display:flex;align-items:center;gap:8px;}

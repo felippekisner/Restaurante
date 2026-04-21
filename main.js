@@ -125,7 +125,14 @@ function sysLog(msg, type='msg') {
 window.clearLog = () => { document.getElementById('log-panel').innerHTML = ''; };
  
 // ── UTILITÁRIOS ───────────────────────────────────────────────────
-function todayStr() { const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+function todayStr() { const d=new Date(); const mm=String(d.getMonth()+1).padStart(2,'0'); const dd=String(d.getDate()).padStart(2,'0'); return `${d.getFullYear()}-${mm}-${dd}`; }
+// Normaliza data para formato padded (YYYY-MM-DD) para comparações consistentes
+function normDate(s) {
+  if(!s) return s;
+  const p=s.split('-');
+  if(p.length!==3) return s;
+  return `${p[0]}-${p[1].padStart(2,'0')}-${p[2].padStart(2,'0')}`;
+}
 function tStr(ms)   { const m=Math.floor(ms/60000); return m<60?`${m}min`:`${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}`; }
 function fmtBRL(v)  { return 'R$ '+Number(v||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
 function uuid()     { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&0x3|0x8)).toString(16);}); }
@@ -476,6 +483,21 @@ window.confirmarDeselect = async () => {
     if(p.mesa_id===id&&(p.status==='preparo'||p.status==='pronto')){
       batch.update(ref('pedidos',pid),{status:'cancelado'});
       DB.pedidos[pid]={...p,status:'cancelado'};
+      // Reverter estoque dos itens deste pedido
+      const itens=Object.values(DB.pedido_itens).filter(i=>i.pedido_id===pid);
+      itens.forEach(item=>{
+        const ing=DB.cardapio[item.item_id]?.ing;
+        if(!ing) return;
+        let ingObj={};
+        try{ ingObj=JSON.parse(ing); }catch(e){}
+        Object.entries(ingObj).forEach(([k,v])=>{
+          if(DB.estoque[k]){
+            const nq=Math.min(DB.estoque[k].max_qty||9999, DB.estoque[k].qty + v*item.qty);
+            batch.update(ref('estoque',k),{qty:nq});
+            DB.estoque[k]={...DB.estoque[k],qty:nq};
+          }
+        });
+      });
     }
   });
   batch.update(ref('mesas',id),{status:'livre',inicio:null,total:0});
@@ -484,7 +506,7 @@ window.confirmarDeselect = async () => {
   sysLog(`Mesa ${id} liberada`);
   closeModal('modal-deselect');
   STATE.deselectMesaId=null;
-  renderFloor(); renderKDS(); renderCaixa();
+  renderFloor(); renderKDS(); renderCaixa(); renderEstoque();
   toast(`Mesa ${id} liberada`,'success');
 };
  
@@ -583,18 +605,21 @@ function syncComandaHandle() {
 }
  
 function renderCart() {
-  const elMobile=document.getElementById('cart-items');
-  const elDesktop=document.getElementById('cart-items-desktop');
+  const elMobile  = document.getElementById('cart-items');
+  const elDesktop = document.getElementById('cart-items-desktop');
+  const tot = STATE.cartItems.reduce((s,c)=>s+c.preco*c.qty,0);
+
   if(!STATE.cartItems.length){
-    const emptyHtml='<div class="text-center text-muted" style="padding:20px 0;font-size:13px;">Nenhum item</div>';
-    if(elMobile)  elMobile.innerHTML=emptyHtml;
-    if(elDesktop) elDesktop.innerHTML=emptyHtml;
-    const t=document.getElementById('cart-total'); if(t) t.textContent='R$ 0,00';
-    const td=document.getElementById('cart-total-desktop'); if(td) td.textContent='R$ 0,00';
+    const empty = '<div class="text-center text-muted" style="padding:20px 0;font-size:13px;">Nenhum item</div>';
+    if(elMobile)  elMobile.innerHTML  = empty;
+    if(elDesktop) elDesktop.innerHTML = empty;
+    if(document.getElementById('cart-total'))         document.getElementById('cart-total').textContent         = 'R$ 0,00';
+    if(document.getElementById('cart-total-desktop')) document.getElementById('cart-total-desktop').textContent = 'R$ 0,00';
     syncComandaHandle();
     return;
   }
-  const itemsHtml=STATE.cartItems.map(c=>`
+
+  const html = STATE.cartItems.map(c=>`
     <div class="cart-item">
       <div class="cart-item-info">
         <div class="cart-item-name">${c.nome}</div>
@@ -606,11 +631,11 @@ function renderCart() {
         <button class="qty-btn" onclick="addItem(${c.id})">+</button>
       </div>
     </div>`).join('');
-  if(elMobile)  elMobile.innerHTML=itemsHtml;
-  if(elDesktop) elDesktop.innerHTML=itemsHtml;
-  const tot=STATE.cartItems.reduce((s,c)=>s+c.preco*c.qty,0);
-  const t=document.getElementById('cart-total'); if(t) t.textContent=fmtBRL(tot);
-  const td=document.getElementById('cart-total-desktop'); if(td) td.textContent=fmtBRL(tot);
+
+  if(elMobile)  elMobile.innerHTML  = html;
+  if(elDesktop) elDesktop.innerHTML = html;
+  if(document.getElementById('cart-total'))         document.getElementById('cart-total').textContent         = fmtBRL(tot);
+  if(document.getElementById('cart-total-desktop')) document.getElementById('cart-total-desktop').textContent = fmtBRL(tot);
   syncComandaHandle();
 }
  
@@ -624,9 +649,7 @@ window.limparCart = () => {
 window.enviarPedido = async () => {
   if(!STATE.mesaSel){toast('Selecione uma mesa!','error');return;}
   if(!STATE.cartItems.length){toast('Adicione itens!','error');return;}
-  const obsDesktop=document.getElementById('obs-inp')?.value.trim()||'';
-  const obsMobile=document.getElementById('obs-inp-mobile')?.value.trim()||'';
-  const obs=obsDesktop||obsMobile;
+  const obs=document.getElementById('obs-inp').value.trim();
   const tot=STATE.cartItems.reduce((s,c)=>s+c.preco*c.qty,0);
   const now=Date.now(), pedId=uuid(), hoje=todayStr(), h=new Date().getHours();
   const user=STATE.currentUser?.nome||'Sistema';
@@ -674,8 +697,7 @@ window.enviarPedido = async () => {
  
   await batch.commit();
   STATE.cartItems=[];
-  const obsInp=document.getElementById('obs-inp'); if(obsInp) obsInp.value='';
-  const obsInpM=document.getElementById('obs-inp-mobile'); if(obsInpM) obsInpM.value='';
+  document.getElementById('obs-inp').value='';
   const p=document.getElementById('comanda-panel');
   if(p) p.classList.remove('expandida');
   renderCart(); renderKDS(); renderFloor();
@@ -1319,15 +1341,15 @@ window.setRelPeriod=(p,btn)=>{relPeriod=p;document.querySelectorAll('.rel-period
 function getRelDatas() {
   const hoje=todayStr();
   if(relPeriod==='hoje') return [hoje];
-  const count=relPeriod==='semana'?7:30, datas=[];
-  for(let i=count-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);datas.push(`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`);}
+    const count=relPeriod==='semana'?7:30, datas=[];
+  for(let i=count-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const mm=String(d.getMonth()+1).padStart(2,'0');const dd=String(d.getDate()).padStart(2,'0');datas.push(`${d.getFullYear()}-${mm}-${dd}`);}  
   return datas;
 }
  
 function renderRelatorios() {
   if(!STATE.dbReady) return;
   const datas=new Set(getRelDatas());
-  const rels=Object.values(DB.relatorio_dia).filter(r=>datas.has(r.id||r.data));
+  const rels=Object.values(DB.relatorio_dia).filter(r=>datas.has(normDate(r.id||r.data)));
   const fat=rels.reduce((s,r)=>s+(r.faturamento||0),0);
   const ped=rels.reduce((s,r)=>s+(r.pedidos_total||0),0);
   const itens=rels.reduce((s,r)=>s+(r.itens_total||0),0);
@@ -1338,30 +1360,33 @@ function renderRelatorios() {
     <div class="metric-card text-center"><div class="metric-val">${fmtBRL(ticket)}</div><div class="metric-label">Ticket médio</div></div>
     <div class="metric-card text-center"><div class="metric-val">${itens}</div><div class="metric-label">Itens vendidos</div></div>
   `;
+    // Título dinâmico conforme período
+  const tituloEl=document.getElementById('chart-horas-title');
+  if(tituloEl) tituloEl.textContent=relPeriod==='hoje'?'Faturamento por hora':'Faturamento por dia';
   if(relPeriod==='hoje'){
-    const horas=Object.values(DB.fat_hora).filter(h=>datas.has(h.data)).sort((a,b)=>a.hora-b.hora);
+    const horas=Object.values(DB.fat_hora).filter(h=>datas.has(normDate(h.data))).sort((a,b)=>a.hora-b.hora);
     const maxH=Math.max(...horas.map(h=>h.valor),1);
     document.getElementById('chart-horas').innerHTML=horas.length?horas.map(h=>`<div class="chart-bar-col"><div class="chart-bar-val">${h.valor>=1000?(h.valor/1000).toFixed(1)+'k':Math.round(h.valor)}</div><div class="chart-bar-rect" style="height:${Math.max(4,Math.round(h.valor/maxH*100))}px"></div></div>`).join(''):'<div class="text-center text-muted" style="padding:20px;width:100%">Sem dados</div>';
     document.getElementById('chart-horas-labels').innerHTML=horas.map(h=>`<span class="chart-bar-label">${h.hora}h</span>`).join('');
   } else {
     const datasArr=[...datas].sort();
-    const fatD=datasArr.map(d=>({d,f:(DB.relatorio_dia[d]?.faturamento||0)}));
+    const fatD=datasArr.map(d=>({d,f:(DB.relatorio_dia[d]?.faturamento||DB.relatorio_dia[d.replace(/-0(\d)/g,'-$1').replace(/-(\d)$/,'-$1')]?.faturamento||Object.values(DB.relatorio_dia).find(r=>normDate(r.id||r.data)===d)?.faturamento||0)}));
     const maxD=Math.max(...fatD.map(x=>x.f),1);
     document.getElementById('chart-horas').innerHTML=fatD.map(x=>`<div class="chart-bar-col"><div class="chart-bar-val">${x.f>=1000?(x.f/1000).toFixed(1)+'k':Math.round(x.f)}</div><div class="chart-bar-rect" style="height:${Math.max(4,Math.round(x.f/maxD*100))}px"></div></div>`).join('');
     document.getElementById('chart-horas-labels').innerHTML=fatD.map(x=>{const p=x.d.split('-');return`<span class="chart-bar-label">${p[2]}/${p[1]}</span>`;}).join('');
   }
   const rankMap={};
-  Object.values(DB.ranking_itens).filter(r=>datas.has(r.data)).forEach(r=>{if(!rankMap[r.nome])rankMap[r.nome]={nome:r.nome,qty:0,fat:0};rankMap[r.nome].qty+=r.qty||0;rankMap[r.nome].fat+=r.faturamento||0;});
+  Object.values(DB.ranking_itens).filter(r=>datas.has(normDate(r.data))).forEach(r=>{if(!rankMap[r.nome])rankMap[r.nome]={nome:r.nome,qty:0,fat:0};rankMap[r.nome].qty+=r.qty||0;rankMap[r.nome].fat+=r.faturamento||0;});
   const rank=Object.values(rankMap).sort((a,b)=>b.qty-a.qty).slice(0,8);
   const maxR=rank.length?rank[0].qty:1;
   document.getElementById('ranking-list').innerHTML=rank.length?rank.map((r,i)=>`<div class="rank-item"><div class="rank-pos">${i+1}</div><div class="rank-name">${r.nome}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(r.qty/maxR*100)}%"></div></div><div class="rank-qty">${r.qty}</div></div>`).join(''):'<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
   const catMap={};
-  Object.values(DB.fat_cat).filter(r=>datas.has(r.data)).forEach(r=>{catMap[r.cat]=(catMap[r.cat]||0)+(r.valor||0);});
+  Object.values(DB.fat_cat).filter(r=>datas.has(normDate(r.data))).forEach(r=>{catMap[r.cat]=(catMap[r.cat]||0)+(r.valor||0);});
   const fatCat=Object.entries(catMap).map(([c,v])=>({c,v})).sort((a,b)=>b.v-a.v);
   const maxC=fatCat.length?fatCat[0].v:1;
   document.getElementById('cat-fat-list').innerHTML=fatCat.length?fatCat.map(x=>`<div class="rank-item"><div class="rank-name">${x.c}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(x.v/maxC*100)}%;background:var(--brand-m)"></div></div><div class="rank-qty">${fmtBRL(x.v)}</div></div>`).join(''):'<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
   const pgtoMap={};
-  Object.values(DB.fat_pgto).filter(r=>datas.has(r.data)).forEach(r=>{if(!pgtoMap[r.forma])pgtoMap[r.forma]={f:r.forma,v:0,q:0};pgtoMap[r.forma].v+=r.valor||0;pgtoMap[r.forma].q+=r.qtd||0;});
+  Object.values(DB.fat_pgto).filter(r=>datas.has(normDate(r.data))).forEach(r=>{if(!pgtoMap[r.forma])pgtoMap[r.forma]={f:r.forma,v:0,q:0};pgtoMap[r.forma].v+=r.valor||0;pgtoMap[r.forma].q+=r.qtd||0;});
   const icons={dinheiro:'💵',debito:'💳',credito:'💳',pix:'📱'};
   document.getElementById('pgto-fat-list').innerHTML=Object.values(pgtoMap).sort((a,b)=>b.v-a.v).length?Object.values(pgtoMap).sort((a,b)=>b.v-a.v).map(p=>`<div class="conta-total-row" style="padding:8px 0;"><span>${icons[p.f]||'💳'} ${p.f} (${p.q}×)</span><span style="font-weight:700;">${fmtBRL(p.v)}</span></div>`).join(''):'<div class="text-muted text-sm text-center" style="padding:16px;">Sem dados</div>';
 }
@@ -1452,6 +1477,9 @@ function goPage(name) {
   document.querySelectorAll('.nav-btn,.nav-mob-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll(`[data-page="${name}"]`).forEach(b=>b.classList.add('active'));
+  // Comanda mobile só aparece na aba pedido
+  const comanda=document.getElementById('comanda-panel');
+  if(comanda) comanda.style.display = (name==='pedido') ? '' : 'none';
   const renders={
     mesas:renderFloor,
     pedido:()=>{renderMesaSelector();renderCardapio();renderCart();},
