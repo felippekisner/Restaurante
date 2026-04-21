@@ -281,7 +281,6 @@
         <div style="display:flex;gap:4px;">
           <button class="rel-period-btn active" onclick="setRelPeriod('hoje',this)">Hoje</button>
           <button class="rel-period-btn" onclick="setRelPeriod('semana',this)">7 dias</button>
-          <button class="rel-period-btn" onclick="setRelPeriod('mes',this)">30 dias</button>
         </div>
       </div>
       <div class="g4" id="rel-metrics" style="margin-bottom:14px;"></div>
@@ -376,6 +375,7 @@
       <button class="nav-mob-btn" onclick="goPage('caixa')" data-page="caixa"><span class="nav-mob-icon">💳</span><span class="nav-mob-label">Caixa</span></button>
       <button class="nav-mob-btn" onclick="goPage('estoque')" data-page="estoque"><span class="nav-mob-icon">📦</span><span class="nav-mob-label">Estoque</span></button>
       <button class="nav-mob-btn" onclick="goPage('relatorios')" data-page="relatorios"><span class="nav-mob-icon">📊</span><span class="nav-mob-label">Relatórios</span></button>
+      <button class="nav-mob-btn" onclick="goPage('relatorios-mensais')" data-page="relatorios-mensais" id="nav-mob-mensal" style="display:none"><span class="nav-mob-icon">📅</span><span class="nav-mob-label">Mensal</span></button>
       <!-- Config mobile: só aparece para gerente -->
       <button class="nav-mob-btn" onclick="goPage('config')" data-page="config" id="nav-mob-config" style="display:none"><span class="nav-mob-icon">⚙️</span><span class="nav-mob-label">Config</span></button>
     </div>
