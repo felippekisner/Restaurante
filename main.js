@@ -256,6 +256,7 @@ function aplicarRole(role) {
   document.getElementById('nav-cardapio').style.display         = rc.canCardapio  ?'':'none';
   document.getElementById('nav-relatorios').style.display       = rc.canRelatorio ?'':'none';
   document.getElementById('nav-relatorios-mensais').style.display = rc.canRelatorio?'':'none';
+  const mobMensal=document.getElementById('nav-mob-mensal'); if(mobMensal) mobMensal.style.display=rc.canRelatorio?'':'none';
   document.getElementById('nav-config').style.display           = rc.canConfig    ?'':'none';
   // FIX: Config também aparece no mobile para gerente
   const mobCfg = document.getElementById('nav-mob-config');
