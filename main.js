@@ -557,7 +557,7 @@ function renderCardapio() {
     const sem=Object.entries(ing).some(([k,v])=>{const e=DB.estoque[k];return e&&e.qty<v;});
     const dis=!i.ativo||sem;
     const cartQty=(STATE.cartItems.find(c=>c.id===String(i.id))?.qty)||0;
-    return `<button class="item-card" onclick="${dis?'':'addItem('+i.id+')'}" ${dis?'disabled':''}>
+    return `<button class="item-card" onclick="${dis?'':"addItem('"+i.id+"')"}" ${dis?'disabled':''}>
       <div class="item-icon-wrap">${i.icon||'🍽️'}</div>
       <div class="item-info">
         <div class="item-cat">${i.cat}</div>
@@ -627,9 +627,9 @@ function renderCart() {
         <div class="cart-item-price">${fmtBRL(c.preco)} × ${c.qty} = ${fmtBRL(c.preco*c.qty)}</div>
       </div>
       <div class="cart-item-ctrl">
-        <button class="qty-btn" onclick="removeItem(${c.id})">−</button>
+        <button class="qty-btn" onclick="removeItem('${c.id}')">−</button>
         <span class="qty-num">${c.qty}</span>
-        <button class="qty-btn" onclick="addItem(${c.id})">+</button>
+        <button class="qty-btn" onclick="addItem('${c.id}')">+</button>
       </div>
     </div>`).join('');
 
